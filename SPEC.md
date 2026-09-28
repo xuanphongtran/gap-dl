@@ -65,14 +65,14 @@ Dialogs or inline forms cover room creation, joining by ID, inviting by user ID,
 
 ## 5. Message updates
 
-Swagger currently exposes REST only. The MVP reloads the most recent page of the open room about every five seconds while the tab is visible. After sending, insert the 201 response and deduplicate by ID. Refresh immediately when the tab becomes visible again. This is temporary: it adds latency and repeated traffic, and can miss messages if more than one page arrives between polls. Confirm the valid limit with the backend.
+Swagger currently exposes REST only. Vue Query reloads the most recent page of the open room about every five seconds while the tab is visible and refetches stale data on focus. Older pages load only on demand. After sending, insert the 201 response and deduplicate by ID. This is temporary: it adds latency and repeated traffic, and can miss messages if more than one page arrives between polls. Confirm the valid limit with the backend.
 
-TODO after MVP: choose WebSocket or SSE, then define authentication, message.created, room.updated, membership.updated, and invitation.updated events, reconnection, and recovery of missed messages through an after cursor or equivalent. Online and typing states require separate contracts.
+TODO after MVP: choose WebSocket or SSE, then define authentication, message.created, room.updated, membership.updated, and invitation.updated events, reconnection, and recovery of missed messages through an after cursor or equivalent. Use `@vueuse/core` for WebSocket lifecycle when that work starts. Online and typing states require separate contracts.
 
 ## 6. Frontend rules
 
-- Use Vue 3, TypeScript, Vite, Vue Router, and Pinia. Centralize typed HTTP calls, base URL, Bearer tokens, error parsing, and token refresh in the API client. Components must not call fetch directly.
-- Separate server data from UI state. Abort room reads and stop polling when navigation changes; prevent stale responses from updating a different room.
+- Use Vue 3, TypeScript, Vite, Vue Router, Axios, Vue Query, and Pinia. Centralize typed HTTP calls, base URL, Bearer tokens, error parsing, and token refresh in the API client. Components use endpoint functions through Vue Query.
+- Vue Query owns server data, caching, invalidation, cancellation, and polling. Pinia owns session state; component refs own local form and panel state. Cancel room reads and stop polling when navigation changes; prevent stale responses from updating a different room.
 - The current backend accepts refresh tokens in JSON. Session storage supports reloads in one tab but is readable by injected scripts. Never log tokens, put them in URLs, or render message HTML. Before production, coordinate an HttpOnly, Secure, SameSite cookie design and matching CSRF policy with the backend.
 - Render messages as plain text. Confirm backend content-length limits and handle 413.
 - Display API timestamps in the browser's locale; use message IDs, not timestamps, for identity and merging.

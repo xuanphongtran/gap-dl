@@ -7,9 +7,9 @@ Reference: [SPEC.md](./SPEC.md). The frontend uses Vue 3, TypeScript, an 8-bit/p
 ## Phase 0 — Contract and project setup
 
 - [ ] Confirm the backend questions in SPEC, especially expires_at, message pagination, and content limits. Local CORS preflight has been verified.
-- [x] Set up Vue 3, TypeScript, Vite, Router, Pinia, ESLint, Prettier, and .env.example with VITE_API_BASE_URL.
+- [x] Set up Vue 3, TypeScript, Vite, Router, Pinia, Axios, Vue Query, ESLint, Prettier, and .env.example with VITE_API_BASE_URL.
 - [x] Create pixel UI tokens and base components; inspect the sign-in screen at desktop and mobile sizes.
-- [x] Add typed API calls, HTTP error handling, 204 handling, request timeout, and cancellation for room reads.
+- [x] Add typed Axios API calls, HTTP error handling, 204 handling, request timeout, and cancellation for room reads.
 - [ ] Prepare at least two test accounts in development for invitation and messaging checks.
 
 **Done when:** The app runs locally, the API health and authentication endpoints can be called, environment setup is documented, and no tokens are hardcoded.
@@ -26,7 +26,7 @@ Reference: [SPEC.md](./SPEC.md). The frontend uses Vue 3, TypeScript, an 8-bit/p
 
 - [x] List and create rooms, open rooms by URL, and show empty/error states.
 - [x] Load recent messages with author and time, then fetch older pages through before.
-- [x] Send messages without duplicate submissions, keep drafts on failure, and temporarily poll the active room over HTTP.
+- [x] Send messages without duplicate submissions, keep drafts on failure, and poll the latest page through Vue Query while history loads on demand.
 - [x] Apply the pixel UI to room navigation, messages, and composer; support mobile navigation and per-room drafts.
 
 **Done when:** Two accounts in one room can exchange messages and load history without duplication or scroll jumps.
@@ -51,7 +51,7 @@ Reference: [SPEC.md](./SPEC.md). The frontend uses Vue 3, TypeScript, an 8-bit/p
 
 ## TODO after MVP — Realtime and expansion
 
-- [ ] Choose WebSocket or SSE and define authentication and event schemas.
+- [ ] Choose WebSocket or SSE and define authentication and event schemas. Use `@vueuse/core` for the WebSocket connection lifecycle.
 - [ ] Add an after cursor for message recovery, reconnection/backoff, and duplicate-event handling.
 - [ ] Move refresh tokens to HttpOnly cookies if backend support is added; add server-side logout/revocation.
 - [ ] Design canonical direct messages and user/room discovery before unread counts, typing, search, files, or notifications.

@@ -1,51 +1,65 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { useMutation, useQuery } from '@tanstack/vue-query'
 import { useRouter } from 'vue-router'
 import { api, errorMessage } from '../lib/api'
+import { queryClient, queryKeys } from '../lib/query'
 import { useAuthStore } from '../stores/auth'
+import type { Profile } from '../types'
 
 const auth = useAuthStore()
 const router = useRouter()
 const username = ref('')
 const avatarUrl = ref('')
-const busy = ref(false)
 const feedback = ref('')
+const profileQuery = useQuery({
+  queryKey: queryKeys.profile,
+  queryFn: ({ signal }) => api.profile(signal),
+})
+const profile = computed(() => profileQuery.data.value)
+const saveMutation = useMutation({
+  mutationFn: (body: { username: string; avatar_url: string }) => api.updateProfile(body),
+  onSuccess: (updated) => queryClient.setQueryData<Profile>(queryKeys.profile, updated),
+})
+const deleteMutation = useMutation({ mutationFn: api.deleteAccount })
+const busy = computed(() => saveMutation.isPending.value || deleteMutation.isPending.value)
 
-onMounted(async () => {
-  if (!auth.profile) await auth.loadProfile().catch(() => undefined)
-  username.value = auth.profile?.username || ''
-  avatarUrl.value = auth.profile?.avatar_url || ''
+watch(
+  profile,
+  (value) => {
+    if (!value) return
+    username.value = value.username
+    avatarUrl.value = value.avatar_url || ''
+  },
+  { immediate: true },
+)
+watch(profileQuery.error, (cause) => {
+  if (cause) feedback.value = errorMessage(cause)
 })
 
 async function save() {
   if (busy.value || !username.value.trim()) return
-  busy.value = true
   feedback.value = ''
   try {
-    auth.profile = await api.updateProfile({
+    await saveMutation.mutateAsync({
       username: username.value.trim(),
       avatar_url: avatarUrl.value.trim(),
     })
     feedback.value = 'Profile saved.'
   } catch (cause) {
     feedback.value = errorMessage(cause)
-  } finally {
-    busy.value = false
   }
 }
 
 async function removeAccount() {
   if (!window.confirm('Permanently delete your account? This cannot be undone.')) return
-  busy.value = true
   feedback.value = ''
   try {
-    await api.deleteAccount()
+    await deleteMutation.mutateAsync()
     auth.logout()
     await router.replace('/register')
   } catch (cause) {
     feedback.value = errorMessage(cause)
-  } finally {
-    busy.value = false
   }
 }
 </script>
@@ -58,7 +72,7 @@ async function removeAccount() {
     <p class="muted">Update how you appear in chat rooms.</p>
     <section class="settings-card pixel-panel">
       <div class="settings-avatar pixel-avatar">
-        {{ auth.profile?.username?.slice(0, 1).toUpperCase() || '?' }}
+        {{ profile?.username?.slice(0, 1).toUpperCase() || '?' }}
       </div>
       <form class="stack-lg" @submit.prevent="save">
         <label class="field"><span>Display name</span><input v-model="username" required /></label
@@ -69,7 +83,7 @@ async function removeAccount() {
             type="url"
             placeholder="https://example.com/avatar.png" /></label
         ><label class="field"
-          ><span>Email</span><input :value="auth.profile?.email || ''" readonly
+          ><span>Email</span><input :value="profile?.email || ''" readonly
         /></label>
         <p v-if="feedback" class="alert" role="status">{{ feedback }}</p>
         <button class="pixel-button primary" :disabled="busy">SAVE CHANGES</button>

@@ -24,9 +24,11 @@ This runs Prettier verification, ESLint, Vue TypeScript checking, tests, and a p
 
 ## Architecture
 
-- `src/lib/api.ts`: typed REST client, error handling and one shared token refresh request.
+- `src/lib/http.ts`: Axios instances, Bearer authentication, error handling, cancellation, timeout, and one shared token refresh request.
+- `src/lib/api.ts`: typed REST endpoint functions.
+- `src/lib/query.ts`: Vue Query client and cache keys. Queries own profile, rooms, invitations, members, and messages; mutations invalidate affected data. The newest message page polls every five seconds while history pages load on demand.
 - `src/lib/session.ts`: session storage for token pair. It persists across reloads in the same tab; production should move refresh tokens to secure HTTP only cookies when supported by the backend.
-- `src/stores/`: auth, rooms and invitation state.
+- `src/stores/auth.ts`: Pinia state for the current session only.
 - `src/views/`: authentication, shell, room chat and profile screens.
 - `src/style.css`: pixel design tokens and responsive layout.
 

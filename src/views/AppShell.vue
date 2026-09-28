@@ -1,21 +1,59 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { useMutation, useQuery } from '@tanstack/vue-query'
 import { useRoute, useRouter } from 'vue-router'
-import { errorMessage } from '../lib/api'
-import { readSession } from '../lib/session'
+import { api, errorMessage } from '../lib/api'
+import { queryClient, queryKeys } from '../lib/query'
 import { useAuthStore } from '../stores/auth'
-import { useRoomsStore } from '../stores/rooms'
 
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
-const roomStore = useRoomsStore()
+const profileQuery = useQuery({
+  queryKey: queryKeys.profile,
+  queryFn: ({ signal }) => api.profile(signal),
+})
+const roomsQuery = useQuery({
+  queryKey: queryKeys.rooms,
+  queryFn: ({ signal }) => api.rooms(signal),
+})
+const invitationsQuery = useQuery({
+  queryKey: queryKeys.invitations,
+  queryFn: ({ signal }) => api.invitations(signal),
+})
+const profile = computed(() => profileQuery.data.value)
+const rooms = computed(() => roomsQuery.data.value?.rooms || [])
+const invitations = computed(() => invitationsQuery.data.value?.invitations || [])
+const loadingRooms = computed(() => roomsQuery.isPending.value)
 const roomName = ref('')
 const visibility = ref<'public' | 'private'>('private')
 const joinId = ref('')
 const creating = ref(false)
 const joining = ref(false)
-const busy = ref(false)
+const createMutation = useMutation({
+  mutationFn: ({ name, visibility }: { name: string; visibility: 'public' | 'private' }) =>
+    api.createRoom(name, visibility),
+  onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.rooms }),
+})
+const joinMutation = useMutation({
+  mutationFn: (id: number) => api.joinRoom(id),
+  onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.rooms }),
+})
+const respondMutation = useMutation({
+  mutationFn: ({ id, action }: { id: number; action: 'accept' | 'decline' }) =>
+    api.respondInvitation(id, action),
+  onSuccess: () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: queryKeys.rooms }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.invitations }),
+    ]),
+})
+const busy = computed(
+  () =>
+    createMutation.isPending.value ||
+    joinMutation.isPending.value ||
+    respondMutation.isPending.value,
+)
 const error = ref('')
 const activeRoomId = computed(() => Number(route.params.id))
 const hasDetail = computed(() => route.path !== '/app')
@@ -27,60 +65,51 @@ watch(
   },
 )
 
-onMounted(async () => {
-  try {
-    await Promise.all([auth.loadProfile(), roomStore.load()])
-  } catch (cause) {
-    if (!readSession()) {
-      auth.logout()
-      await router.replace('/login')
-    } else error.value = errorMessage(cause)
-  }
-})
+watch(
+  [profileQuery.error, roomsQuery.error, invitationsQuery.error],
+  ([profileError, roomsError, invitationsError]) => {
+    const cause = profileError || roomsError || invitationsError
+    if (cause) error.value = errorMessage(cause)
+  },
+)
 
 async function createRoom() {
   if (!roomName.value.trim() || busy.value) return
-  busy.value = true
   error.value = ''
   try {
-    const room = await roomStore.create(roomName.value.trim(), visibility.value)
+    const room = await createMutation.mutateAsync({
+      name: roomName.value.trim(),
+      visibility: visibility.value,
+    })
     roomName.value = ''
     creating.value = false
     await router.push(`/app/rooms/${room.id}`)
   } catch (cause) {
     error.value = errorMessage(cause)
-  } finally {
-    busy.value = false
   }
 }
 
 async function joinRoom() {
   const id = Number(joinId.value)
   if (!Number.isSafeInteger(id) || id <= 0 || busy.value) return
-  busy.value = true
   error.value = ''
   try {
-    await roomStore.join(id)
+    await joinMutation.mutateAsync(id)
     joinId.value = ''
     joining.value = false
     await router.push(`/app/rooms/${id}`)
   } catch (cause) {
     error.value = errorMessage(cause)
-  } finally {
-    busy.value = false
   }
 }
 
 async function respond(id: number, action: 'accept' | 'decline') {
   if (busy.value) return
-  busy.value = true
   error.value = ''
   try {
-    await roomStore.respond(id, action)
+    await respondMutation.mutateAsync({ id, action })
   } catch (cause) {
     error.value = errorMessage(cause)
-  } finally {
-    busy.value = false
   }
 }
 
@@ -113,15 +142,13 @@ function toggleJoin() {
       <div class="sidebar-scroll">
         <div class="section-heading">
           <span>CHAT ROOMS</span
-          ><span class="count">{{ roomStore.rooms.length.toString().padStart(2, '0') }}</span>
+          ><span class="count">{{ rooms.length.toString().padStart(2, '0') }}</span>
         </div>
-        <p v-if="roomStore.loading" class="sidebar-note">Loading rooms...</p>
-        <p v-else-if="!roomStore.rooms.length" class="sidebar-note">
-          No rooms yet. Create your first room.
-        </p>
+        <p v-if="loadingRooms" class="sidebar-note">Loading rooms...</p>
+        <p v-else-if="!rooms.length" class="sidebar-note">No rooms yet. Create your first room.</p>
         <nav class="room-list" aria-label="Room list">
           <RouterLink
-            v-for="room in roomStore.rooms"
+            v-for="room in rooms"
             :key="room.id"
             :to="`/app/rooms/${room.id}`"
             class="room-link"
@@ -162,10 +189,10 @@ function toggleJoin() {
 
         <div class="section-heading invitations-title">
           <span>INVITATIONS</span
-          ><span class="count">{{ roomStore.invitations.length.toString().padStart(2, '0') }}</span>
+          ><span class="count">{{ invitations.length.toString().padStart(2, '0') }}</span>
         </div>
-        <p v-if="!roomStore.invitations.length" class="sidebar-note">No pending invitations.</p>
-        <div v-for="invitation in roomStore.invitations" :key="invitation.id" class="invite-card">
+        <p v-if="!invitations.length" class="sidebar-note">No pending invitations.</p>
+        <div v-for="invitation in invitations" :key="invitation.id" class="invite-card">
           <strong>{{ invitation.room_name }}</strong>
           <span class="muted">Room #{{ invitation.room_id }}</span>
           <div class="invite-actions">
@@ -179,10 +206,10 @@ function toggleJoin() {
       <div class="sidebar-footer">
         <RouterLink class="profile-link" to="/app/settings">
           <span class="pixel-avatar">{{
-            auth.profile?.username?.slice(0, 1).toUpperCase() || '?'
+            profile?.username?.slice(0, 1).toUpperCase() || '?'
           }}</span>
           <span class="profile-copy"
-            ><strong>{{ auth.profile?.username || 'Loading...' }}</strong
+            ><strong>{{ profile?.username || 'Loading...' }}</strong
             ><small>View profile</small></span
           >
           <span>⚙</span>

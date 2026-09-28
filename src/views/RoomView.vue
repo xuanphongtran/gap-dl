@@ -1,35 +1,93 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
+import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/vue-query'
 import { useRoute, useRouter } from 'vue-router'
 import { api, errorMessage } from '../lib/api'
 import { mergeMessages } from '../lib/messages'
-import { useAuthStore } from '../stores/auth'
-import { useRoomsStore } from '../stores/rooms'
-import type { Message, Room, RoomMember } from '../types'
+import { queryClient, queryKeys } from '../lib/query'
+import type { Message } from '../types'
 
 const route = useRoute()
 const router = useRouter()
-const auth = useAuthStore()
-const roomStore = useRoomsStore()
 const roomId = computed(() => Number(route.params.id))
-const room = ref<Room | null>(null)
-const messages = ref<Message[]>([])
-const members = ref<RoomMember[]>([])
+const validRoom = computed(() => Number.isSafeInteger(roomId.value) && roomId.value > 0)
+const roomQuery = useQuery({
+  queryKey: computed(() => queryKeys.room(roomId.value)),
+  queryFn: ({ signal }) => api.room(roomId.value, signal),
+  enabled: validRoom,
+})
+const membersQuery = useQuery({
+  queryKey: computed(() => queryKeys.members(roomId.value)),
+  queryFn: ({ signal }) => api.members(roomId.value, signal),
+  enabled: validRoom,
+})
+const profileQuery = useQuery({
+  queryKey: queryKeys.profile,
+  queryFn: ({ signal }) => api.profile(signal),
+})
+const latestQuery = useQuery({
+  queryKey: computed(() => queryKeys.latestMessages(roomId.value)),
+  queryFn: async ({ signal }) =>
+    (await api.messages(roomId.value, 40, undefined, signal)).messages || [],
+  enabled: validRoom,
+  refetchInterval: 5000,
+})
+const historyQuery = useInfiniteQuery({
+  queryKey: computed(() => queryKeys.messageHistory(roomId.value)),
+  queryFn: async ({ pageParam, signal }) =>
+    (await api.messages(roomId.value, 40, pageParam ?? undefined, signal)).messages || [],
+  initialPageParam: null as number | null,
+  getNextPageParam: (lastPage) =>
+    lastPage.length === 40 ? Math.min(...lastPage.map((message) => message.id)) : undefined,
+  enabled: validRoom,
+  staleTime: Infinity,
+})
+const room = computed(() => roomQuery.data.value || null)
+const members = computed(() => membersQuery.data.value?.members || [])
+const profile = computed(() => profileQuery.data.value)
+const messages = computed(() => {
+  const history = historyQuery.data.value?.pages.flat() || []
+  return mergeMessages(history, latestQuery.data.value || [])
+})
+const loading = computed(
+  () => roomQuery.isPending.value || historyQuery.isPending.value || membersQuery.isPending.value,
+)
+const hasOlder = computed(() => historyQuery.hasNextPage.value)
+const loadingOlder = computed(() => historyQuery.isFetchingNextPage.value)
 const draft = ref('')
 const draftByRoom = new Map<number, string>()
-const loading = ref(true)
-const loadingOlder = ref(false)
-const hasOlder = ref(true)
-const sending = ref(false)
-const syncing = ref(false)
 const showMembers = ref(false)
 const inviteId = ref('')
-const actionBusy = ref(false)
 const error = ref('')
 const actionError = ref('')
 const listEl = ref<HTMLElement | null>(null)
-const roomController = ref<AbortController | null>(null)
 const canManage = computed(() => room.value?.role === 'owner' || room.value?.role === 'moderator')
+const queryError = computed(
+  () =>
+    roomQuery.error.value ||
+    membersQuery.error.value ||
+    historyQuery.error.value ||
+    latestQuery.error.value,
+)
+const visibleError = computed(
+  () =>
+    error.value ||
+    (validRoom.value ? queryError.value && errorMessage(queryError.value) : 'Invalid room ID.'),
+)
+
+watch(roomId, (id, oldId) => {
+  if (oldId) draftByRoom.set(oldId, draft.value)
+  draft.value = draftByRoom.get(id) || ''
+  error.value = ''
+  actionError.value = ''
+})
+
+watch(messages, (_next, previous) => {
+  const element = listEl.value
+  const nearBottom =
+    !element || element.scrollHeight - element.scrollTop - element.clientHeight < 120
+  if (nearBottom || !previous.length) scrollBottom()
+})
 
 function scrollBottom() {
   nextTick(() => {
@@ -37,135 +95,92 @@ function scrollBottom() {
   })
 }
 
-watch(
-  roomId,
-  (id, oldId, onCleanup) => {
-    if (oldId) draftByRoom.set(oldId, draft.value)
-    draft.value = draftByRoom.get(id) || ''
-    room.value = null
-    messages.value = []
-    members.value = []
-    loading.value = true
-    hasOlder.value = true
-    error.value = ''
-    const controller = new AbortController()
-    roomController.value = controller
-    let active = true
-    let timer: ReturnType<typeof setInterval> | undefined
-    let visibilityHandler: (() => void) | undefined
-    onCleanup(() => {
-      active = false
-      controller.abort()
-      if (timer) clearInterval(timer)
-      if (visibilityHandler) document.removeEventListener('visibilitychange', visibilityHandler)
-    })
-
-    if (!Number.isSafeInteger(id) || id <= 0) {
-      error.value = 'Invalid room ID.'
-      loading.value = false
-      return
-    }
-    Promise.all([
-      api.room(id, controller.signal),
-      api.messages(id, 40, undefined, controller.signal),
-      api.members(id, controller.signal),
-    ])
-      .then(([roomData, messageData, memberData]) => {
-        if (!active) return
-        room.value = roomData
-        messages.value = mergeMessages([], messageData.messages || [])
-        members.value = memberData.members || []
-        hasOlder.value = (messageData.messages || []).length >= 40
-        loading.value = false
-        scrollBottom()
-        const syncLatest = async () => {
-          if (!active || document.hidden || syncing.value) return
-          syncing.value = true
-          try {
-            const latest = await api.messages(id, 40, undefined, controller.signal)
-            if (!active) return
-            const atBottom = listEl.value
-              ? listEl.value.scrollHeight - listEl.value.scrollTop - listEl.value.clientHeight < 120
-              : true
-            messages.value = mergeMessages(messages.value, latest.messages || [])
-            if (atBottom) scrollBottom()
-          } catch {
-            /* Keep visible messages; next cycle retries. */
-          } finally {
-            syncing.value = false
-          }
-        }
-        timer = setInterval(syncLatest, 5000)
-        visibilityHandler = () => {
-          if (!document.hidden) void syncLatest()
-        }
-        document.addEventListener('visibilitychange', visibilityHandler)
-      })
-      .catch((cause: unknown) => {
-        if (!active) return
-        loading.value = false
-        error.value = errorMessage(cause)
-      })
-  },
-  { immediate: true },
-)
-
 async function loadOlder() {
-  if (!hasOlder.value || loadingOlder.value || !messages.value.length) return
-  loadingOlder.value = true
+  if (!hasOlder.value || loadingOlder.value) return
   error.value = ''
   const id = roomId.value
-  const before = messages.value[0]?.id
   const previousHeight = listEl.value?.scrollHeight || 0
   const previousTop = listEl.value?.scrollTop || 0
   try {
-    const result = await api.messages(id, 40, before, roomController.value?.signal)
+    await historyQuery.fetchNextPage()
     if (id !== roomId.value) return
-    messages.value = mergeMessages(messages.value, result.messages || [])
-    hasOlder.value = (result.messages || []).length >= 40
     await nextTick()
     if (listEl.value)
       listEl.value.scrollTop = listEl.value.scrollHeight - previousHeight + previousTop
   } catch (cause) {
-    if (id !== roomId.value || roomController.value?.signal.aborted) return
-    error.value = errorMessage(cause)
-  } finally {
-    loadingOlder.value = false
+    if (id === roomId.value) error.value = errorMessage(cause)
   }
 }
 
+const sendMutation = useMutation({
+  mutationFn: ({ id, content }: { id: number; content: string }) => api.sendMessage(id, content),
+})
+const sending = computed(() => sendMutation.isPending.value)
 async function send() {
   const content = draft.value.trim()
-  if (!content || sending.value) return
-  sending.value = true
+  if (!content || sending.value || !room.value) return
   error.value = ''
   const id = roomId.value
   try {
-    const message = await api.sendMessage(id, content)
+    const message = await sendMutation.mutateAsync({ id, content })
+    queryClient.setQueryData<Message[]>(queryKeys.latestMessages(id), (current) =>
+      mergeMessages(current || [], [message]),
+    )
     if (id !== roomId.value) return
-    messages.value = mergeMessages(messages.value, [message])
     draft.value = ''
     scrollBottom()
   } catch (cause) {
-    error.value = errorMessage(cause)
-  } finally {
-    sending.value = false
+    if (id === roomId.value) error.value = errorMessage(cause)
   }
 }
+
+const inviteMutation = useMutation({
+  mutationFn: ({ id, userId }: { id: number; userId: number }) => api.invite(id, userId),
+})
+const memberMutation = useMutation({
+  mutationFn: ({
+    id,
+    userId,
+    action,
+  }: {
+    id: number
+    userId: number
+    action: 'remove' | 'moderator' | 'member' | 'owner'
+  }) => {
+    if (action === 'remove') return api.removeMember(id, userId)
+    if (action === 'owner') return api.transferOwnership(id, userId)
+    return api.changeRole(id, userId, action)
+  },
+  onSuccess: (_result, { id }) =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: queryKeys.members(id) }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.room(id), exact: true }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.rooms }),
+    ]),
+})
+const leaveMutation = useMutation({
+  mutationFn: (id: number) => api.leaveRoom(id),
+  onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.rooms }),
+})
+const actionBusy = computed(
+  () =>
+    inviteMutation.isPending.value ||
+    memberMutation.isPending.value ||
+    leaveMutation.isPending.value,
+)
 
 async function invite() {
   const userId = Number(inviteId.value)
   if (!Number.isSafeInteger(userId) || userId <= 0 || actionBusy.value) return
-  actionBusy.value = true
   actionError.value = ''
+  const id = roomId.value
   try {
-    await api.invite(roomId.value, userId)
+    await inviteMutation.mutateAsync({ id, userId })
+    if (id !== roomId.value) return
     inviteId.value = ''
     actionError.value = 'Invitation sent.'
   } catch (cause) {
-    actionError.value = errorMessage(cause)
-  } finally {
-    actionBusy.value = false
+    if (id === roomId.value) actionError.value = errorMessage(cause)
   }
 }
 
@@ -181,38 +196,25 @@ async function memberAction(userId: number, action: 'remove' | 'moderator' | 'me
     )
   )
     return
-  actionBusy.value = true
   actionError.value = ''
+  const id = roomId.value
   try {
-    if (action === 'remove') await api.removeMember(roomId.value, userId)
-    else if (action === 'owner') await api.transferOwnership(roomId.value, userId)
-    else await api.changeRole(roomId.value, userId, action)
-    const [newMembers, newRoom] = await Promise.all([
-      api.members(roomId.value),
-      api.room(roomId.value),
-    ])
-    members.value = newMembers.members || []
-    room.value = newRoom
-    await roomStore.load()
+    await memberMutation.mutateAsync({ id, userId, action })
   } catch (cause) {
-    actionError.value = errorMessage(cause)
-  } finally {
-    actionBusy.value = false
+    if (id === roomId.value) actionError.value = errorMessage(cause)
   }
 }
 
 async function leave() {
-  if (!window.confirm('Leave this room?')) return
-  actionBusy.value = true
+  if (!window.confirm('Leave this room?') || actionBusy.value) return
   actionError.value = ''
+  const id = roomId.value
   try {
-    await api.leaveRoom(roomId.value)
-    await roomStore.load()
+    await leaveMutation.mutateAsync(id)
     await router.push('/app')
+    queryClient.removeQueries({ queryKey: queryKeys.room(id) })
   } catch (cause) {
     actionError.value = errorMessage(cause)
-  } finally {
-    actionBusy.value = false
   }
 }
 
@@ -263,7 +265,7 @@ function formatDate(value: string) {
       <section class="conversation" aria-label="Room messages">
         <div ref="listEl" class="message-list" role="log" aria-live="polite">
           <div v-if="loading" class="message-state">Loading conversation...</div>
-          <div v-else-if="!messages.length && !error" class="message-state">
+          <div v-else-if="!messages.length && !visibleError" class="message-state">
             <span class="state-icon">✦</span><strong>No messages yet</strong
             ><span>Say hello to get started!</span>
           </div>
@@ -285,15 +287,13 @@ function formatDate(value: string) {
             >
               <span>{{ formatDate(message.created_at) }}</span>
             </div>
-            <article class="message-row" :class="{ mine: message.user_id === auth.profile?.id }">
+            <article class="message-row" :class="{ mine: message.user_id === profile?.id }">
               <span class="pixel-avatar message-avatar">{{
                 message.username.slice(0, 1).toUpperCase()
               }}</span>
               <div class="message-content">
                 <div class="message-meta">
-                  <strong>{{
-                    message.user_id === auth.profile?.id ? 'You' : message.username
-                  }}</strong
+                  <strong>{{ message.user_id === profile?.id ? 'You' : message.username }}</strong
                   ><time :datetime="message.created_at">{{ formatTime(message.created_at) }}</time>
                 </div>
                 <p>{{ message.content }}</p>
@@ -302,7 +302,7 @@ function formatDate(value: string) {
           </div>
         </div>
         <div class="composer-wrap">
-          <p v-if="error" class="alert error" role="alert">{{ error }}</p>
+          <p v-if="visibleError" class="alert error" role="alert">{{ visibleError }}</p>
           <form class="composer" @submit.prevent="send">
             <label class="sr-only" for="message-input">Message content</label
             ><textarea
@@ -346,7 +346,7 @@ function formatDate(value: string) {
             <details
               v-if="
                 canManage &&
-                member.user_id !== auth.profile?.id &&
+                member.user_id !== profile?.id &&
                 (room?.role === 'owner' || member.role === 'member')
               "
               class="member-menu"
