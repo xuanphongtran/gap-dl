@@ -29,7 +29,9 @@ This runs Prettier verification, ESLint, Vue TypeScript checking, tests, and a p
 - `src/lib/query.ts`: Vue Query client and cache keys. Queries own profile, rooms, invitations, members, and messages; mutations invalidate affected data. The newest message page polls every five seconds while history pages load on demand.
 - `src/lib/session.ts`: session storage for token pair. It persists across reloads in the same tab; production should move refresh tokens to secure HTTP only cookies when supported by the backend.
 - `src/stores/auth.ts`: Pinia state for the current session only.
-- `src/views/`: authentication, shell, room chat and profile screens.
-- `src/style.css`: pixel design tokens and responsive layout.
+- `src/components/base/`: reusable pixel controls with typed props and accessible form behavior. They do not depend on API or application state.
+- `src/features/`: authentication, rooms, messages, and profile UI. Feature screens own their local interactions.
+- `src/views/`: thin route wrappers that compose feature screens.
+- `src/style.css`: shared pixel design tokens, global utilities, and responsive layout.
 
 Read [SPEC.md](./SPEC.md) and [PLAN.md](./PLAN.md) for scope and remaining API questions. Repository guidance for Codex is in [AGENTS.md](./AGENTS.md) and `.agents/skills/gogo-chat-development/SKILL.md`.

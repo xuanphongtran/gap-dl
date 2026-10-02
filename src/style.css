@@ -87,7 +87,7 @@ h2 {
 .composer-hint,
 .count,
 .panel-heading,
-.field > span,
+.field > label,
 .load-older,
 .invite-actions button {
   font-family: 'Press Start 2P', monospace;
@@ -156,8 +156,16 @@ a:hover {
   flex-direction: column;
   gap: 10px;
 }
-.field > span {
+.field > label {
   color: #aec3c3;
+}
+.field-help {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+.field-error {
+  color: var(--red);
 }
 .field input,
 .field select,
@@ -198,6 +206,13 @@ a:hover {
   background: #3b272b;
   border-color: var(--red);
   color: #ffb2b2;
+}
+.pixel-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
 }
 
 .auth-page {
@@ -430,7 +445,7 @@ a:hover {
   padding: 15px;
   box-shadow: 3px 3px 0 #0b151a;
 }
-.sidebar-form .field > span {
+.sidebar-form .field > label {
   font-size: 8px;
 }
 .invitations-title {
@@ -518,11 +533,6 @@ a:hover {
 }
 .empty-room {
   height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
   padding: 32px;
   background: radial-gradient(circle at center, #1b3035 0, #101820 54%);
 }
@@ -624,13 +634,8 @@ a:hover {
 }
 .message-state {
   height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
   gap: 14px;
   color: var(--muted);
-  text-align: center;
 }
 .message-state strong {
   color: var(--text);
@@ -854,7 +859,7 @@ a:hover {
   padding-top: 24px;
   border-top: 1px solid #38515a;
 }
-.invite-form .field > span {
+.invite-form .field > label {
   font-size: 8px;
 }
 .panel-feedback {

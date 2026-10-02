@@ -8,9 +8,16 @@ Swagger documents `PATCH/DELETE /api/v1/rooms/{id}/messages/{message_id}`, `GET/
 
 The existing Vue 3 and TypeScript client supports account access, room text chat, invitations, membership actions, profile settings, older-page loading, and five-second HTTP polling of the newest message page. Preserve these flows and the 8-bit/pixel UI while adding backend capabilities in independently usable releases.
 
+### Frontend foundation
+
+Before adding new API-driven features, organize the existing source by responsibility and extract repeated pixel UI patterns into reusable base components. Route views compose feature components; base components provide presentation and accessible interactions without importing API clients, Vue Query, Pinia, or router state. Keep typed REST endpoints in `src/lib/api.ts`, Axios transport in `src/lib/http.ts`, shared Vue Query keys in `src/lib/query.ts`, and session state in Pinia.
+
+The initial base set covers buttons, form fields, panels, alerts, empty/loading states, and avatars. Each component needs a small typed public interface, semantic HTML, keyboard and focus behavior, disabled/loading states where applicable, and consistent use of `src/style.css` pixel tokens. Feature-specific chat rows, room links, and invitation cards stay in feature folders. The foundation must preserve existing routes, copy, responsive layout, and network behavior.
+
 | Area | Frontend scope | Prerequisite |
 | --- | --- | --- |
-| API reliability | Verify validation, errors, rate limits, deleted authors, and account-deletion behavior. | Deployed response contracts |
+| Frontend foundation | Organize source and establish reusable pixel components before new feature work. | Existing UI regression checks |
+| API reliability | Verify validation, errors, rate limits, deleted authors, and account-deletion behavior. | Frontend foundation and deployed response contracts |
 | Membership | Align public/private room and role UI with the final authorization matrix. | Deployed authorization behavior |
 | Message lifecycle | Add edit/delete UI. | Swagger documents lifecycle endpoints and revision fields; verify behavior with accounts. |
 | Read state | Add durable REST read state and unread counts; defer presence and typing. | Swagger documents read-state endpoints and cursor fields; verify behavior with accounts. |
