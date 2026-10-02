@@ -1,92 +1,86 @@
-# Product specification: Gogo DL Web Chat
+# Frontend product specification: Gogo DL Web Chat
 
-Status: MVP implementation draft. Source: [Gogo DL API 1.0 Swagger](https://gogo-dl.onrender.com/swagger/index.html), reviewed on 2026-09-28. The Swagger document describes 22 operations across 17 paths. Authenticated behavior has not yet been verified with test accounts. Visual direction: 8-bit/pixel. WebSocket and SSE remain post-MVP TODOs.
+**Status:** Frontend planning update, 2026-10-02. The REST contract source is the deployed [Swagger JSON](https://gogo-dl.onrender.com/swagger/doc.json), checked on 2026-10-02 (Swagger 2.0, API version 1.0, 20 paths, 27 operations). Check it again before implementing each feature and verify authenticated behavior against the API at `VITE_API_BASE_URL`. WebSocket and SSE remain frontend TODOs.
 
-## 1. Goal and scope
+Swagger documents `PATCH/DELETE /api/v1/rooms/{id}/messages/{message_id}`, `GET/PUT /api/v1/rooms/{id}/read-state`, and `GET /api/v1/rooms/{id}/presence`. Search, attachment, mention/inbox, and WebSocket event contracts are not present in this REST document. Endpoint presence in Swagger does not confirm authenticated runtime behavior.
 
-Build a room-based web chat application with Vue 3 and TypeScript. Users can register, sign in, view rooms they can access, read and send messages, handle invitations, and manage their profile. The interface must work on desktop and mobile.
+## 1. Scope and release map
 
-The MVP supports text messages in rooms. A private room can serve a small group, but the API does not define a unique direct-message conversation, user directory, or user search. Attachments, reactions, read receipts, typing indicators, message search, and push notifications are later work.
+The existing Vue 3 and TypeScript client supports account access, room text chat, invitations, membership actions, profile settings, older-page loading, and five-second HTTP polling of the newest message page. Preserve these flows and the 8-bit/pixel UI while adding backend capabilities in independently usable releases.
 
-## 2. Main user flows
-
-| Flow | Expected behavior | Existing API |
+| Area | Frontend scope | Prerequisite |
 | --- | --- | --- |
-| Register | Enter email, username, and password; receive a token pair | POST /api/v1/auth/register |
-| Sign in | Enter email and password; load profile | POST /api/v1/auth/login; GET /api/v1/users/me |
-| Open app | View accessible rooms and pending invitations | GET /api/v1/rooms; GET /api/v1/users/me/invitations?status=pending |
-| Open room | Load room details, recent messages, and members | GET /api/v1/rooms/{id}; /messages; /members |
-| Send message | Send plain text and show sending, error, or success state | POST /api/v1/rooms/{id}/messages |
-| Read history | Load older messages with before=<id> and limit | GET /api/v1/rooms/{id}/messages |
-| Manage rooms | Create public/private rooms, join a public room by ID, leave a room | POST /api/v1/rooms; POST /api/v1/rooms/{id}/join; DELETE /api/v1/rooms/{id}/membership |
-| Invitations | Invite by user_id; accept or decline | POST /api/v1/rooms/{id}/invitations; POST /api/v1/invitations/{id}/accept or /decline |
-| Members | View members; change role, remove member, or transfer ownership when allowed | GET/PATCH/DELETE member endpoints; POST /api/v1/rooms/{id}/ownership |
-| Profile | View/update username and avatar URL; confirm account deletion | GET/PATCH/DELETE /api/v1/users/me |
+| API reliability | Verify validation, errors, rate limits, deleted authors, and account-deletion behavior. | Deployed response contracts |
+| Membership | Align public/private room and role UI with the final authorization matrix. | Deployed authorization behavior |
+| Message lifecycle | Add edit/delete UI. | Swagger documents lifecycle endpoints and revision fields; verify behavior with accounts. |
+| Read state | Add durable REST read state and unread counts; defer presence and typing. | Swagger documents read-state endpoints and cursor fields; verify behavior with accounts. |
+| Rich messaging | Add search, attachments, mentions, and inbox in separate releases. | Released APIs and provider gates |
+| Realtime and operations | Add reconnect/recovery when explicitly in scope; handle warm-up and transient failures. | Verified transport and deployment contracts |
 
-### MVP acceptance criteria
+## 2. Existing journeys to preserve
 
-1. Users can register and sign in. Reloading preserves the tab session or clearly returns them to sign-in when the session expires.
-2. Rooms, messages, and invitations show only data returned for the current account, with useful loading, empty, and error states.
-3. Sending and syncing do not duplicate messages. Failed sends preserve the draft for retry. Messages display in ascending ID order.
-4. Loading older messages preserves reading position. Overlapping pages merge by message ID.
-5. Accepting an invitation, joining/leaving a room, and changing membership refresh affected views.
-6. The UI works with keyboard navigation and labelled inputs, with readable contrast and mobile room/chat navigation.
-7. A 401 triggers one token refresh attempt. Failed refresh clears the session. 403, 404, 409, 413, and 429 receive contextual feedback.
+| Journey | Expected behavior | Existing API |
+| --- | --- | --- |
+| Account | Register/sign in, persist tab session, refresh one expired access token, clear session and private cache on final auth failure. | Auth and profile REST operations |
+| Browse | Show accessible rooms and pending invitations with loading, empty, and error states. | Rooms and invitations reads |
+| Chat | Load room, members, newest messages, then older pages with `before`; retain per-room draft and scroll position. | Room, members, messages reads |
+| Send | Preserve draft on failure, show returned message once, reconcile by message ID. | Message POST |
+| Membership | Create/join/leave, invite/accept/decline, manage eligible roles, invalidate affected queries. | Room/invitation/member operations |
+| Profile | Update profile and confirm deletion. Explain ownership conflict on `409`. | Profile GET/PATCH/DELETE |
 
-## 3. Screens and visual direction
+## 3. API hardening and data integrity
 
-| Route | Content |
-| --- | --- |
-| /login and /register | Authentication form, errors, cross-link |
-| /app | Room list, pending invitations, create/join actions, empty state |
-| /app/rooms/:id | Room header, messages, composer, member panel |
-| /app/settings | Profile settings and account deletion |
+- The current Swagger error model exposes an `error` string. Show safe form-level feedback; map validation to individual inputs only if a later documented response adds stable field details. Client validation helps usability and never substitutes for server authorization.
+- On `429`, honor a valid integer `Retry-After`, disable only the affected action for that interval, and allow retry afterward. On `413`, explain the relevant size limit. Distinguish final `401`, `403`, concealed `404`, `409`, network failure, and temporary `503` without revealing private-resource existence or backend internals.
+- Capture `X-Request-ID` for safe support details when present. Never log tokens, message bodies, signed URLs, or raw error stacks. Do not automatically replay writes without a confirmed idempotency contract.
+- Account deletion may be rejected while the user owns rooms; explain ownership transfer. Deleted authors can remain in message history with nullable identity; display a neutral deleted-user label while preserving the message ID and deletion state.
+- Confirm server normalization and bounds for email, username, room name, avatar URL, and message content before adding matching client hints.
 
-Dialogs or inline forms cover room creation, joining by ID, inviting by user ID, member management, and destructive action confirmation. Show actions according to the returned owner/moderator/member role; the backend remains authoritative for permissions.
+## 4. Rooms and permissions
 
-### 8-bit/pixel language
+- Public rooms may be discoverable and self-joinable if the deployed API exposes discovery. History and real-time subscription still require membership. A concealed private-room `404` must not reveal details.
+- Treat visibility as immutable unless the deployed API supports changing it. Owners transfer ownership before leaving or deleting their account. Use confirmed idempotent join/leave/invitation responses.
+- Show owner/moderator/member actions according to the returned role, while the API remains authoritative. On membership loss, clear that room's cached details, members, messages, read state, and pending private UI; return to the room list.
 
-- Use rectangular panels, pixel-like borders, offset shadows, square corners, and spacing based on 4 or 8 px.
-- Initial colors: background #101820, panel #1D2B34, border #5A6B75, text #F4F4E8, accent #4DE0A8, warning #FFCA5C, error #FF6B6B. Check contrast, especially for small labels.
-- Use a pixel font for short labels and buttons, and a readable sans-serif font for messages, forms, and help text.
-- Use a consistent pixel icon style. Default avatars use the first username character; valid avatar URLs can be added to displayed avatars.
-- Convey state through both color and text/shape. Keep focus visible, touch targets around 44 px, and respect reduced-motion settings.
-- Desktop uses room, conversation, and optional member columns. Mobile shows the room list or one chat at a time.
-- Preserve line breaks in messages and wrap long URLs. Do not pixelate body text.
+## 5. Message lifecycle
 
-## 4. API contract notes
+- After verifying the documented lifecycle endpoints with accounts, let an eligible current-member author edit their own text. Owners/moderators may delete other users' messages but may not rewrite their text. Confirm the complete role matrix before showing controls.
+- `PATCH /api/v1/rooms/{id}/messages/{message_id}` takes `{ content, revision }` and returns a Message. Send the current revision when editing. A `409` conflict keeps the local edit, fetches the latest server version, and offers explicit retry/discard; never silently overwrite newer text.
+- Deletion renders an ID-stable, content-free tombstone. Repeated deletes converge on the same state. Show an edited indicator only when the API supplies it. Merge history, polling, mutations, and eventual events by message ID and increasing revision; ignore older results.
+- Edits/deletes do not create a new unread item. `before=<message ID>` pagination must continue to work through tombstones and preserve reading position.
 
-- Configure the backend origin with VITE_API_BASE_URL. Swagger currently lists localhost:8080 as its host; production uses https://gogo-dl.onrender.com.
-- Protected requests use Authorization: Bearer <access_token>. Login/register return access_token, refresh_token, and expires_at. Refresh accepts a JSON refresh_token and returns a new pair. Confirm the unit and meaning of expires_at before proactive refresh scheduling.
-- Core models: Room {id,name,visibility,role,created_by,created_at}; Message {id,room_id,user_id,username,content,created_at}; Invitation {id,room_id,room_name,invitee_id,invited_by,status,...}; RoomMember {room_id,user_id,username,role,joined_at}.
-- Enums: visibility = public/private; role = owner/moderator/member; invitation status = pending/accepted/declined.
-- List responses wrap their arrays in rooms, messages, members, or invitations. Some successful mutations return 204 with no body. API errors use an error string.
-- The messages endpoint uses before=<message ID> for older history. It does not expose an after cursor for new messages. Merge by ID and sort before rendering.
+## 6. Read state, unread, presence, and typing
 
-## 5. Message updates
+- `GET/PUT /api/v1/rooms/{id}/read-state` returns `{ room_id, last_read_message_id, unread_count }`; PUT takes `{ last_read_message_id }` with a positive integer. Advance the room cursor only when messages are actually viewed, never merely because a list query loaded. Keep writes monotonic and retry safely. The returned cursor can be `0`; own messages are excluded from unread; tombstones still count by ID.
+- Scope read state to current account and membership; clear it on logout or room removal. Show unread counts from an authoritative API projection or a documented full-history calculation, never only from the newest 40-message cache.
+- Presence is visible only to current room members and aggregates a user's subscriptions across tabs. Reconnection requires an authorized snapshot. Typing is ephemeral, throttled, and expires; it is not durable Vue Query state.
+- Presence and typing UI remain TODO until frontend WebSocket integration. REST read state can ship independently.
 
-Swagger currently exposes REST only. Vue Query reloads the most recent page of the open room about every five seconds while the tab is visible and refetches stale data on focus. Older pages load only on demand. After sending, insert the 201 response and deduplicate by ID. This is temporary: it adds latency and repeated traffic, and can miss messages if more than one page arrives between polls. Confirm the valid limit with the backend.
+## 7. Search, attachments, and inbox
 
-TODO after MVP: choose WebSocket or SSE, then define authentication, message.created, room.updated, membership.updated, and invitation.updated events, reconnection, and recovery of missed messages through an after cursor or equivalent. Use `@vueuse/core` for WebSocket lifecycle when that work starts. Online and typing states require separate contracts.
+- **Search:** room-scoped authorized search with bounded query and documented cursor pagination. Handle edits, tombstones, revoked membership, and stale snippets without leaking content. Wait for the released search contract.
+- **Attachments:** add progress/cancel/retry, scanning states, quotas, and authorized download only after private immutable storage, scanning, and cleanup are verified. Signed URLs stay ephemeral and out of durable caches/logs/events. Keep text-only sending; attachment-only sending needs a separate contract.
+- **Mentions/inbox:** select recipients by typed identity, not username parsing. Add private paginated feed and preferences when endpoints exist; deleted or revoked items must not reappear after reconnect. External email/push is outside scope.
 
-## 6. Frontend rules
+## 8. Transport, state, and privacy
 
-- Use Vue 3, TypeScript, Vite, Vue Router, Axios, Vue Query, and Pinia. Centralize typed HTTP calls, base URL, Bearer tokens, error parsing, and token refresh in the API client. Components use endpoint functions through Vue Query.
-- Vue Query owns server data, caching, invalidation, cancellation, and polling. Pinia owns session state; component refs own local form and panel state. Cancel room reads and stop polling when navigation changes; prevent stale responses from updating a different room.
-- The current backend accepts refresh tokens in JSON. Session storage supports reloads in one tab but is readable by injected scripts. Never log tokens, put them in URLs, or render message HTML. Before production, coordinate an HttpOnly, Secure, SameSite cookie design and matching CSRF policy with the backend.
-- Render messages as plain text. Confirm backend content-length limits and handle 413.
-- Display API timestamps in the browser's locale; use message IDs, not timestamps, for identity and merging.
+- Keep typed endpoints in `src/lib/api.ts`, Axios transport and refresh in `src/lib/http.ts`, Vue Query keys in `src/lib/query.ts`, and Pinia for session state. Component refs own drafts and panels. Pass query abort signals to cancellable reads and clear private cache on account change.
+- Poll only the newest message page every five seconds while visible; older pages load on demand. The current `before` cursor cannot recover a gap larger than one newest page. Add a recovery prompt or full history reload until a confirmed `after` cursor or snapshot contract exists.
+- Frontend WebSocket and SSE remain TODO. When requested, use `@vueuse/core` for WebSocket lifecycle after confirming URL, auth transport, origin, command/event schemas, reconnect behavior, and whether HTTP remains the write path. Never send fabricated authoritative events from the browser.
+- On eventual reconnect, reauthorize subscriptions, reload an authorized snapshot/history/read state, deduplicate by ID/revision, and apply membership revocation before displaying further private data. Sequence/recovery metadata and cross-instance guarantees are contract gates, not assumptions. SSE requires its own backend contract.
+- Safe reads may retry transient failures; writes require confirmed idempotency before automatic replay. Honor `Retry-After` and use bounded backoff for readiness failures.
 
-## 7. Backend questions
+## 9. Visual and accessibility requirements
 
-1. Which production/local frontend origins are allowed by CORS?
-2. What does expires_at represent, and how does refresh-token rotation work?
-3. What are the message order, default/max limit, exact before semantics, and future after-cursor contract?
-4. What can each role do with invitations, role changes, removals, ownership transfer, and leaving? Must an owner transfer ownership before leaving or deleting their account?
-5. How can users discover another user's ID or a public room, besides manually entering IDs?
-6. What are the limits for message content, usernames, and room names? What avatar URLs are accepted?
-7. Is a server-side logout or refresh-token revocation endpoint planned?
+Keep square panels, 4/8 px spacing, pixel borders/shadows, a pixel font for short labels, and readable sans-serif text for messages/forms. Preserve contrast, visible keyboard focus, labelled inputs, readable line breaks and long URLs, reduced-motion behavior, and mobile room/chat navigation. Edit/delete controls need keyboard access and accessible success/error feedback. Loading, empty, permission-lost, rate-limited, offline, and retry states need distinct text. Do not leave stale private content visible after membership loss.
 
-## 8. Outside MVP
+## 10. Acceptance and open contracts
 
-Canonical direct messages, user/room search, attachments, notifications, exact unread counts, read receipts, message editing/deletion, full-text search, advanced moderation, and audio/video calls need separate API contracts.
+1. Existing register → room → invite → chat → leave flows pass with two accounts on the target deployment, including desktop/mobile use.
+2. Removed/unauthorized users cannot view cached private room content after navigation or reload; final `401` clears session and private query data.
+3. Edit/delete converge after conflict, retry, reload, and out-of-order updates; tombstones never reveal old text.
+4. Read cursors never move backward; unread counts follow membership and deletion rules across reloads/tabs.
+5. `413`, `429` with `Retry-After`, ownership `409`, concealed `404`, network failure, and warm-up have clear UI states.
+6. Search, attachments, inbox, presence, typing, and distributed real-time features ship only after their deployed contract and privacy gates pass.
+
+**Contract gate:** Recheck the deployed [Swagger JSON](https://gogo-dl.onrender.com/swagger/doc.json) before implementation. Verify lifecycle/read-state behavior, nullable deleted authors, request-ID/`Retry-After` headers, and authorization with test accounts. Obtain separate published contracts for WebSocket events, search, uploads, and inbox when those features enter scope. Track resolution in [PLAN.md](./PLAN.md).
