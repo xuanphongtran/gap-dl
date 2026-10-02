@@ -4,6 +4,8 @@
 
 Swagger documents `PATCH/DELETE /api/v1/rooms/{id}/messages/{message_id}`, `GET/PUT /api/v1/rooms/{id}/read-state`, and `GET /api/v1/rooms/{id}/presence`. Search, attachment, mention/inbox, and WebSocket event contracts are not present in this REST document. Endpoint presence in Swagger does not confirm authenticated runtime behavior.
 
+The reviewed frontend operation and DTO matrix is in [docs/API_CONTRACT.md](./docs/API_CONTRACT.md).
+
 ## 1. Scope and release map
 
 The existing Vue 3 and TypeScript client supports account access, room text chat, invitations, membership actions, profile settings, older-page loading, and five-second HTTP polling of the newest message page. Preserve these flows and the 8-bit/pixel UI while adding backend capabilities in independently usable releases.

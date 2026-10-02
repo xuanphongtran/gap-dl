@@ -22,6 +22,8 @@ npm run check
 
 This runs Prettier verification, ESLint, Vue TypeScript checking, tests, and a production build. Use `npm run format` to format source files. `.github/workflows/ci.yml` runs the same check on push and pull request.
 
+Run `npm run contract:check` to compare the current deployed Swagger document with the routes and core DTO fields this client expects. This live check is separate from CI because it requires the API to be reachable. Set `SWAGGER_URL` to check another deployment. The reviewed operation matrix and authenticated HTTP smoke results are in [docs/API_CONTRACT.md](./docs/API_CONTRACT.md).
+
 ## Architecture
 
 - `src/lib/http.ts`: Axios instances, Bearer authentication, error handling, cancellation, timeout, and one shared token refresh request.
