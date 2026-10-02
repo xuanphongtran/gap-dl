@@ -2,7 +2,9 @@
 
 References: [frontend specification](./SPEC.md) and the deployed [Swagger JSON](https://gogo-dl.onrender.com/swagger/doc.json), the REST contract source. Recheck Swagger before implementing each feature and verify authenticated behavior at `VITE_API_BASE_URL`. A Swagger route alone is not proof that the user journey works.
 
-**Current frontend baseline (2026-10-02):** Vue 3, TypeScript, Router, Pinia session state, Axios transport, Vue Query server state, pixel UI, ESLint, Prettier, Vitest, and GitHub Actions are in place. Basic REST rooms, invitations, membership actions, profile, text messages, pagination, and latest-page polling are implemented. Authenticated end-to-end behavior on the target deployment still needs two-account verification. WebSocket and SSE are deferred.
+The latest reviewed operation matrix and unresolved runtime checks are in [docs/API_CONTRACT.md](./docs/API_CONTRACT.md).
+
+**Current frontend baseline (2026-10-02):** Vue 3, TypeScript, Router, Pinia session state, Axios transport, Vue Query server state, pixel UI, ESLint, Prettier, Vitest, and GitHub Actions are in place. Basic REST rooms, invitations, membership actions, profile, text messages, pagination, and latest-page polling are implemented. Two-account HTTP behavior was verified on the target deployment; browser end-to-end behavior remains open. WebSocket and SSE are deferred.
 
 ## 0. Frontend source and component foundation — P0, implement first
 
@@ -40,10 +42,10 @@ Keep endpoint functions in `src/lib/api.ts`, Axios transport in `src/lib/http.ts
 ## 1. Contract inventory and regression baseline — P0
 
 - [x] Inspect the deployed Swagger JSON: on 2026-10-02 it reported API 1.0 with 20 paths and 27 operations, including message edit/delete, room read state, and room presence. The error schema currently exposes an `error` string.
-- [ ] Recheck Swagger at implementation time; record target deployment version and compare request/response schemas with `src/types.ts` and `src/lib/api.ts`, including nullable deleted authors and message revision/tombstone fields. Verify documented contracts with authenticated requests.
-- [ ] Confirm target origin, CORS, HTTPS, route availability, `expires_at`, refresh rotation, `before` ordering/limit, validation bounds, `Retry-After`, `X-Request-ID`, and stable error shape. Record which capabilities exist only on branches.
-- [ ] Create two disposable development accounts and room fixtures. Verify register/login/refresh, create/join/invite/accept/send/history/leave/profile/delete-conflict in a browser. Check public/private concealment and owner transfer rules.
-- [ ] Keep `npm run check` green in CI. Add focused tests for new DTOs, error mapping, and query invalidation as each slice lands. Use mocked HTTP for deterministic tests and an opt-in live smoke check for deployed behavior.
+- [x] Recheck Swagger at implementation time; record target deployment version and compare request/response schemas with `src/types.ts` and `src/lib/api.ts`, including nullable deleted authors and message revision/tombstone fields. Verify the current text-chat contracts with authenticated HTTP requests.
+- [ ] Confirm target origin, CORS, HTTPS, route availability, `expires_at`, refresh rotation, `before` ordering/limit, validation bounds, `Retry-After`, `X-Request-ID`, and stable error shape. Most items were observed; final-host CORS, boundary responses, and `Retry-After` still need verification. Refresh did not rotate the refresh token in the sampled request.
+- [ ] Create disposable development accounts and room fixtures. Register/login/refresh, create/invite/accept/send/history/leave/profile/delete-conflict, private-room concealment, role changes, removal, and owner transfer passed via HTTP. Browser journeys and public join remain.
+- [x] Keep `npm run check` green locally. Add focused mocked HTTP contract tests and an opt-in live Swagger check; remote CI remains to be verified after push.
 
 **Exit gate:** A versioned contract matrix identifies deployed routes and fields; existing text-chat journeys work with two accounts, or response-backed mismatches are recorded as blockers.
 

@@ -10,6 +10,9 @@ function message(id: number): Message {
     username: 'tester',
     content: `Message ${id}`,
     created_at: '2026-09-28T00:00:00Z',
+    revision: 1,
+    edited_at: null,
+    deleted_at: null,
   }
 }
 

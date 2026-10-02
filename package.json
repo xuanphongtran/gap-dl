@@ -11,10 +11,11 @@
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview",
     "lint": "eslint .",
-    "format": "prettier --write src index.html vite.config.ts eslint.config.js",
-    "format:check": "prettier --check src index.html vite.config.ts eslint.config.js",
+    "format": "prettier --write src scripts index.html vite.config.ts eslint.config.js",
+    "format:check": "prettier --check src scripts index.html vite.config.ts eslint.config.js",
     "typecheck": "vue-tsc --noEmit",
     "test": "vitest run",
+    "contract:check": "node scripts/check-api-contract.mjs",
     "check": "npm run format:check && npm run lint && npm run typecheck && npm run test && npm run build"
   },
   "dependencies": {

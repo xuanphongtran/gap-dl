@@ -28,10 +28,13 @@ export interface Room {
 export interface Message {
   id: number
   room_id: number
-  user_id: number
+  user_id: number | null
   username: string
   content: string
   created_at: string
+  revision: number
+  edited_at: string | null
+  deleted_at: string | null
 }
 
 export interface Invitation {
