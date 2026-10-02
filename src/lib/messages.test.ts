@@ -34,6 +34,17 @@ describe('mergeMessages', () => {
     }
     expect(mergeMessages([deleted], [message(4)])[0]).toEqual(deleted)
   })
+
+  it('does not restore a deleted author or tombstone content from an overlapping page', () => {
+    const deleted = {
+      ...message(4),
+      user_id: null,
+      revision: 2,
+      deleted_at: '2026-10-02T00:00:00Z',
+    }
+    const result = mergeMessages([deleted], [{ ...message(4), revision: 2 }])
+    expect(result).toEqual([{ ...deleted, content: '' }])
+  })
 })
 
 describe('messageContentBytes', () => {

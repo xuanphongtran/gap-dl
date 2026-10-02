@@ -19,6 +19,8 @@ const username = ref('')
 const avatarUrl = ref('')
 const feedback = ref('')
 const feedbackTone = ref<'info' | 'error'>('info')
+const deleteFeedback = ref('')
+const ownershipConflict = ref(false)
 const saveCooldown = useActionCooldown()
 const deleteCooldown = useActionCooldown()
 const profileQuery = useQuery({
@@ -69,18 +71,16 @@ async function save() {
 async function removeAccount() {
   if (busy.value || deleteCooldown.remaining.value) return
   if (!window.confirm('Permanently delete your account? This cannot be undone.')) return
-  feedback.value = ''
+  deleteFeedback.value = ''
+  ownershipConflict.value = false
   try {
     await deleteMutation.mutateAsync()
     auth.logout()
     await router.replace('/register')
   } catch (cause) {
     deleteCooldown.start(cause)
-    feedbackTone.value = 'error'
-    feedback.value =
-      cause instanceof ApiError && cause.status === 409
-        ? `Transfer ownership of your rooms before deleting your account.${cause.requestId ? ` Reference: ${cause.requestId}.` : ''}`
-        : errorMessage(cause)
+    ownershipConflict.value = cause instanceof ApiError && cause.status === 409
+    deleteFeedback.value = errorMessage(cause)
   }
 }
 </script>
@@ -94,7 +94,7 @@ async function removeAccount() {
     <PixelPanel as="section" class="settings-card">
       <PixelAvatar class="settings-avatar" :name="profile?.username" />
       <form class="stack-lg" @submit.prevent="save">
-        <PixelField v-model="username" label="Display name" required />
+        <PixelField v-model="username" label="Display name" minlength="3" maxlength="50" required />
         <PixelField
           v-model="avatarUrl"
           label="Avatar URL"
@@ -119,6 +119,10 @@ async function removeAccount() {
     <section class="danger-zone">
       <h2>Danger zone</h2>
       <p class="muted">Account deletion follows the server's data retention rules.</p>
+      <PixelAlert v-if="deleteFeedback" tone="error">{{ deleteFeedback }}</PixelAlert>
+      <RouterLink v-if="ownershipConflict" to="/app" class="text-button">
+        Manage room ownership →
+      </RouterLink>
       <PixelButton
         variant="danger"
         :disabled="busy || !!deleteCooldown.remaining.value"

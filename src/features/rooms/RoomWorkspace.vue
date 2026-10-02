@@ -9,7 +9,7 @@ import PixelField from '../../components/base/PixelField.vue'
 import PixelPanel from '../../components/base/PixelPanel.vue'
 import { api, errorMessage } from '../../lib/api'
 import { queryClient, queryKeys } from '../../lib/query'
-import { useActionCooldown } from '../../lib/rate-limit'
+import { useActionCooldown, useKeyedActionCooldown } from '../../lib/rate-limit'
 import { useAuthStore } from '../../stores/auth'
 
 const route = useRoute()
@@ -38,7 +38,7 @@ const creating = ref(false)
 const joining = ref(false)
 const createCooldown = useActionCooldown()
 const joinCooldown = useActionCooldown()
-const invitationCooldown = useActionCooldown()
+const invitationCooldowns = useKeyedActionCooldown()
 const createMutation = useMutation({
   mutationFn: ({ name, visibility }: { name: string; visibility: 'public' | 'private' }) =>
     api.createRoom(name, visibility),
@@ -115,12 +115,13 @@ async function joinRoom() {
 }
 
 async function respond(id: number, action: 'accept' | 'decline') {
-  if (busy.value || invitationCooldown.remaining.value) return
+  const key = `${id}:${action}`
+  if (busy.value || invitationCooldowns.remaining(key)) return
   error.value = ''
   try {
     await respondMutation.mutateAsync({ id, action })
   } catch (cause) {
-    invitationCooldown.start(cause)
+    invitationCooldowns.start(key, cause)
     error.value = errorMessage(cause)
   }
 }
@@ -178,7 +179,7 @@ function toggleJoin() {
           <PixelField
             v-model="roomName"
             label="Room name"
-            maxlength="80"
+            maxlength="100"
             required
             placeholder="Room name"
           />
@@ -225,16 +226,24 @@ function toggleJoin() {
           <span class="muted">Room #{{ invitation.room_id }}</span>
           <div class="invite-actions">
             <button
-              :disabled="busy || !!invitationCooldown.remaining.value"
+              :disabled="busy || !!invitationCooldowns.remaining(`${invitation.id}:accept`)"
               @click="respond(invitation.id, 'accept')"
             >
-              ACCEPT
+              {{
+                invitationCooldowns.remaining(`${invitation.id}:accept`)
+                  ? `RETRY IN ${invitationCooldowns.remaining(`${invitation.id}:accept`)}s`
+                  : 'ACCEPT'
+              }}
             </button>
             <button
-              :disabled="busy || !!invitationCooldown.remaining.value"
+              :disabled="busy || !!invitationCooldowns.remaining(`${invitation.id}:decline`)"
               @click="respond(invitation.id, 'decline')"
             >
-              DECLINE
+              {{
+                invitationCooldowns.remaining(`${invitation.id}:decline`)
+                  ? `RETRY IN ${invitationCooldowns.remaining(`${invitation.id}:decline`)}s`
+                  : 'DECLINE'
+              }}
             </button>
           </div>
         </div>
