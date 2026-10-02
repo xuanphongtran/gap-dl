@@ -18,7 +18,7 @@ The first three probes are read-only. The authenticated checks below used dispos
 
 ## Authenticated smoke on the deployed origin
 
-Three disposable accounts were registered on 2026-10-02. Two were deleted after the checks. One owner account and its private room remain because account deletion returned `409` while that account owns a room; the API exposes no room-deletion route. Credentials and tokens are stored only in a local temporary file outside the repository.
+Six disposable accounts were registered on 2026-10-02. Four were deleted after the checks. One owner account and its private room remain because account deletion returned `409` while that account owns a room; the API exposes no room-deletion route. An additional account was registered during a failed smoke attempt before its credentials were saved; it was never invited to the room and cannot be cleaned up with the available API. Credentials and tokens for the retained owner are stored only in a local temporary file outside the repository.
 
 | Journey | Observed result |
 | --- | --- |
@@ -29,9 +29,12 @@ Three disposable accounts were registered on 2026-10-02. Two were deleted after 
 | Older-page cursor | `before` excluded its message ID; sampled page IDs were in descending order |
 | Deleted author | After a member sent messages, left, and deleted their account, history retained the messages with `user_id: null` |
 | Leave and account deletion | Member leave `204`, member account deletion `204`; owner account deletion `409` with `cannot delete account while owning rooms` |
+| Owner room reads | Room list, owned room detail, and member list returned `200`; the room detail and member list identified the owner |
+| Owner membership actions | Owner leave returned `409` with `owner transfer required`; promotion and demotion returned `204`; removal returned `204` and the removed member then got `404` for room detail |
+| Ownership transfer | Transfer to an accepted member returned `204`; the successor's room detail reported `owner`; the former owner then left and deleted their account with `204` responses |
 | Diagnostics | Sampled success and failure responses had `X-Request-ID`; no `429` was produced, so `Retry-After` is unverified |
 
-These are HTTP client checks, not browser end-to-end tests. Role changes, ownership transfer, public-room discovery, validation boundaries, and final-host CORS were not exercised.
+These are HTTP client checks, not browser end-to-end tests. Public-room join, invitation decline, profile update, validation boundaries, and final-host CORS were not exercised. The first owner-action smoke attempt used an expired access token and got `401`; a fresh login resolved it.
 
 ## Operation coverage
 
@@ -53,7 +56,7 @@ Search, attachments, mentions, notification inbox, and WebSocket event schemas a
 ## DTO and limit checks
 
 - `Message` includes `id`, `room_id`, `content`, `created_at`, `username`, `revision` (minimum 1), nullable `user_id`, nullable `edited_at`, and nullable `deleted_at`. Phase 1 aligned the frontend type without adding lifecycle UI.
-- `GET /api/v1/rooms/{id}/messages` accepts `limit` from 1 to 100 (default 50) and `before` as a positive message ID. The frontend requests 40 and merges pages by ID. Swagger says `before` returns IDs below the cursor; ordering of the returned page still needs an authenticated check.
+- `GET /api/v1/rooms/{id}/messages` accepts `limit` from 1 to 100 (default 50) and `before` as a positive message ID. The frontend requests 40 and merges pages by ID. The authenticated sample excluded IDs at or above the cursor and returned a descending page.
 - `POST /api/v1/rooms/{id}/messages` documents content length 1–4000. Create room name is 1–100; registration username is 3–50 and password has minimum length 8. These are server contract bounds; field-level UX changes belong to the next phase.
 - `PATCH /api/v1/rooms/{id}/messages/{message_id}` takes `{ content, revision }`, returns a Message, and documents `409` for conflict. `DELETE` returns a Message tombstone. These endpoints are not used by the current UI.
 - `GET/PUT /api/v1/rooms/{id}/read-state` returns `{ room_id, last_read_message_id, unread_count }`; PUT requires a positive `last_read_message_id`. Read state is not used by the current UI.
@@ -62,7 +65,7 @@ Search, attachments, mentions, notification inbox, and WebSocket event schemas a
 ## Open verification gates
 
 1. Verify the existing text-chat journey in a browser using two accounts. The HTTP checks above establish route behavior, but do not cover rendered interactions.
-2. Confirm role changes, ownership-transfer rules, public-room join behavior, and exact validation/size-limit responses. Avoid generating `429` solely for a smoke test.
+2. Confirm public-room join behavior, invitation decline, profile update, and exact validation/size-limit responses. Avoid generating `429` solely for a smoke test.
 3. Confirm `Retry-After` on a naturally observed `429` response. The sampled responses all had `X-Request-ID`.
 4. Recheck CORS and route fallback from the final frontend origin. The local development origin is allowed; production frontend hosting is not chosen here.
 
