@@ -12,7 +12,7 @@ import MessageRow from './MessageRow.vue'
 import { api, ApiError, errorMessage } from '../../lib/api'
 import { MAX_MESSAGE_BYTES, mergeMessages, messageContentBytes } from '../../lib/messages'
 import { clearRoomQueries, queryClient, queryKeys } from '../../lib/query'
-import { useActionCooldown } from '../../lib/rate-limit'
+import { useActionCooldown, useKeyedActionCooldown } from '../../lib/rate-limit'
 import type { Message } from '../../types'
 
 const route = useRoute()
@@ -83,7 +83,8 @@ const error = ref('')
 const actionError = ref('')
 const sendCooldown = useActionCooldown()
 const inviteCooldown = useActionCooldown()
-const memberCooldown = useActionCooldown()
+const memberCooldowns = useKeyedActionCooldown()
+const lastMemberCooldownKey = ref('')
 const leaveCooldown = useActionCooldown()
 const joinCooldown = useActionCooldown()
 const joinError = ref('')
@@ -107,6 +108,7 @@ watch(roomId, (id, oldId) => {
   draft.value = draftByRoom.get(id) || ''
   error.value = ''
   actionError.value = ''
+  lastMemberCooldownKey.value = ''
   joinError.value = ''
   accessLost.value = false
 })
@@ -264,7 +266,8 @@ async function invite() {
 }
 
 async function memberAction(userId: number, action: 'remove' | 'moderator' | 'member' | 'owner') {
-  if (actionBusy.value || memberCooldown.remaining.value) return
+  const key = `${roomId.value}:${userId}:${action}`
+  if (actionBusy.value || memberCooldowns.remaining(key)) return
   if (
     !window.confirm(
       action === 'remove'
@@ -280,7 +283,8 @@ async function memberAction(userId: number, action: 'remove' | 'moderator' | 'me
   try {
     await memberMutation.mutateAsync({ id, userId, action })
   } catch (cause) {
-    memberCooldown.start(cause)
+    memberCooldowns.start(key, cause)
+    lastMemberCooldownKey.value = key
     if (id === roomId.value) actionError.value = errorMessage(cause)
   }
 }
@@ -444,25 +448,34 @@ function formatDate(value: string) {
               <div class="member-menu-content">
                 <button
                   v-if="room?.role === 'owner' && member.role !== 'moderator'"
-                  :disabled="actionBusy || !!memberCooldown.remaining.value"
+                  :disabled="
+                    actionBusy ||
+                    !!memberCooldowns.remaining(`${roomId}:${member.user_id}:moderator`)
+                  "
                   @click="memberAction(member.user_id, 'moderator')"
                 >
                   Make moderator</button
                 ><button
                   v-if="room?.role === 'owner' && member.role === 'moderator'"
-                  :disabled="actionBusy || !!memberCooldown.remaining.value"
+                  :disabled="
+                    actionBusy || !!memberCooldowns.remaining(`${roomId}:${member.user_id}:member`)
+                  "
                   @click="memberAction(member.user_id, 'member')"
                 >
                   Make member</button
                 ><button
                   v-if="room?.role === 'owner'"
-                  :disabled="actionBusy || !!memberCooldown.remaining.value"
+                  :disabled="
+                    actionBusy || !!memberCooldowns.remaining(`${roomId}:${member.user_id}:owner`)
+                  "
                   @click="memberAction(member.user_id, 'owner')"
                 >
                   Transfer ownership</button
                 ><button
                   v-if="room?.role === 'owner' || member.role === 'member'"
-                  :disabled="actionBusy || !!memberCooldown.remaining.value"
+                  :disabled="
+                    actionBusy || !!memberCooldowns.remaining(`${roomId}:${member.user_id}:remove`)
+                  "
                   @click="memberAction(member.user_id, 'remove')"
                 >
                   Remove from room
@@ -493,6 +506,14 @@ function formatDate(value: string) {
           </PixelButton>
         </form>
         <p v-if="actionError" class="panel-feedback" role="status">{{ actionError }}</p>
+        <p
+          v-if="memberCooldowns.remaining(lastMemberCooldownKey)"
+          class="panel-feedback"
+          role="status"
+        >
+          This member action is available in
+          {{ memberCooldowns.remaining(lastMemberCooldownKey) }} seconds.
+        </p>
         <p v-if="room?.role === 'owner'" class="muted panel-subtitle">
           Transfer ownership before leaving this room.
         </p>

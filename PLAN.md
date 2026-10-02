@@ -61,6 +61,8 @@ Keep endpoint functions in `src/lib/api.ts`, Axios transport in `src/lib/http.ts
 
 **Completion record (2026-10-02):** The frontend gates private room queries on membership and offers a join action. The refreshed Swagger now documents nullable `Room.role` and clarifies that message content over 4,000 UTF-8 bytes returns `400`, while `413` is for an oversized HTTP body. The composer validates the byte limit. `Retry-After` remains unverified on a real `429`; the header parser and countdown are covered by mocks. The review found a missing `PixelAlert` import in the new join state; it was fixed before commit. Final-host CORS remains a release gate.
 
+**Follow-up review:** A rejected write now refreshes authentication without silently resending the write. Invitation and member rate limits block only the affected action. Ownership conflicts appear beside account deletion, and merged message pages retain erased authors and tombstones. Write retry safety, action isolation, and message merging have focused regression tests.
+
 ## 3. Message lifecycle — P1
 
 **Dependency:** The Swagger-documented lifecycle routes and Message fields are rechecked and verified with test accounts.

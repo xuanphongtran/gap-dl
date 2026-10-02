@@ -933,6 +933,11 @@ a:hover {
   font-size: 13px;
   line-height: 1.6;
 }
+.danger-zone > .text-button {
+  display: block;
+  margin: 12px 0;
+  color: var(--mint);
+}
 
 @media (max-width: 950px) {
   .app-layout {

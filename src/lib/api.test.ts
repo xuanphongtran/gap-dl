@@ -67,6 +67,24 @@ describe('Axios session refresh', () => {
     expect(readSession()).toBeNull()
   })
 
+  it('refreshes the session without replaying a rejected write', async () => {
+    let writes = 0
+    privateMock.onPost('/private').reply(() => {
+      writes++
+      return [401, { error: 'unauthorized' }]
+    })
+    publicMock.onPost('/api/v1/auth/refresh').reply(200, {
+      access_token: 'new',
+      refresh_token: 'refresh-new',
+      expires_at: 1,
+    })
+    await expect(request('/private', { method: 'POST' })).rejects.toThrow(
+      'Session refreshed. Please retry this action.',
+    )
+    expect(writes).toBe(1)
+    expect(readSession()?.access_token).toBe('new')
+  })
+
   it('cancels a request with the caller signal', async () => {
     privateMock
       .onGet('/private')
@@ -111,6 +129,12 @@ describe('Axios session refresh', () => {
     )
     expect(errorMessage(new ApiError(413, 'oversized HTTP body'))).toBe(
       'The request body is too large.',
+    )
+    expect(errorMessage(new ApiError(400, 'database connection string'))).toBe(
+      'Check the information and try again.',
+    )
+    expect(errorMessage(new ApiError(403, 'private room details'))).toBe(
+      'You do not have permission for this action.',
     )
   })
 })

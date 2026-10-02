@@ -118,6 +118,8 @@ http.interceptors.response.use(undefined, async (error: unknown) => {
       session.access_token !== config._accessToken
         ? session.access_token
         : (await refreshToken()).access_token
+    if (!['GET', 'HEAD'].includes((config.method || 'get').toUpperCase()))
+      throw new ApiError(401, 'Session refreshed. Please retry this action.')
     config.headers.set('Authorization', `Bearer ${token}`)
     return await http.request(config)
   } catch (cause) {
@@ -136,7 +138,16 @@ export async function request<T>(
 
 export function errorMessage(error: unknown): string {
   if (error instanceof ApiError) {
-    const reference = error.requestId ? ` Reference: ${error.requestId}.` : ''
+    const reference =
+      error.requestId && /^[A-Za-z0-9._-]{1,128}$/.test(error.requestId)
+        ? ` Reference: ${error.requestId}.`
+        : ''
+    if (error.status === 400) return `Check the information and try again.${reference}`
+    if (error.status === 401)
+      return error.message === 'Session refreshed. Please retry this action.'
+        ? error.message
+        : `Sign in again or check your credentials.${reference}`
+    if (error.status === 403) return `You do not have permission for this action.${reference}`
     if (error.status === 413) return `The request body is too large.${reference}`
     if (error.status === 429)
       return error.retryAfterSeconds
@@ -146,8 +157,11 @@ export function errorMessage(error: unknown): string {
       return `The server is temporarily unavailable. Please try again.${reference}`
     if (error.status === 404)
       return `This resource is unavailable or you no longer have access.${reference}`
-    if (error.status === 409) return `This action conflicts with the current state.${reference}`
-    return `${error.message}${reference}`
+    if (error.status === 409)
+      return /ownership|owning rooms|owner transfer|transfer ownership/i.test(error.message)
+        ? `Transfer room ownership before leaving or deleting your account.${reference}`
+        : `This action conflicts with the current state.${reference}`
+    return `The request could not be completed. Please try again.${reference}`
   }
   return 'Could not connect to the server. Please try again.'
 }
