@@ -6,8 +6,8 @@ This is the frontend's reviewed snapshot of the deployed [Swagger JSON](https://
 
 | Item | Observed on 2026-10-02 |
 | --- | --- |
-| Swagger document | Swagger 2.0, API version `1.0`; 23 paths and 30 HTTP operations |
-| Document SHA-256 | `89a399d008cc924546f57cbc18a303a63bbb8654f484dc0869553b75d518d59e` |
+| Swagger document | Swagger 2.0, API version `1.0`; 24 paths and 31 HTTP operations |
+| Document SHA-256 | `ed10262eab3c56d7fb4a6fec775266d1379c62f8d01af0e6d9ec21f4dbd4cd09` |
 | Browser API origin | `https://gogo-dl.onrender.com` by default; override with `VITE_API_BASE_URL` |
 | Swagger `host` | `localhost:8080`; do not use this field as the deployed browser origin |
 | Health | `GET /health` returned `200` with `{ "status": "ok", "time": "..." }` and `X-Request-ID` |
@@ -23,6 +23,8 @@ The 2026-10-02 refresh added `GET /livez`, `GET /readyz`, and `GET /readyz/realt
 Swagger now marks `Room.role` nullable. It also specifies nonblank message content of at most 4,000 UTF-8 bytes after trimming. A content validation failure returns `400`; `413` means the entire HTTP request body exceeds `HTTP_MAX_BODY_BYTES`. An authenticated boundary probe sent 1,000 emoji (4,000 UTF-8 bytes) with `201`, deleted that test message with `200` and an empty tombstone, and received `400` for 1,001 emoji (4,004 UTF-8 bytes). The frontend composer now counts trimmed UTF-8 bytes and retains an over-limit draft for editing.
 
 The previous Swagger snapshot had 20 paths, 27 operations, and SHA-256 `cda46b4f15b0d28bd753fd8c415739731e457cdb26edd67cf95ee0416b36c8d2`. Its missing `Room.role` nullability and ambiguous `400`/`413` descriptions are resolved in the refreshed document.
+
+The latest refresh added `GET /api/v1/rooms/{id}/messages/search` to the prior 23-path, 30-operation snapshot. Search remains outside the current frontend phase and needs authenticated response and privacy checks before implementation.
 
 ## Phase 2 runtime findings
 
@@ -71,12 +73,13 @@ At the Phase 1 checkpoint, these were HTTP client checks, not browser end-to-end
 | Invitations | Create, list personal, accept, decline | Implemented |
 | Members | List, change role, remove | Implemented |
 | Messages | List with `limit`/`before`, send | Implemented |
-| Message lifecycle | `PATCH` and `DELETE /api/v1/rooms/{id}/messages/{message_id}` | Documented; planned in frontend phase 3 |
+| Message lifecycle | `PATCH` and `DELETE /api/v1/rooms/{id}/messages/{message_id}` | Implemented in frontend phase 3; author and forbidden-member behavior verified against the deployed API |
+| Message search | `GET /api/v1/rooms/{id}/messages/search` | Documented; frontend implementation and authenticated behavior pending |
 | Read state | `GET` and `PUT /api/v1/rooms/{id}/read-state` | Documented; planned in frontend phase 4 |
 | Presence | `GET /api/v1/rooms/{id}/presence` | Documented; frontend presence remains deferred with WebSocket work |
 | System health | `GET /health`, `/livez`, `/readyz`, `/readyz/realtime` | Deployment probes; no application screen |
 
-Search, attachments, mentions, notification inbox, and WebSocket event schemas are absent from this REST Swagger snapshot. Their FE work remains gated on a published contract.
+Attachments, mentions, notification inbox, and WebSocket event schemas are absent from this REST Swagger snapshot. Search is documented but still needs authenticated behavior and privacy checks before frontend work.
 
 ## DTO and limit checks
 

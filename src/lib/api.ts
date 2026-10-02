@@ -30,6 +30,13 @@ export const api = {
     }),
   sendMessage: (id: number, content: string) =>
     request<Message>(`/api/v1/rooms/${id}/messages`, { method: 'POST', data: { content } }),
+  editMessage: (roomId: number, messageId: number, content: string, revision: number) =>
+    request<Message>(`/api/v1/rooms/${roomId}/messages/${messageId}`, {
+      method: 'PATCH',
+      data: { content, revision },
+    }),
+  deleteMessage: (roomId: number, messageId: number) =>
+    request<Message>(`/api/v1/rooms/${roomId}/messages/${messageId}`, { method: 'DELETE' }),
   members: (id: number, signal?: AbortSignal) =>
     request<{ members: RoomMember[] }>(`/api/v1/rooms/${id}/members`, { signal }),
   invite: (id: number, userId: number) =>

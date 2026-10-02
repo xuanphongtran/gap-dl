@@ -82,6 +82,13 @@ const inviteId = ref('')
 const error = ref('')
 const actionError = ref('')
 const sendCooldown = useActionCooldown()
+const editCooldowns = useKeyedActionCooldown()
+const deleteCooldowns = useKeyedActionCooldown()
+const editingMessageId = ref<number | null>(null)
+const editDraft = ref('')
+const editRevision = ref(0)
+const editError = ref('')
+const editConflict = ref<Message | null>(null)
 const inviteCooldown = useActionCooldown()
 const memberCooldowns = useKeyedActionCooldown()
 const lastMemberCooldownKey = ref('')
@@ -111,7 +118,25 @@ watch(roomId, (id, oldId) => {
   lastMemberCooldownKey.value = ''
   joinError.value = ''
   accessLost.value = false
+  closeEditor()
 })
+
+function closeEditor() {
+  editingMessageId.value = null
+  editDraft.value = ''
+  editRevision.value = 0
+  editError.value = ''
+  editConflict.value = null
+}
+
+function openEditor(message: Message) {
+  if (!isMember.value || message.deleted_at || message.user_id !== profile.value?.id) return
+  editingMessageId.value = message.id
+  editDraft.value = message.content
+  editRevision.value = message.revision
+  editError.value = ''
+  editConflict.value = null
+}
 
 function loseRoomAccess(id: number) {
   if (id !== roomId.value || accessLost.value) return
@@ -119,6 +144,7 @@ function loseRoomAccess(id: number) {
   draft.value = ''
   draftByRoom.delete(id)
   seenMessages.delete(id)
+  closeEditor()
   clearRoomQueries(id)
   void router.replace('/app')
 }
@@ -128,6 +154,8 @@ watch(queryError, (cause) => {
 })
 
 watch(messages, (_next, previous) => {
+  const editing = _next.find((message) => message.id === editingMessageId.value)
+  if (editing?.deleted_at && !editConflict.value) editConflict.value = editing
   const element = listEl.value
   const nearBottom =
     !element || element.scrollHeight - element.scrollTop - element.clientHeight < 120
@@ -160,6 +188,103 @@ async function loadOlder() {
 const sendMutation = useMutation({
   mutationFn: ({ id, content }: { id: number; content: string }) => api.sendMessage(id, content),
 })
+const editMutation = useMutation({
+  mutationFn: ({
+    roomId,
+    messageId,
+    content,
+    revision,
+  }: {
+    roomId: number
+    messageId: number
+    content: string
+    revision: number
+  }) => api.editMessage(roomId, messageId, content, revision),
+})
+const deleteMutation = useMutation({
+  mutationFn: ({ roomId, messageId }: { roomId: number; messageId: number }) =>
+    api.deleteMessage(roomId, messageId),
+})
+
+function applyMessageResult(id: number, message: Message) {
+  if (id !== roomId.value || !isMember.value) return
+  queryClient.setQueryData<Message[]>(queryKeys.latestMessages(id), (current) =>
+    mergeMessages(current || [], [message]),
+  )
+  void queryClient.invalidateQueries({ queryKey: queryKeys.messageHistory(id), exact: true })
+}
+
+async function saveEdit() {
+  const messageId = editingMessageId.value
+  const content = editDraft.value.trim()
+  const id = roomId.value
+  const cooldownKey = `${id}:${messageId}:edit`
+  if (
+    messageId === null ||
+    !isMember.value ||
+    editMutation.isPending.value ||
+    editCooldowns.remaining(cooldownKey) ||
+    editConflict.value?.deleted_at ||
+    !content
+  )
+    return
+  if (messageContentBytes(content) > MAX_MESSAGE_BYTES) {
+    editError.value = 'Message exceeds the 4000-byte UTF-8 limit.'
+    return
+  }
+  editError.value = ''
+  try {
+    const updated = await editMutation.mutateAsync({
+      roomId: id,
+      messageId,
+      content,
+      revision: editRevision.value,
+    })
+    applyMessageResult(id, updated)
+    if (id === roomId.value && editingMessageId.value === messageId) closeEditor()
+  } catch (cause) {
+    editCooldowns.start(cooldownKey, cause)
+    if (id !== roomId.value || editingMessageId.value !== messageId) return
+    if (cause instanceof ApiError && cause.status === 409) {
+      const [latest, history] = await Promise.all([latestQuery.refetch(), historyQuery.refetch()])
+      const fresh = mergeMessages(
+        [],
+        [...(latest.data || []), ...(history.data?.pages.flat() || [])],
+      ).find((message) => message.id === messageId)
+      if (fresh) {
+        editConflict.value = fresh
+        editRevision.value = fresh.revision
+      } else editError.value = 'Could not load the current message. Keep this draft and try again.'
+    } else {
+      editError.value = errorMessage(cause)
+      if (cause instanceof ApiError && [403, 404].includes(cause.status)) void roomQuery.refetch()
+    }
+  }
+}
+
+async function deleteMessage(message: Message) {
+  const id = roomId.value
+  const cooldownKey = `${id}:${message.id}:delete`
+  if (
+    !isMember.value ||
+    message.deleted_at ||
+    deleteMutation.isPending.value ||
+    deleteCooldowns.remaining(cooldownKey) ||
+    !(message.user_id === profile.value?.id || canManage.value) ||
+    !window.confirm('Delete this message?')
+  )
+    return
+  error.value = ''
+  try {
+    const deleted = await deleteMutation.mutateAsync({ roomId: id, messageId: message.id })
+    applyMessageResult(id, deleted)
+    if (id === roomId.value && editingMessageId.value === message.id) closeEditor()
+  } catch (cause) {
+    deleteCooldowns.start(cooldownKey, cause)
+    if (id === roomId.value) error.value = errorMessage(cause)
+    if (cause instanceof ApiError && [403, 404].includes(cause.status)) void roomQuery.refetch()
+  }
+}
 const joinMutation = useMutation({
   mutationFn: (id: number) => api.joinRoom(id),
   onSuccess: (_result, id) =>
@@ -191,9 +316,7 @@ async function send() {
   const id = roomId.value
   try {
     const message = await sendMutation.mutateAsync({ id, content })
-    queryClient.setQueryData<Message[]>(queryKeys.latestMessages(id), (current) =>
-      mergeMessages(current || [], [message]),
-    )
+    applyMessageResult(id, message)
     if (id !== roomId.value) return
     draft.value = ''
     scrollBottom()
@@ -408,6 +531,32 @@ function formatDate(value: string) {
               :message="message"
               :mine="message.user_id === profile?.id"
               :time="formatTime(message.created_at)"
+              :can-edit="
+                isMember &&
+                message.user_id === profile?.id &&
+                !message.deleted_at &&
+                (editingMessageId === null || editingMessageId === message.id)
+              "
+              :can-delete="
+                isMember && !message.deleted_at && (message.user_id === profile?.id || canManage)
+              "
+              :editing="editingMessageId === message.id"
+              :edit-draft="editingMessageId === message.id ? editDraft : ''"
+              :edit-error="editingMessageId === message.id ? editError : ''"
+              :conflict="editingMessageId === message.id ? editConflict : null"
+              :saving="editMutation.isPending.value && editingMessageId === message.id"
+              :deleting="
+                deleteMutation.isPending.value &&
+                deleteMutation.variables.value?.messageId === message.id
+              "
+              :edit-cooldown="editCooldowns.remaining(`${roomId}:${message.id}:edit`)"
+              :delete-cooldown="deleteCooldowns.remaining(`${roomId}:${message.id}:delete`)"
+              @edit="openEditor(message)"
+              @save="saveEdit"
+              @cancel="closeEditor"
+              @discard="closeEditor"
+              @delete="deleteMessage(message)"
+              @update:edit-draft="editDraft = $event"
             />
           </div>
         </div>
