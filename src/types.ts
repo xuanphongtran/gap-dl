@@ -37,6 +37,12 @@ export interface Message {
   deleted_at: string | null
 }
 
+export interface ReadState {
+  room_id: number
+  last_read_message_id: number
+  unread_count: number
+}
+
 export interface Invitation {
   id: number
   room_id: number

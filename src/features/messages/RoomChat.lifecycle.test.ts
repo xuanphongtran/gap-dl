@@ -43,6 +43,19 @@ async function mountChat(role: RoomRole, getMessages: () => Message[]) {
   })
   mock.onGet('/api/v1/rooms/7/members').reply(200, { members: [] })
   mock.onGet('/api/v1/rooms/7/messages').reply(() => [200, { messages: getMessages() }])
+  mock.onGet('/api/v1/rooms/7/read-state').reply(200, {
+    room_id: 7,
+    last_read_message_id: 0,
+    unread_count: 0,
+  })
+  mock.onPut('/api/v1/rooms/7/read-state').reply((config) => [
+    200,
+    {
+      room_id: 7,
+      last_read_message_id: JSON.parse(config.data).last_read_message_id,
+      unread_count: 0,
+    },
+  ])
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [

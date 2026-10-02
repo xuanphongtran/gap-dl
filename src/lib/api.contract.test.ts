@@ -66,4 +66,23 @@ describe('documented message contract', () => {
     })
     await expect(api.deleteMessage(7, 21)).resolves.toMatchObject({ content: '', revision: 3 })
   })
+
+  it('reads and advances the personal room cursor', async () => {
+    mock.onGet('/api/v1/rooms/7/read-state').reply((config) => {
+      expect(config.headers?.Authorization).toBe('Bearer test-access')
+      return [200, { room_id: 7, last_read_message_id: 8, unread_count: 2 }]
+    })
+    mock.onPut('/api/v1/rooms/7/read-state').reply((config) => {
+      expect(JSON.parse(config.data)).toEqual({ last_read_message_id: 21 })
+      return [200, { room_id: 7, last_read_message_id: 21, unread_count: 0 }]
+    })
+    await expect(api.readState(7)).resolves.toMatchObject({
+      last_read_message_id: 8,
+      unread_count: 2,
+    })
+    await expect(api.advanceReadState(7, 21)).resolves.toMatchObject({
+      last_read_message_id: 21,
+      unread_count: 0,
+    })
+  })
 })

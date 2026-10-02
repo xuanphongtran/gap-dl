@@ -11,6 +11,7 @@ export const queryKeys = {
   members: (id: number) => ['room', id, 'members'] as const,
   latestMessages: (id: number) => ['room', id, 'latest-messages'] as const,
   messageHistory: (id: number) => ['room', id, 'message-history'] as const,
+  readState: (id: number, userId: number) => ['room', id, 'read-state', userId] as const,
 }
 
 export const queryClient = new QueryClient({
