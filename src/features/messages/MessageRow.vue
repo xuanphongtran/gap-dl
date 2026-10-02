@@ -7,13 +7,19 @@ defineProps<{ message: Message; mine: boolean; time: string }>()
 
 <template>
   <article class="message-row" :class="{ mine }">
-    <PixelAvatar class="message-avatar" :name="message.username" />
+    <PixelAvatar
+      class="message-avatar"
+      :name="message.user_id === null ? 'Deleted user' : message.username"
+    />
     <div class="message-content">
       <div class="message-meta">
-        <strong>{{ mine ? 'You' : message.username }}</strong
+        <strong>{{
+          message.user_id === null ? 'Deleted user' : mine ? 'You' : message.username
+        }}</strong
         ><time :datetime="message.created_at">{{ time }}</time>
       </div>
-      <p>{{ message.content }}</p>
+      <p v-if="message.deleted_at" class="muted">Message deleted.</p>
+      <p v-else>{{ message.content }}</p>
     </div>
   </article>
 </template>

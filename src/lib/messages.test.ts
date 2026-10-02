@@ -24,4 +24,14 @@ describe('mergeMessages', () => {
       ),
     ).toEqual([2, 3, 4, 5])
   })
+
+  it('keeps a newer tombstone when an older page arrives later', () => {
+    const deleted = {
+      ...message(4),
+      revision: 3,
+      content: '',
+      deleted_at: '2026-10-02T00:00:00Z',
+    }
+    expect(mergeMessages([deleted], [message(4)])[0]).toEqual(deleted)
+  })
 })

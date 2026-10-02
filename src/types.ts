@@ -20,7 +20,7 @@ export interface Room {
   id: number
   name: string
   visibility: RoomVisibility
-  role: RoomRole
+  role: RoomRole | null
   created_by: number
   created_at: string
 }

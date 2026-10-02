@@ -9,6 +9,7 @@ import PixelField from '../../components/base/PixelField.vue'
 import PixelPanel from '../../components/base/PixelPanel.vue'
 import { api, errorMessage } from '../../lib/api'
 import { queryClient, queryKeys } from '../../lib/query'
+import { useActionCooldown } from '../../lib/rate-limit'
 import { useAuthStore } from '../../stores/auth'
 
 const route = useRoute()
@@ -35,6 +36,9 @@ const visibility = ref<'public' | 'private'>('private')
 const joinId = ref('')
 const creating = ref(false)
 const joining = ref(false)
+const createCooldown = useActionCooldown()
+const joinCooldown = useActionCooldown()
+const invitationCooldown = useActionCooldown()
 const createMutation = useMutation({
   mutationFn: ({ name, visibility }: { name: string; visibility: 'public' | 'private' }) =>
     api.createRoom(name, visibility),
@@ -79,7 +83,7 @@ watch(
 )
 
 async function createRoom() {
-  if (!roomName.value.trim() || busy.value) return
+  if (!roomName.value.trim() || busy.value || createCooldown.remaining.value) return
   error.value = ''
   try {
     const room = await createMutation.mutateAsync({
@@ -90,13 +94,14 @@ async function createRoom() {
     creating.value = false
     await router.push(`/app/rooms/${room.id}`)
   } catch (cause) {
+    createCooldown.start(cause)
     error.value = errorMessage(cause)
   }
 }
 
 async function joinRoom() {
   const id = Number(joinId.value)
-  if (!Number.isSafeInteger(id) || id <= 0 || busy.value) return
+  if (!Number.isSafeInteger(id) || id <= 0 || busy.value || joinCooldown.remaining.value) return
   error.value = ''
   try {
     await joinMutation.mutateAsync(id)
@@ -104,16 +109,18 @@ async function joinRoom() {
     joining.value = false
     await router.push(`/app/rooms/${id}`)
   } catch (cause) {
+    joinCooldown.start(cause)
     error.value = errorMessage(cause)
   }
 }
 
 async function respond(id: number, action: 'accept' | 'decline') {
-  if (busy.value) return
+  if (busy.value || invitationCooldown.remaining.value) return
   error.value = ''
   try {
     await respondMutation.mutateAsync({ id, action })
   } catch (cause) {
+    invitationCooldown.start(cause)
     error.value = errorMessage(cause)
   }
 }
@@ -179,7 +186,13 @@ function toggleJoin() {
             <option value="private">Private</option>
             <option value="public">Public</option>
           </PixelField>
-          <PixelButton full type="submit" :disabled="busy">CREATE</PixelButton>
+          <PixelButton full type="submit" :disabled="busy || !!createCooldown.remaining.value">
+            {{
+              createCooldown.remaining.value
+                ? `RETRY IN ${createCooldown.remaining.value}s`
+                : 'CREATE'
+            }}
+          </PixelButton>
         </PixelPanel>
         <button class="text-button sidebar-secondary" @click="toggleJoin">
           ↳ Join with a room ID
@@ -193,7 +206,13 @@ function toggleJoin() {
             required
             placeholder="For example: 42"
           />
-          <PixelButton full type="submit" :disabled="busy">JOIN ROOM</PixelButton>
+          <PixelButton full type="submit" :disabled="busy || !!joinCooldown.remaining.value">
+            {{
+              joinCooldown.remaining.value
+                ? `RETRY IN ${joinCooldown.remaining.value}s`
+                : 'JOIN ROOM'
+            }}
+          </PixelButton>
         </PixelPanel>
 
         <div class="section-heading invitations-title">
@@ -205,8 +224,18 @@ function toggleJoin() {
           <strong>{{ invitation.room_name }}</strong>
           <span class="muted">Room #{{ invitation.room_id }}</span>
           <div class="invite-actions">
-            <button :disabled="busy" @click="respond(invitation.id, 'accept')">ACCEPT</button>
-            <button :disabled="busy" @click="respond(invitation.id, 'decline')">DECLINE</button>
+            <button
+              :disabled="busy || !!invitationCooldown.remaining.value"
+              @click="respond(invitation.id, 'accept')"
+            >
+              ACCEPT
+            </button>
+            <button
+              :disabled="busy || !!invitationCooldown.remaining.value"
+              @click="respond(invitation.id, 'decline')"
+            >
+              DECLINE
+            </button>
           </div>
         </div>
         <PixelAlert v-if="error" tone="error" class="sidebar-error">{{ error }}</PixelAlert>

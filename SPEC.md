@@ -47,7 +47,7 @@ The initial base set covers buttons, form fields, panels, alerts, empty/loading 
 
 ## 4. Rooms and permissions
 
-- Public rooms may be discoverable and self-joinable if the deployed API exposes discovery. History and real-time subscription still require membership. A concealed private-room `404` must not reveal details.
+- The deployed `GET /api/v1/rooms` discovers public rooms before membership; their `role` is `null`. An unaffiliated user can read public room details and join by ID, while members and messages require membership. A concealed private-room `404` must not reveal details.
 - Treat visibility as immutable unless the deployed API supports changing it. Owners transfer ownership before leaving or deleting their account. Use confirmed idempotent join/leave/invitation responses.
 - Show owner/moderator/member actions according to the returned role, while the API remains authoritative. On membership loss, clear that room's cached details, members, messages, read state, and pending private UI; return to the room list.
 

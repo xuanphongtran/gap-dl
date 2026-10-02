@@ -23,6 +23,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   function logout(): void {
     clearSession()
+    queryClient.clear()
     signedIn.value = false
   }
 

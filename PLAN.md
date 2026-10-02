@@ -51,13 +51,15 @@ Keep endpoint functions in `src/lib/api.ts`, Axios transport in `src/lib/http.ts
 
 ## 2. Hardening and membership alignment — P0
 
-- [ ] Extend Axios error normalization with documented `error` messages, `Retry-After`, and `X-Request-ID` after confirming the response headers. Add field-level mapping only if Swagger later defines a stable field error shape. Preserve single-flight `401` refresh and clear private Vue Query data on final auth failure.
-- [ ] Add actionable UI for `413`, `429`, transient `503`/warm-up, ownership `409`, and concealed private-room `404`. Do not replay non-idempotent writes automatically. Show a bounded retry timer for valid `Retry-After`.
-- [ ] Render nullable deleted authors and account-deletion ownership conflict without losing message identity or exposing deleted text.
-- [ ] Align create/join/leave/invite/member controls with the deployed authorization matrix and idempotent retry behavior. Remove private room queries immediately after membership loss. Add public-room discovery only if the deployed API exposes it.
-- [ ] Test role changes, removal during an open room, transfer-before-leave, duplicate join/leave, hidden private rooms, logout/account switch, mobile layout, and keyboard interaction.
+- [x] Extend Axios error normalization with documented `error` messages, integer `Retry-After`, and `X-Request-ID`. Preserve single-flight `401` refresh and clear private Vue Query data on final auth failure. Actual `429` response headers remain unobserved; mocked tests cover parsing and countdown.
+- [x] Add actionable UI for `400` message length validation, `413`, `429`, transient `503`, ownership `409`, and concealed private-room `404`. Do not replay writes automatically. Show a bounded retry timer for valid integer `Retry-After`.
+- [x] Render nullable deleted authors and account-deletion ownership conflict without losing message identity or exposing tombstone text. Keep a newer revision/tombstone when older pages or polls arrive.
+- [x] Align create/join/leave/invite/member controls with observed authorization behavior. Clear private room queries immediately after membership loss and preserve discoverable public rooms with `role: null` and a join action.
+- [x] Test role changes, removal during an open room, transfer-before-leave, duplicate join/leave, hidden private rooms, logout/account switch, mobile layout, and keyboard interaction. Live HTTP checks cover roles, transfer, concealment, and duplicate public join/leave. Mocked tests cover cache revocation, public join UI, and account switch; headless Chrome with the deployed API covers owner login/private navigation and visitor registration/public join/leave. Desktop/mobile join-state layouts were inspected with local mock data.
 
 **Exit gate:** Errors and membership changes render safely, private cache is cleared on revocation, and current REST chat remains usable. Final membership semantics are verified against the deployed API.
+
+**Completion record (2026-10-02):** The deployed public-room contract returned `role: null` for unaffiliated users, which Swagger omits. The frontend now gates private room queries on membership and offers a join action. An empty or 4,001-character message returned `400`, not the documented `413`, so the composer handles both. `Retry-After` remains unverified on a real `429`; the header parser and countdown are covered by mocks. The review found a missing `PixelAlert` import in the new join state; it was fixed before commit. Final-host CORS remains a release gate.
 
 ## 3. Message lifecycle — P1
 

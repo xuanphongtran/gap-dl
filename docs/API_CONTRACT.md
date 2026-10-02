@@ -16,6 +16,23 @@ This is the frontend's reviewed snapshot of the deployed [Swagger JSON](https://
 
 The first three probes are read-only. The authenticated checks below used disposable accounts. Other frontend origins, rate-limit headers, and production hosting remain unverified.
 
+## Phase 2 runtime findings
+
+Additional disposable accounts were used for a public-room journey and deleted afterward. A public room remains under the retained test owner because the API has no room-deletion operation.
+
+| Endpoint or behavior | Observed result |
+| --- | --- |
+| `GET /api/v1/rooms` before public join | Returned the public room with `role: null`; Swagger's `Room.role` property does not declare nullability |
+| `GET /api/v1/rooms/{id}` before public join | Returned `200` with `role: null` |
+| Member and message reads before public join | `403` for both; public detail visibility does not grant history access |
+| `POST /api/v1/rooms/{id}/join` | Initial and duplicate join each returned `200` |
+| `DELETE /api/v1/rooms/{id}/membership` | Initial and duplicate leave each returned `204`; message reads after leave returned `403` |
+| `POST /api/v1/rooms/{id}/messages` with empty or 4,001-character content | Both returned `400` with `{ "error": "invalid request" }` and `X-Request-ID`; Swagger also lists `413`, which was not produced by this length probe |
+
+The frontend now treats `role: null` as a discoverable public room, shows a join action, and avoids members/messages requests until membership exists. It keeps public discovery after membership loss while clearing private room data. The `400` validation response is mapped to a message-length hint in the composer. No actual `429` or `Retry-After` header has been observed yet; the Axios normalization and bounded countdown are covered by mocked tests.
+
+A headless Chrome smoke against the deployed API through `http://localhost:5173` completed owner login and private-room navigation, then visitor registration, public-room join, leave, and return to the join state without browser console errors. The disposable visitor was deleted with `204`. Desktop and mobile join-state layouts were also inspected with a local mock API. Final production-host CORS remains unverified.
+
 ## Authenticated smoke on the deployed origin
 
 Six disposable accounts were registered on 2026-10-02. Four were deleted after the checks. One owner account and its private room remain because account deletion returned `409` while that account owns a room; the API exposes no room-deletion route. An additional account was registered during a failed smoke attempt before its credentials were saved; it was never invited to the room and cannot be cleaned up with the available API. Credentials and tokens for the retained owner are stored only in a local temporary file outside the repository.
@@ -57,15 +74,15 @@ Search, attachments, mentions, notification inbox, and WebSocket event schemas a
 
 - `Message` includes `id`, `room_id`, `content`, `created_at`, `username`, `revision` (minimum 1), nullable `user_id`, nullable `edited_at`, and nullable `deleted_at`. Phase 1 aligned the frontend type without adding lifecycle UI.
 - `GET /api/v1/rooms/{id}/messages` accepts `limit` from 1 to 100 (default 50) and `before` as a positive message ID. The frontend requests 40 and merges pages by ID. The authenticated sample excluded IDs at or above the cursor and returned a descending page.
-- `POST /api/v1/rooms/{id}/messages` documents content length 1–4000. Create room name is 1–100; registration username is 3–50 and password has minimum length 8. These are server contract bounds; field-level UX changes belong to the next phase.
+- `POST /api/v1/rooms/{id}/messages` documents content length 1–4000. The Phase 2 length probe returned `400` for 4,001 characters even though `413` is listed as a possible response. Create room name is 1–100; registration username is 3–50 and password has minimum length 8.
 - `PATCH /api/v1/rooms/{id}/messages/{message_id}` takes `{ content, revision }`, returns a Message, and documents `409` for conflict. `DELETE` returns a Message tombstone. These endpoints are not used by the current UI.
 - `GET/PUT /api/v1/rooms/{id}/read-state` returns `{ room_id, last_read_message_id, unread_count }`; PUT requires a positive `last_read_message_id`. Read state is not used by the current UI.
 - Successful membership, ownership, and account-deletion operations can return `204` with no body. The common error schema currently contains only an `error` string; field-specific error codes are not documented.
 
 ## Open verification gates
 
-1. Verify the existing text-chat journey in a browser using two accounts. The HTTP checks above establish route behavior, but do not cover rendered interactions.
-2. Confirm public-room join behavior, invitation decline, profile update, and exact validation/size-limit responses. Avoid generating `429` solely for a smoke test.
+1. Complete a two-account browser invitation/send/history journey. Owner login/private navigation and visitor registration/public join/leave already passed in Chrome; the earlier HTTP checks establish message and invitation route behavior.
+2. Confirm invitation decline, profile update, and other validation/size-limit responses. Public-room join and duplicate join/leave are verified. Avoid generating `429` solely for a smoke test.
 3. Confirm `Retry-After` on a naturally observed `429` response. The sampled responses all had `X-Request-ID`.
 4. Recheck CORS and route fallback from the final frontend origin. The local development origin is allowed; production frontend hosting is not chosen here.
 

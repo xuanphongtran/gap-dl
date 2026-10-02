@@ -2,7 +2,7 @@
 import MockAdapter from 'axios-mock-adapter'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { request } from './api'
-import { http, publicHttp } from './http'
+import { ApiError, errorMessage, http, publicHttp } from './http'
 import { clearSession, readSession, saveSession } from './session'
 
 let privateMock: MockAdapter
@@ -80,5 +80,34 @@ describe('Axios session refresh', () => {
   it('returns undefined for a 204 response', async () => {
     privateMock.onDelete('/private').reply(204)
     await expect(request('/private', { method: 'DELETE' })).resolves.toBeUndefined()
+  })
+
+  it('keeps rate-limit diagnostics and caps the retry delay', async () => {
+    privateMock.onGet('/limited').reply(
+      429,
+      { error: 'too many requests' },
+      {
+        'Retry-After': '90000',
+        'X-Request-ID': 'request-123',
+      },
+    )
+    await expect(request('/limited')).rejects.toMatchObject({
+      status: 429,
+      requestId: 'request-123',
+      retryAfterSeconds: 86_400,
+    })
+  })
+
+  it('does not use an invalid retry delay or expose a server error body', async () => {
+    privateMock
+      .onGet('/limited')
+      .reply(429, { error: 'too many requests' }, { 'Retry-After': 'soon' })
+    await expect(request('/limited')).rejects.toMatchObject({ retryAfterSeconds: undefined })
+    expect(errorMessage(new ApiError(503, 'internal database detail'))).toBe(
+      'The server is temporarily unavailable. Please try again.',
+    )
+    expect(errorMessage(new ApiError(404, 'private room 7 exists'))).toBe(
+      'This resource is unavailable or you no longer have access.',
+    )
   })
 })

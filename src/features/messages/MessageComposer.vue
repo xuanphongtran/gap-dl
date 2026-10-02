@@ -2,7 +2,16 @@
 import PixelAlert from '../../components/base/PixelAlert.vue'
 import PixelButton from '../../components/base/PixelButton.vue'
 
-defineProps<{ modelValue: string; disabled: boolean; sending: boolean; error: string }>()
+withDefaults(
+  defineProps<{
+    modelValue: string
+    disabled: boolean
+    sending: boolean
+    error: string
+    cooldownSeconds?: number
+  }>(),
+  { cooldownSeconds: 0 },
+)
 const emit = defineEmits<{ 'update:modelValue': [value: string]; send: [] }>()
 
 function update(event: Event) {
@@ -18,6 +27,7 @@ function update(event: Event) {
       <textarea
         id="message-input"
         :value="modelValue"
+        maxlength="4000"
         rows="1"
         placeholder="Write a message..."
         :disabled="disabled || sending"
@@ -28,14 +38,21 @@ function update(event: Event) {
         variant="primary"
         class="send-button"
         type="submit"
-        :disabled="!modelValue.trim() || disabled || sending"
-        :aria-label="sending ? 'Sending' : 'Send message'"
+        :disabled="!modelValue.trim() || disabled || sending || cooldownSeconds > 0"
+        :aria-label="
+          sending
+            ? 'Sending'
+            : cooldownSeconds
+              ? `Retry in ${cooldownSeconds} seconds`
+              : 'Send message'
+        "
       >
         {{ sending ? '...' : '➤' }}
       </PixelButton>
     </form>
     <div class="composer-hint">
-      <span>ENTER TO SEND · SHIFT + ENTER FOR NEW LINE</span><span>HTTP SYNC / 5S</span>
+      <span>ENTER TO SEND · SHIFT + ENTER FOR NEW LINE</span
+      ><span>{{ cooldownSeconds ? `RETRY IN ${cooldownSeconds}S` : 'HTTP SYNC / 5S' }}</span>
     </div>
   </div>
 </template>

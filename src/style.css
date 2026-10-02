@@ -615,6 +615,13 @@ a:hover {
   min-height: 0;
   flex: 1;
 }
+.public-join-state {
+  flex: 1;
+  gap: 18px;
+  padding: 32px;
+  text-align: center;
+  background-color: #101c23;
+}
 .conversation {
   display: flex;
   flex-direction: column;
