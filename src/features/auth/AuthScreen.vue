@@ -6,6 +6,7 @@ import PixelButton from '../../components/base/PixelButton.vue'
 import PixelField from '../../components/base/PixelField.vue'
 import PixelPanel from '../../components/base/PixelPanel.vue'
 import { errorMessage } from '../../lib/api'
+import { useActionCooldown } from '../../lib/rate-limit'
 import { useAuthStore } from '../../stores/auth'
 
 const props = defineProps<{ mode: 'login' | 'register' }>()
@@ -16,10 +17,11 @@ const username = ref('')
 const password = ref('')
 const busy = ref(false)
 const error = ref('')
+const cooldown = useActionCooldown()
 const registering = computed(() => props.mode === 'register')
 
 async function submit() {
-  if (busy.value) return
+  if (busy.value || cooldown.remaining.value) return
   busy.value = true
   error.value = ''
   try {
@@ -28,6 +30,7 @@ async function submit() {
     else await auth.login(email.value.trim(), password.value)
     await router.push('/app')
   } catch (cause) {
+    cooldown.start(cause)
     error.value = errorMessage(cause)
   } finally {
     busy.value = false
@@ -81,8 +84,22 @@ async function submit() {
           placeholder="••••••••"
         />
         <PixelAlert v-if="error" tone="error">{{ error }}</PixelAlert>
-        <PixelButton variant="primary" full :loading="busy" type="submit">
-          {{ busy ? 'PLEASE WAIT...' : registering ? 'CREATE ACCOUNT →' : 'SIGN IN →' }}
+        <PixelButton
+          variant="primary"
+          full
+          :loading="busy"
+          :disabled="!!cooldown.remaining.value"
+          type="submit"
+        >
+          {{
+            busy
+              ? 'PLEASE WAIT...'
+              : cooldown.remaining.value
+                ? `RETRY IN ${cooldown.remaining.value}s`
+                : registering
+                  ? 'CREATE ACCOUNT →'
+                  : 'SIGN IN →'
+          }}
         </PixelButton>
       </form>
       <p class="auth-switch muted">

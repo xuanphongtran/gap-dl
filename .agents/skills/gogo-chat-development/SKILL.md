@@ -13,4 +13,6 @@ Write UI copy, source comments, tests, and documentation in English.
 
 For chat changes, keep message IDs as the merge key, use `before` for older pages, poll only the latest page, and avoid duplicate sends. Pass each query's AbortSignal to Axios so room changes cancel reads. Invalidate affected cache keys after mutations. For auth changes, preserve the single refresh request for concurrent `401` responses, clear cached server data when the session ends, and never log or render tokens.
 
+The deployed REST API lists public rooms before membership with `role: null`. Public room details are visible, but members and messages return `403` until join. Gate private room queries on a non-null role, clear them immediately on membership loss, and keep public rooms discoverable. Message content must be nonblank and at most 4,000 UTF-8 bytes after trimming; content validation returns `400`, while an oversized HTTP body returns `413`. Keep `Retry-After` handling bounded and do not automatically replay writes.
+
 Run `npm run check` after code changes. Add focused tests for behavior that can regress, especially auth refresh, message pagination, and state transitions. If the API behavior cannot be checked locally, state the unverified contract clearly in the handoff.

@@ -1,6 +1,6 @@
 # Frontend product specification: Gogo DL Web Chat
 
-**Status:** Frontend planning update, 2026-10-02. The REST contract source is the deployed [Swagger JSON](https://gogo-dl.onrender.com/swagger/doc.json), checked on 2026-10-02 (Swagger 2.0, API version 1.0, 20 paths, 27 operations). Check it again before implementing each feature and verify authenticated behavior against the API at `VITE_API_BASE_URL`. WebSocket and SSE remain frontend TODOs.
+**Status:** Frontend planning update, 2026-10-02. The REST contract source is the deployed [Swagger JSON](https://gogo-dl.onrender.com/swagger/doc.json), checked after the API update on 2026-10-02 (Swagger 2.0, API version 1.0, 23 paths, 30 operations). Check it again before implementing each feature and verify authenticated behavior against the API at `VITE_API_BASE_URL`. WebSocket and SSE remain frontend TODOs.
 
 Swagger documents `PATCH/DELETE /api/v1/rooms/{id}/messages/{message_id}`, `GET/PUT /api/v1/rooms/{id}/read-state`, and `GET /api/v1/rooms/{id}/presence`. Search, attachment, mention/inbox, and WebSocket event contracts are not present in this REST document. Endpoint presence in Swagger does not confirm authenticated runtime behavior.
 
@@ -40,6 +40,7 @@ The initial base set covers buttons, form fields, panels, alerts, empty/loading 
 ## 3. API hardening and data integrity
 
 - The current Swagger error model exposes an `error` string. Show safe form-level feedback; map validation to individual inputs only if a later documented response adds stable field details. Client validation helps usability and never substitutes for server authorization.
+- Trim message content and enforce the documented 4,000 UTF-8 byte limit. Content validation returns `400`; `413` refers to an oversized HTTP request body. Keep the draft editable when it exceeds the limit.
 - On `429`, honor a valid integer `Retry-After`, disable only the affected action for that interval, and allow retry afterward. On `413`, explain the relevant size limit. Distinguish final `401`, `403`, concealed `404`, `409`, network failure, and temporary `503` without revealing private-resource existence or backend internals.
 - Capture `X-Request-ID` for safe support details when present. Never log tokens, message bodies, signed URLs, or raw error stacks. Do not automatically replay writes without a confirmed idempotency contract.
 - Account deletion may be rejected while the user owns rooms; explain ownership transfer. Deleted authors can remain in message history with nullable identity; display a neutral deleted-user label while preserving the message ID and deletion state.
@@ -47,7 +48,7 @@ The initial base set covers buttons, form fields, panels, alerts, empty/loading 
 
 ## 4. Rooms and permissions
 
-- Public rooms may be discoverable and self-joinable if the deployed API exposes discovery. History and real-time subscription still require membership. A concealed private-room `404` must not reveal details.
+- The deployed `GET /api/v1/rooms` discovers public rooms before membership; their `role` is `null`. An unaffiliated user can read public room details and join by ID, while members and messages require membership. A concealed private-room `404` must not reveal details.
 - Treat visibility as immutable unless the deployed API supports changing it. Owners transfer ownership before leaving or deleting their account. Use confirmed idempotent join/leave/invitation responses.
 - Show owner/moderator/member actions according to the returned role, while the API remains authoritative. On membership loss, clear that room's cached details, members, messages, read state, and pending private UI; return to the room list.
 

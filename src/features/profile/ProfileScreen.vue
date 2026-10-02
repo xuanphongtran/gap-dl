@@ -7,8 +7,9 @@ import PixelAvatar from '../../components/base/PixelAvatar.vue'
 import PixelButton from '../../components/base/PixelButton.vue'
 import PixelField from '../../components/base/PixelField.vue'
 import PixelPanel from '../../components/base/PixelPanel.vue'
-import { api, errorMessage } from '../../lib/api'
+import { api, ApiError, errorMessage } from '../../lib/api'
 import { queryClient, queryKeys } from '../../lib/query'
+import { useActionCooldown } from '../../lib/rate-limit'
 import { useAuthStore } from '../../stores/auth'
 import type { Profile } from '../../types'
 
@@ -17,6 +18,9 @@ const router = useRouter()
 const username = ref('')
 const avatarUrl = ref('')
 const feedback = ref('')
+const feedbackTone = ref<'info' | 'error'>('info')
+const saveCooldown = useActionCooldown()
+const deleteCooldown = useActionCooldown()
 const profileQuery = useQuery({
   queryKey: queryKeys.profile,
   queryFn: ({ signal }) => api.profile(signal),
@@ -39,24 +43,31 @@ watch(
   { immediate: true },
 )
 watch(profileQuery.error, (cause) => {
-  if (cause) feedback.value = errorMessage(cause)
+  if (cause) {
+    feedbackTone.value = 'error'
+    feedback.value = errorMessage(cause)
+  }
 })
 
 async function save() {
-  if (busy.value || !username.value.trim()) return
+  if (busy.value || !username.value.trim() || saveCooldown.remaining.value) return
   feedback.value = ''
   try {
     await saveMutation.mutateAsync({
       username: username.value.trim(),
       avatar_url: avatarUrl.value.trim(),
     })
+    feedbackTone.value = 'info'
     feedback.value = 'Profile saved.'
   } catch (cause) {
+    saveCooldown.start(cause)
+    feedbackTone.value = 'error'
     feedback.value = errorMessage(cause)
   }
 }
 
 async function removeAccount() {
+  if (busy.value || deleteCooldown.remaining.value) return
   if (!window.confirm('Permanently delete your account? This cannot be undone.')) return
   feedback.value = ''
   try {
@@ -64,7 +75,12 @@ async function removeAccount() {
     auth.logout()
     await router.replace('/register')
   } catch (cause) {
-    feedback.value = errorMessage(cause)
+    deleteCooldown.start(cause)
+    feedbackTone.value = 'error'
+    feedback.value =
+      cause instanceof ApiError && cause.status === 409
+        ? `Transfer ownership of your rooms before deleting your account.${cause.requestId ? ` Reference: ${cause.requestId}.` : ''}`
+        : errorMessage(cause)
   }
 }
 </script>
@@ -86,15 +102,33 @@ async function removeAccount() {
           placeholder="https://example.com/avatar.png"
         />
         <PixelField label="Email" :model-value="profile?.email || ''" readonly />
-        <PixelAlert v-if="feedback">{{ feedback }}</PixelAlert>
-        <PixelButton variant="primary" type="submit" :disabled="busy">SAVE CHANGES</PixelButton>
+        <PixelAlert v-if="feedback" :tone="feedbackTone">{{ feedback }}</PixelAlert>
+        <PixelButton
+          variant="primary"
+          type="submit"
+          :disabled="busy || !!saveCooldown.remaining.value"
+        >
+          {{
+            saveCooldown.remaining.value
+              ? `RETRY IN ${saveCooldown.remaining.value}s`
+              : 'SAVE CHANGES'
+          }}
+        </PixelButton>
       </form>
     </PixelPanel>
     <section class="danger-zone">
       <h2>Danger zone</h2>
       <p class="muted">Account deletion follows the server's data retention rules.</p>
-      <PixelButton variant="danger" :disabled="busy" @click="removeAccount">
-        DELETE ACCOUNT
+      <PixelButton
+        variant="danger"
+        :disabled="busy || !!deleteCooldown.remaining.value"
+        @click="removeAccount"
+      >
+        {{
+          deleteCooldown.remaining.value
+            ? `RETRY IN ${deleteCooldown.remaining.value}s`
+            : 'DELETE ACCOUNT'
+        }}
       </PixelButton>
     </section>
   </main>

@@ -15,10 +15,23 @@ export class ApiError extends Error {
   constructor(
     public status: number,
     message: string,
+    public requestId?: string,
+    public retryAfterSeconds?: number,
   ) {
     super(message)
     this.name = 'ApiError'
   }
+}
+
+function retryAfterSeconds(value: string | undefined): number | undefined {
+  if (!value || !/^\d+$/.test(value)) return undefined
+  const seconds = Number(value)
+  return Number.isSafeInteger(seconds) ? Math.min(seconds, 86_400) : undefined
+}
+
+function responseHeader(headers: object, name: string): string | undefined {
+  const entry = Object.entries(headers).find(([key]) => key.toLowerCase() === name)
+  return typeof entry?.[1] === 'string' ? entry[1] : undefined
 }
 
 interface AuthConfig extends InternalAxiosRequestConfig {
@@ -33,7 +46,12 @@ function normalizeError(error: unknown): unknown {
     data && typeof data === 'object' && 'error' in data && typeof data.error === 'string'
       ? data.error
       : `Request failed (${error.response.status})`
-  return new ApiError(error.response.status, message)
+  return new ApiError(
+    error.response.status,
+    message,
+    responseHeader(error.response.headers, 'x-request-id'),
+    retryAfterSeconds(responseHeader(error.response.headers, 'retry-after')),
+  )
 }
 
 export const publicHttp = axios.create({ baseURL, timeout: 30_000 })
@@ -118,9 +136,18 @@ export async function request<T>(
 
 export function errorMessage(error: unknown): string {
   if (error instanceof ApiError) {
-    if (error.status === 413) return 'This message is too long.'
-    if (error.status === 429) return 'Too many requests. Please try again later.'
-    return error.message
+    const reference = error.requestId ? ` Reference: ${error.requestId}.` : ''
+    if (error.status === 413) return `The request body is too large.${reference}`
+    if (error.status === 429)
+      return error.retryAfterSeconds
+        ? `Too many requests. Try again in ${error.retryAfterSeconds} seconds.${reference}`
+        : `Too many requests. Please try again later.${reference}`
+    if ([500, 502, 503, 504].includes(error.status))
+      return `The server is temporarily unavailable. Please try again.${reference}`
+    if (error.status === 404)
+      return `This resource is unavailable or you no longer have access.${reference}`
+    if (error.status === 409) return `This action conflicts with the current state.${reference}`
+    return `${error.message}${reference}`
   }
   return 'Could not connect to the server. Please try again.'
 }
