@@ -45,6 +45,26 @@ describe('mergeMessages', () => {
     const result = mergeMessages([deleted], [{ ...message(4), revision: 2 }])
     expect(result).toEqual([{ ...deleted, content: '' }])
   })
+
+  it('keeps the newest edit when an older page or poll arrives later', () => {
+    const edited = { ...message(4), content: 'Current text', revision: 3 }
+    expect(mergeMessages([edited], [message(4)])[0]).toEqual(edited)
+  })
+
+  it('never restores a tombstone or deleted author from a later malformed revision', () => {
+    const deleted = {
+      ...message(4),
+      user_id: null,
+      revision: 3,
+      content: '',
+      deleted_at: '2026-10-02T00:02:00Z',
+    }
+    expect(mergeMessages([deleted], [{ ...message(4), revision: 4 }])).toEqual([deleted])
+    expect(
+      mergeMessages([{ ...message(4), user_id: null }], [{ ...message(4), revision: 2 }])[0]
+        ?.user_id,
+    ).toBeNull()
+  })
 })
 
 describe('messageContentBytes', () => {

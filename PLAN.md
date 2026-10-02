@@ -41,7 +41,7 @@ Keep endpoint functions in `src/lib/api.ts`, Axios transport in `src/lib/http.ts
 
 ## 1. Contract inventory and regression baseline — P0
 
-- [x] Inspect the deployed Swagger JSON: the refreshed 2026-10-02 snapshot reports API 1.0 with 23 paths and 30 operations, including message edit/delete, room read state, room presence, and system readiness routes. The error schema currently exposes an `error` string.
+- [x] Inspect the deployed Swagger JSON: the latest 2026-10-02 snapshot reports API 1.0 with 24 paths and 31 operations, including message edit/delete, room read state, room presence, message search, and system readiness routes. The error schema currently exposes an `error` string.
 - [x] Recheck Swagger at implementation time; record target deployment version and compare request/response schemas with `src/types.ts` and `src/lib/api.ts`, including nullable deleted authors and message revision/tombstone fields. Verify the current text-chat contracts with authenticated HTTP requests.
 - [ ] Confirm target origin, CORS, HTTPS, route availability, `expires_at`, refresh rotation, `before` ordering/limit, validation bounds, `Retry-After`, `X-Request-ID`, and stable error shape. Most items were observed; final-host CORS, boundary responses, and `Retry-After` still need verification. Refresh did not rotate the refresh token in the sampled request.
 - [ ] Create disposable development accounts and room fixtures. Register/login/refresh, create/invite/accept/send/history/leave/profile/delete-conflict, private-room concealment, role changes, removal, owner transfer, and public join passed via HTTP. Browser invitation/send/history remains to be completed.
@@ -67,11 +67,15 @@ Keep endpoint functions in `src/lib/api.ts`, Axios transport in `src/lib/http.ts
 
 **Dependency:** The Swagger-documented lifecycle routes and Message fields are rechecked and verified with test accounts.
 
-- [ ] Add typed `PATCH/DELETE /api/v1/rooms/{id}/messages/{message_id}` functions and Message fields. PATCH sends `{ content, revision }`; verify the documented `200` response and `409` conflict behavior.
-- [ ] Add edit/delete controls to eligible message rows with keyboard support, edit draft preservation, destructive confirmation, and clear edited/deleted display.
-- [ ] Merge history, newest-page responses, mutation responses, and eventual events by message ID and increasing revision. Keep tombstones ID-stable and content-free. Preserve scroll position while older pages load.
-- [ ] On revision conflict, preserve the local edit and display the fresh server version with explicit retry/discard choices. Repeated delete must converge on the same tombstone.
-- [ ] Test author/manager/forbidden cases, concurrent edits, delete while viewing, out-of-order results, page overlap, and reload.
+**Implementation note (2026-10-02):** The current deployed Swagger lists 24 paths and 31 operations and documents `PATCH` with `{ content, revision }` plus `DELETE` returning a Message tombstone. Keep one room-local editor draft, merge mutation results with the displayed REST pages by ID/revision, and refetch loaded pages after `409` to present the server version before an explicit retry. Event merging stays with deferred real-time work.
+
+- [x] Add typed `PATCH/DELETE /api/v1/rooms/{id}/messages/{message_id}` functions and Message fields. PATCH sends `{ content, revision }`; authenticated requests confirmed `200` and stale-revision `409`.
+- [x] Add edit/delete controls to eligible message rows with keyboard support, edit draft preservation, destructive confirmation, and clear edited/deleted display.
+- [x] Merge history, newest-page, and mutation responses by message ID and increasing revision. Keep tombstones ID-stable and content-free. Preserve scroll position while older pages load. Event merging remains in deferred Phase 5.
+- [x] On revision conflict, preserve the local edit and display the fresh server version with explicit retry/discard choices. A repeated delete returned the same tombstone in the live smoke.
+- [ ] Test author/manager/forbidden cases, concurrent edits, delete while viewing, out-of-order results, page overlap, and reload. Author and forbidden-member behavior, concurrent revision conflict, repeated delete, and tombstone history passed against the deployed API; mocked tests cover owner controls, draft preservation, page overlap, and stale results. Manager authorization and browser reload remain to verify.
+
+**Phase 3 verification (2026-10-02):** A disposable account joined an existing public room, sent, edited, retried a stale revision, deleted twice, and read the tombstone; a second two-account check confirmed non-author edit/delete return `403`. All three test accounts left and were deleted. The live browser URL `https://chat.xuanphong.io.vn/login` returned Vercel `404: NOT_FOUND` before Vue loaded; the repository now includes an SPA rewrite. Confirm direct `/login` and room routes after deployment.
 
 **Exit gate:** No stale response restores erased content or overwrites a newer revision; edit conflicts are recoverable without losing the user's draft.
 
@@ -98,7 +102,7 @@ Keep endpoint functions in `src/lib/api.ts`, Axios transport in `src/lib/http.ts
 
 ## 6. Search, attachments, and inbox — P2
 
-- [ ] **Search:** After the authorized, deletion-aware search endpoint is released, add room-scoped query form, cursor pagination, loading/empty states, and revoked-membership cleanup. Test edits/tombstones and result privacy.
+- [ ] **Search:** The endpoint is now documented; verify authorization and deletion-aware responses with test accounts, then add a room-scoped query form, cursor pagination, loading/empty states, and revoked-membership cleanup. Test edits/tombstones and result privacy.
 - [ ] **Attachments:** Wait for provider, scanner, quota, reservation, and signed-download contracts. Add upload progress/cancel/retry and scan states; keep signed URLs ephemeral/private. Test scan failure, expiry, leave during upload, duplicate retry, and cleanup-visible states.
 - [ ] **Mentions/inbox:** Wait for typed recipient/generation and feed/preference endpoints. Add recipient picker, private paginated inbox, preference controls, and retry-safe read actions. Test leave/rejoin and deleted references. Do not infer mentions by parsing names in text.
 

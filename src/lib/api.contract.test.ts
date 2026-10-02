@@ -48,4 +48,22 @@ describe('documented message contract', () => {
     })
     await expect(api.sendMessage(7, 'Hello')).resolves.toMatchObject({ id: 21 })
   })
+
+  it('edits with an expected revision and returns the updated message', async () => {
+    mock.onPatch('/api/v1/rooms/7/messages/21').reply((config) => {
+      expect(JSON.parse(config.data)).toEqual({ content: 'Updated', revision: 2 })
+      return [200, { id: 21, content: 'Updated', revision: 3 }]
+    })
+    await expect(api.editMessage(7, 21, 'Updated', 2)).resolves.toMatchObject({ revision: 3 })
+  })
+
+  it('deletes by message ID and returns the tombstone', async () => {
+    mock.onDelete('/api/v1/rooms/7/messages/21').reply(200, {
+      id: 21,
+      revision: 3,
+      content: '',
+      deleted_at: '2026-10-02T00:02:00Z',
+    })
+    await expect(api.deleteMessage(7, 21)).resolves.toMatchObject({ content: '', revision: 3 })
+  })
 })

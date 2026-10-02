@@ -737,6 +737,66 @@ a:hover {
   background: #245044;
   border-color: #468b71;
 }
+.message-edited {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 10px;
+}
+.message-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+.message-actions > button {
+  border: 1px solid #42616d;
+  background: #223842;
+  color: var(--mint);
+  padding: 6px 9px;
+  font-size: 11px;
+}
+.message-actions > button:disabled {
+  opacity: 0.6;
+}
+.message-editor {
+  display: grid;
+  gap: 8px;
+  min-width: min(72vw, 420px);
+  margin-top: 10px;
+}
+.message-editor label {
+  font-size: 11px;
+  color: var(--mint);
+}
+.message-editor textarea {
+  width: 100%;
+  min-height: 90px;
+  resize: vertical;
+  padding: 10px;
+  line-height: 1.5;
+}
+.message-edit-feedback {
+  display: grid;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.message-edit-feedback [role='alert'] {
+  color: #ffb6a3;
+}
+.message-conflict {
+  border: 1px solid #bc8d4a;
+  padding: 9px;
+  background: #473922;
+  font-size: 12px;
+}
+.message-content .message-conflict p {
+  margin-top: 7px;
+  padding: 8px;
+  background: #263944;
+  box-shadow: none;
+}
 .composer-wrap {
   padding: 16px clamp(16px, 4vw, 60px) 13px;
   border-top: 2px solid #2f454e;

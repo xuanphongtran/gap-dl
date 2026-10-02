@@ -12,7 +12,7 @@ cp .env.example .env
 npm run dev
 ```
 
-Set `VITE_API_BASE_URL` in `.env` to the backend origin. The default is `https://gogo-dl.onrender.com`. The backend must allow the frontend origin through CORS. For production hosting, configure a fallback to `index.html` for client side routes such as `/app/rooms/1`.
+Set `VITE_API_BASE_URL` in `.env` to the backend origin. The default is `https://gogo-dl.onrender.com`. The backend must allow the frontend origin through CORS. The included `vercel.json` rewrites direct requests such as `/login` and `/app/rooms/1` to `index.html` so Vue Router can handle them. Other hosts need an equivalent SPA fallback.
 
 ## Checks
 

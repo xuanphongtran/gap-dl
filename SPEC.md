@@ -1,8 +1,8 @@
 # Frontend product specification: Gogo DL Web Chat
 
-**Status:** Frontend planning update, 2026-10-02. The REST contract source is the deployed [Swagger JSON](https://gogo-dl.onrender.com/swagger/doc.json), checked after the API update on 2026-10-02 (Swagger 2.0, API version 1.0, 23 paths, 30 operations). Check it again before implementing each feature and verify authenticated behavior against the API at `VITE_API_BASE_URL`. WebSocket and SSE remain frontend TODOs.
+**Status:** Frontend planning update, 2026-10-02. The REST contract source is the deployed [Swagger JSON](https://gogo-dl.onrender.com/swagger/doc.json), checked after the API update on 2026-10-02 (Swagger 2.0, API version 1.0, 24 paths, 31 operations). Check it again before implementing each feature and verify authenticated behavior against the API at `VITE_API_BASE_URL`. WebSocket and SSE remain frontend TODOs.
 
-Swagger documents `PATCH/DELETE /api/v1/rooms/{id}/messages/{message_id}`, `GET/PUT /api/v1/rooms/{id}/read-state`, and `GET /api/v1/rooms/{id}/presence`. Search, attachment, mention/inbox, and WebSocket event contracts are not present in this REST document. Endpoint presence in Swagger does not confirm authenticated runtime behavior.
+Swagger documents `PATCH/DELETE /api/v1/rooms/{id}/messages/{message_id}`, `GET/PUT /api/v1/rooms/{id}/read-state`, `GET /api/v1/rooms/{id}/presence`, and `GET /api/v1/rooms/{id}/messages/search`. Attachment, mention/inbox, and WebSocket event contracts are not present in this REST document. Endpoint presence in Swagger does not confirm authenticated runtime behavior.
 
 The reviewed frontend operation and DTO matrix is in [docs/API_CONTRACT.md](./docs/API_CONTRACT.md).
 
@@ -68,7 +68,7 @@ The initial base set covers buttons, form fields, panels, alerts, empty/loading 
 
 ## 7. Search, attachments, and inbox
 
-- **Search:** room-scoped authorized search with bounded query and documented cursor pagination. Handle edits, tombstones, revoked membership, and stale snippets without leaking content. Wait for the released search contract.
+- **Search:** room-scoped authorized search with bounded query and documented cursor pagination. Handle edits, tombstones, revoked membership, and stale snippets without leaking content. Verify the newly documented endpoint with test accounts before frontend implementation.
 - **Attachments:** add progress/cancel/retry, scanning states, quotas, and authorized download only after private immutable storage, scanning, and cleanup are verified. Signed URLs stay ephemeral and out of durable caches/logs/events. Keep text-only sending; attachment-only sending needs a separate contract.
 - **Mentions/inbox:** select recipients by typed identity, not username parsing. Add private paginated feed and preferences when endpoints exist; deleted or revoked items must not reappear after reconnect. External email/push is outside scope.
 
