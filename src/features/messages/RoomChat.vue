@@ -10,7 +10,7 @@ import PixelField from '../../components/base/PixelField.vue'
 import MessageComposer from './MessageComposer.vue'
 import MessageRow from './MessageRow.vue'
 import { api, ApiError, errorMessage } from '../../lib/api'
-import { mergeMessages } from '../../lib/messages'
+import { MAX_MESSAGE_BYTES, mergeMessages, messageContentBytes } from '../../lib/messages'
 import { clearRoomQueries, queryClient, queryKeys } from '../../lib/query'
 import { useActionCooldown } from '../../lib/rate-limit'
 import type { Message } from '../../types'
@@ -181,6 +181,10 @@ const sending = computed(() => sendMutation.isPending.value)
 async function send() {
   const content = draft.value.trim()
   if (!content || sending.value || !room.value || sendCooldown.remaining.value) return
+  if (messageContentBytes(content) > MAX_MESSAGE_BYTES) {
+    error.value = 'Message exceeds the 4000-byte UTF-8 limit.'
+    return
+  }
   error.value = ''
   const id = roomId.value
   try {
@@ -197,7 +201,7 @@ async function send() {
     else if (id === roomId.value)
       error.value =
         cause instanceof ApiError && cause.status === 400
-          ? 'Message must contain 1 to 4000 characters.'
+          ? 'Message must contain 1 to 4000 UTF-8 bytes after trimming.'
           : errorMessage(cause)
   }
 }

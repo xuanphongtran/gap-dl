@@ -765,11 +765,15 @@ a:hover {
 }
 .composer-hint {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   gap: 15px;
   color: #667e83;
   font-size: 7px;
   margin-top: 11px;
+}
+.composer-hint span:last-child {
+  margin-left: auto;
 }
 .members-panel {
   flex: none;

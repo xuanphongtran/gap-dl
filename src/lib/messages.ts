@@ -1,5 +1,11 @@
 import type { Message } from '../types'
 
+export const MAX_MESSAGE_BYTES = 4000
+
+export function messageContentBytes(content: string): number {
+  return new TextEncoder().encode(content.trim()).length
+}
+
 export function mergeMessages(current: Message[], incoming: Message[]): Message[] {
   const byId = new Map<number, Message>()
   for (const message of current) byId.set(message.id, message)

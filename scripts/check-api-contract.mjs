@@ -28,6 +28,9 @@ const requiredOperations = [
   ['get', '/api/v1/rooms/{id}/read-state'],
   ['put', '/api/v1/rooms/{id}/read-state'],
   ['get', '/api/v1/rooms/{id}/presence'],
+  ['get', '/livez'],
+  ['get', '/readyz'],
+  ['get', '/readyz/realtime'],
 ]
 
 const response = await fetch(url, { signal: AbortSignal.timeout(30_000) })
@@ -60,6 +63,13 @@ for (const field of ['user_id', 'edited_at', 'deleted_at']) {
     failures.push(`Message.${field} is no longer nullable`)
 }
 if (message?.revision?.minimum !== 1) failures.push('Message.revision minimum changed')
+
+const room = document.definitions?.['internal_chat.Room']?.properties
+if (room?.role?.['x-nullable'] !== true) failures.push('Room.role is no longer nullable')
+
+const sendContent = document.definitions?.['internal_chat.SendMessageRequest']?.properties?.content
+if (sendContent?.maxLength !== 4000 || !sendContent.description?.includes('UTF-8 bytes'))
+  failures.push('SendMessageRequest.content byte limit changed')
 
 const token =
   document.definitions?.['github_com_xuanphongtran_gogo-dl_internal_middleware.TokenPair']

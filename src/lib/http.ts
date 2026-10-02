@@ -137,7 +137,7 @@ export async function request<T>(
 export function errorMessage(error: unknown): string {
   if (error instanceof ApiError) {
     const reference = error.requestId ? ` Reference: ${error.requestId}.` : ''
-    if (error.status === 413) return `This message is too long.${reference}`
+    if (error.status === 413) return `The request body is too large.${reference}`
     if (error.status === 429)
       return error.retryAfterSeconds
         ? `Too many requests. Try again in ${error.retryAfterSeconds} seconds.${reference}`

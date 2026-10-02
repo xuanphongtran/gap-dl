@@ -6,8 +6,8 @@ This is the frontend's reviewed snapshot of the deployed [Swagger JSON](https://
 
 | Item | Observed on 2026-10-02 |
 | --- | --- |
-| Swagger document | Swagger 2.0, API version `1.0`; 20 paths and 27 HTTP operations |
-| Document SHA-256 | `cda46b4f15b0d28bd753fd8c415739731e457cdb26edd67cf95ee0416b36c8d2` |
+| Swagger document | Swagger 2.0, API version `1.0`; 23 paths and 30 HTTP operations |
+| Document SHA-256 | `89a399d008cc924546f57cbc18a303a63bbb8654f484dc0869553b75d518d59e` |
 | Browser API origin | `https://gogo-dl.onrender.com` by default; override with `VITE_API_BASE_URL` |
 | Swagger `host` | `localhost:8080`; do not use this field as the deployed browser origin |
 | Health | `GET /health` returned `200` with `{ "status": "ok", "time": "..." }` and `X-Request-ID` |
@@ -16,18 +16,26 @@ This is the frontend's reviewed snapshot of the deployed [Swagger JSON](https://
 
 The first three probes are read-only. The authenticated checks below used disposable accounts. Other frontend origins, rate-limit headers, and production hosting remain unverified.
 
+## Refreshed API contract
+
+The 2026-10-02 refresh added `GET /livez`, `GET /readyz`, and `GET /readyz/realtime` without removing existing operations. All three returned `200` with a boolean health field (`live` or `ready`). They are deployment probes, not chat UI routes.
+
+Swagger now marks `Room.role` nullable. It also specifies nonblank message content of at most 4,000 UTF-8 bytes after trimming. A content validation failure returns `400`; `413` means the entire HTTP request body exceeds `HTTP_MAX_BODY_BYTES`. An authenticated boundary probe sent 1,000 emoji (4,000 UTF-8 bytes) with `201`, deleted that test message with `200` and an empty tombstone, and received `400` for 1,001 emoji (4,004 UTF-8 bytes). The frontend composer now counts trimmed UTF-8 bytes and retains an over-limit draft for editing.
+
+The previous Swagger snapshot had 20 paths, 27 operations, and SHA-256 `cda46b4f15b0d28bd753fd8c415739731e457cdb26edd67cf95ee0416b36c8d2`. Its missing `Room.role` nullability and ambiguous `400`/`413` descriptions are resolved in the refreshed document.
+
 ## Phase 2 runtime findings
 
 Additional disposable accounts were used for a public-room journey and deleted afterward. A public room remains under the retained test owner because the API has no room-deletion operation.
 
 | Endpoint or behavior | Observed result |
 | --- | --- |
-| `GET /api/v1/rooms` before public join | Returned the public room with `role: null`; Swagger's `Room.role` property does not declare nullability |
+| `GET /api/v1/rooms` before public join | Returned the public room with `role: null`; the refreshed Swagger now declares that nullability |
 | `GET /api/v1/rooms/{id}` before public join | Returned `200` with `role: null` |
 | Member and message reads before public join | `403` for both; public detail visibility does not grant history access |
 | `POST /api/v1/rooms/{id}/join` | Initial and duplicate join each returned `200` |
 | `DELETE /api/v1/rooms/{id}/membership` | Initial and duplicate leave each returned `204`; message reads after leave returned `403` |
-| `POST /api/v1/rooms/{id}/messages` with empty or 4,001-character content | Both returned `400` with `{ "error": "invalid request" }` and `X-Request-ID`; Swagger also lists `413`, which was not produced by this length probe |
+| `POST /api/v1/rooms/{id}/messages` with empty or 4,001-character content | Both returned `400` with `{ "error": "invalid request" }` and `X-Request-ID`; the refreshed Swagger clarifies why this is `400` |
 
 The frontend now treats `role: null` as a discoverable public room, shows a join action, and avoids members/messages requests until membership exists. It keeps public discovery after membership loss while clearing private room data. The `400` validation response is mapped to a message-length hint in the composer. No actual `429` or `Retry-After` header has been observed yet; the Axios normalization and bounded countdown are covered by mocked tests.
 
@@ -51,7 +59,7 @@ Six disposable accounts were registered on 2026-10-02. Four were deleted after t
 | Ownership transfer | Transfer to an accepted member returned `204`; the successor's room detail reported `owner`; the former owner then left and deleted their account with `204` responses |
 | Diagnostics | Sampled success and failure responses had `X-Request-ID`; no `429` was produced, so `Retry-After` is unverified |
 
-These are HTTP client checks, not browser end-to-end tests. Public-room join, invitation decline, profile update, validation boundaries, and final-host CORS were not exercised. The first owner-action smoke attempt used an expired access token and got `401`; a fresh login resolved it.
+At the Phase 1 checkpoint, these were HTTP client checks, not browser end-to-end tests. Public-room join, invitation decline, profile update, validation boundaries, and final-host CORS had not been exercised. The later Phase 2 and refreshed-contract sections above record subsequent checks. The first owner-action smoke attempt used an expired access token and got `401`; a fresh login resolved it.
 
 ## Operation coverage
 
@@ -66,7 +74,7 @@ These are HTTP client checks, not browser end-to-end tests. Public-room join, in
 | Message lifecycle | `PATCH` and `DELETE /api/v1/rooms/{id}/messages/{message_id}` | Documented; planned in frontend phase 3 |
 | Read state | `GET` and `PUT /api/v1/rooms/{id}/read-state` | Documented; planned in frontend phase 4 |
 | Presence | `GET /api/v1/rooms/{id}/presence` | Documented; frontend presence remains deferred with WebSocket work |
-| Health | `GET /health` | Deployment probe; no application screen |
+| System health | `GET /health`, `/livez`, `/readyz`, `/readyz/realtime` | Deployment probes; no application screen |
 
 Search, attachments, mentions, notification inbox, and WebSocket event schemas are absent from this REST Swagger snapshot. Their FE work remains gated on a published contract.
 
@@ -74,7 +82,7 @@ Search, attachments, mentions, notification inbox, and WebSocket event schemas a
 
 - `Message` includes `id`, `room_id`, `content`, `created_at`, `username`, `revision` (minimum 1), nullable `user_id`, nullable `edited_at`, and nullable `deleted_at`. Phase 1 aligned the frontend type without adding lifecycle UI.
 - `GET /api/v1/rooms/{id}/messages` accepts `limit` from 1 to 100 (default 50) and `before` as a positive message ID. The frontend requests 40 and merges pages by ID. The authenticated sample excluded IDs at or above the cursor and returned a descending page.
-- `POST /api/v1/rooms/{id}/messages` documents content length 1–4000. The Phase 2 length probe returned `400` for 4,001 characters even though `413` is listed as a possible response. Create room name is 1–100; registration username is 3–50 and password has minimum length 8.
+- `POST /api/v1/rooms/{id}/messages` documents nonblank content of at most 4,000 UTF-8 bytes after trimming. Content over that limit returns `400`; an oversized HTTP body returns `413`. Create room name is 1–100; registration username is 3–50 and password has minimum length 8.
 - `PATCH /api/v1/rooms/{id}/messages/{message_id}` takes `{ content, revision }`, returns a Message, and documents `409` for conflict. `DELETE` returns a Message tombstone. These endpoints are not used by the current UI.
 - `GET/PUT /api/v1/rooms/{id}/read-state` returns `{ room_id, last_read_message_id, unread_count }`; PUT requires a positive `last_read_message_id`. Read state is not used by the current UI.
 - Successful membership, ownership, and account-deletion operations can return `204` with no body. The common error schema currently contains only an `error` string; field-specific error codes are not documented.

@@ -109,5 +109,8 @@ describe('Axios session refresh', () => {
     expect(errorMessage(new ApiError(404, 'private room 7 exists'))).toBe(
       'This resource is unavailable or you no longer have access.',
     )
+    expect(errorMessage(new ApiError(413, 'oversized HTTP body'))).toBe(
+      'The request body is too large.',
+    )
   })
 })

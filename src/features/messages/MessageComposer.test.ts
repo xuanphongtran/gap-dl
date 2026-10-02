@@ -39,3 +39,31 @@ it('preserves multiline drafts and sends only on unmodified Enter', async () => 
     app.unmount()
   }
 })
+
+it('blocks a draft that exceeds 4000 UTF-8 bytes and keeps it editable', async () => {
+  const draft = ref('😀'.repeat(1001))
+  const host = document.createElement('div')
+  const app = createApp({
+    render: () =>
+      h(MessageComposer, {
+        modelValue: draft.value,
+        disabled: false,
+        sending: false,
+        error: '',
+        'onUpdate:modelValue': (value: string) => {
+          draft.value = value
+        },
+      }),
+  })
+  app.mount(host)
+  try {
+    expect(host.querySelector('textarea')?.getAttribute('aria-invalid')).toBe('true')
+    expect(host.querySelector('button')?.disabled).toBe(true)
+    expect(host.textContent).toContain('4000-byte UTF-8 limit')
+    draft.value = '😀'.repeat(1000)
+    await nextTick()
+    expect(host.querySelector('button')?.disabled).toBe(false)
+  } finally {
+    app.unmount()
+  }
+})

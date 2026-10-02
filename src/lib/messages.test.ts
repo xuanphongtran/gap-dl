@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { mergeMessages } from './messages'
+import { MAX_MESSAGE_BYTES, mergeMessages, messageContentBytes } from './messages'
 import type { Message } from '../types'
 
 function message(id: number): Message {
@@ -33,5 +33,13 @@ describe('mergeMessages', () => {
       deleted_at: '2026-10-02T00:00:00Z',
     }
     expect(mergeMessages([deleted], [message(4)])[0]).toEqual(deleted)
+  })
+})
+
+describe('messageContentBytes', () => {
+  it('counts trimmed UTF-8 bytes rather than UTF-16 code units', () => {
+    expect(messageContentBytes(`  ${'😀'.repeat(1000)}  `)).toBe(MAX_MESSAGE_BYTES)
+    expect(messageContentBytes('😀'.repeat(1001))).toBe(4004)
+    expect(messageContentBytes('   ')).toBe(0)
   })
 })
