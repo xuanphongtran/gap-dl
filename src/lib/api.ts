@@ -1,5 +1,5 @@
 import { request } from './http'
-import type { Invitation, Message, Profile, Room, RoomMember, TokenPair } from '../types'
+import type { Invitation, Message, Profile, ReadState, Room, RoomMember, TokenPair } from '../types'
 
 export { ApiError, errorMessage, request } from './http'
 
@@ -37,6 +37,14 @@ export const api = {
     }),
   deleteMessage: (roomId: number, messageId: number) =>
     request<Message>(`/api/v1/rooms/${roomId}/messages/${messageId}`, { method: 'DELETE' }),
+  readState: (id: number, signal?: AbortSignal) =>
+    request<ReadState>(`/api/v1/rooms/${id}/read-state`, { signal }),
+  advanceReadState: (id: number, messageId: number, signal?: AbortSignal) =>
+    request<ReadState>(`/api/v1/rooms/${id}/read-state`, {
+      method: 'PUT',
+      data: { last_read_message_id: messageId },
+      signal,
+    }),
   members: (id: number, signal?: AbortSignal) =>
     request<{ members: RoomMember[] }>(`/api/v1/rooms/${id}/members`, { signal }),
   invite: (id: number, userId: number) =>

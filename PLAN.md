@@ -83,9 +83,11 @@ Keep endpoint functions in `src/lib/api.ts`, Axios transport in `src/lib/http.ts
 
 **Dependency:** The Swagger-documented GET/PUT read-state DTO and cursor semantics are verified with test accounts. This slice does not require WebSocket.
 
-- [ ] Add typed `GET/PUT /api/v1/rooms/{id}/read-state` functions and room-scoped Vue Query keys. PUT sends `{ last_read_message_id }`; consume `{ room_id, last_read_message_id, unread_count }`. Advance a cursor only when messages are viewed; debounce writes without moving backward.
-- [ ] Add unread badges to the room list using server state or a documented full-history calculation. Do not infer exact counts from the newest-page cache. Exclude own messages and preserve tombstone-by-ID behavior.
-- [ ] Clear read state on logout, account switch, and membership loss. Test rapid room switches, overlapping writes, reloads, two tabs, leave/rejoin, and failed writes.
+- [x] Add typed `GET/PUT /api/v1/rooms/{id}/read-state` functions and room-scoped Vue Query keys. PUT sends `{ last_read_message_id }`; consume `{ room_id, last_read_message_id, unread_count }`. Advance a cursor only when messages are viewed; debounce writes without moving backward.
+- [x] Add unread badges to the room list using server state or a documented full-history calculation. Do not infer exact counts from the newest-page cache. Exclude own messages and preserve tombstone-by-ID behavior.
+- [x] Clear read state on logout, account switch, and membership loss. Test rapid room switches, overlapping writes, reloads, two tabs, leave/rejoin, and failed writes.
+
+**Completion record (2026-10-02):** Added room-scoped read-state queries, monotonic cursor merging, a debounced visible-message acknowledgement, membership revocation cleanup, and server-backed unread badges. The deployed two-account smoke verified own-message exclusion, tombstones counting by ID, monotonic stale writes, duplicate acknowledgement, membership denial, and cleanup of disposable accounts. Local checks cover cursor merging and API payloads; browser multi-tab convergence and final-host CORS remain release gates.
 
 **Exit gate:** Read cursor and unread count converge with the backend after retries/reloads; no other user's private state is shown.
 

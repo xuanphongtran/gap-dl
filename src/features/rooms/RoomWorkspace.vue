@@ -7,6 +7,7 @@ import PixelAvatar from '../../components/base/PixelAvatar.vue'
 import PixelButton from '../../components/base/PixelButton.vue'
 import PixelField from '../../components/base/PixelField.vue'
 import PixelPanel from '../../components/base/PixelPanel.vue'
+import RoomUnreadBadge from './RoomUnreadBadge.vue'
 import { api, errorMessage } from '../../lib/api'
 import { queryClient, queryKeys } from '../../lib/query'
 import { useActionCooldown, useKeyedActionCooldown } from '../../lib/rate-limit'
@@ -169,6 +170,7 @@ function toggleJoin() {
           >
             <span class="room-glyph">{{ room.visibility === 'private' ? '◆' : '#' }}</span>
             <span class="room-name">{{ room.name }}</span>
+            <RoomUnreadBadge v-if="room.role && profile" :room-id="room.id" :user-id="profile.id" />
             <span class="room-arrow">›</span>
           </RouterLink>
         </nav>

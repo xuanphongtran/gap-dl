@@ -75,7 +75,7 @@ At the Phase 1 checkpoint, these were HTTP client checks, not browser end-to-end
 | Messages | List with `limit`/`before`, send | Implemented |
 | Message lifecycle | `PATCH` and `DELETE /api/v1/rooms/{id}/messages/{message_id}` | Implemented in frontend phase 3; author and forbidden-member behavior verified against the deployed API |
 | Message search | `GET /api/v1/rooms/{id}/messages/search` | Documented; frontend implementation and authenticated behavior pending |
-| Read state | `GET` and `PUT /api/v1/rooms/{id}/read-state` | Documented; planned in frontend phase 4 |
+| Read state | `GET` and `PUT /api/v1/rooms/{id}/read-state` | Implemented in frontend phase 4; deployed two-account smoke verified cursor/unread behavior |
 | Presence | `GET /api/v1/rooms/{id}/presence` | Documented; frontend presence remains deferred with WebSocket work |
 | System health | `GET /health`, `/livez`, `/readyz`, `/readyz/realtime` | Deployment probes; no application screen |
 

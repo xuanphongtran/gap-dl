@@ -44,6 +44,19 @@ it('keeps public-room messages private until the visitor joins', async () => {
     privateReads++
     return [200, { messages: [] }]
   })
+  mock.onGet('/api/v1/rooms/7/read-state').reply(200, {
+    room_id: 7,
+    last_read_message_id: 0,
+    unread_count: 0,
+  })
+  mock.onPut('/api/v1/rooms/7/read-state').reply((config) => [
+    200,
+    {
+      room_id: 7,
+      last_read_message_id: JSON.parse(config.data).last_read_message_id,
+      unread_count: 0,
+    },
+  ])
   mock.onPost('/api/v1/rooms/7/join').reply(() => {
     joined = true
     return [200, { message: 'joined' }]
@@ -120,6 +133,16 @@ it('removes cached private messages and navigates away after membership is revok
           },
         ],
   )
+  mock.onGet('/api/v1/rooms/7/read-state').reply(200, {
+    room_id: 7,
+    last_read_message_id: 0,
+    unread_count: 0,
+  })
+  mock.onPut('/api/v1/rooms/7/read-state').reply(200, {
+    room_id: 7,
+    last_read_message_id: 9,
+    unread_count: 0,
+  })
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [

@@ -9,6 +9,7 @@ import PixelEmptyState from '../../components/base/PixelEmptyState.vue'
 import PixelField from '../../components/base/PixelField.vue'
 import MessageComposer from './MessageComposer.vue'
 import MessageRow from './MessageRow.vue'
+import { useViewedReadState } from './useViewedReadState'
 import { api, ApiError, errorMessage } from '../../lib/api'
 import { MAX_MESSAGE_BYTES, mergeMessages, messageContentBytes } from '../../lib/messages'
 import { clearRoomQueries, queryClient, queryKeys } from '../../lib/query'
@@ -96,6 +97,14 @@ const leaveCooldown = useActionCooldown()
 const joinCooldown = useActionCooldown()
 const joinError = ref('')
 const listEl = ref<HTMLElement | null>(null)
+const readState = useViewedReadState(
+  roomId,
+  computed(() => profile.value?.id),
+  canReadPrivateData,
+  listEl,
+  messages,
+  loseRoomAccess,
+)
 const canManage = computed(() => room.value?.role === 'owner' || room.value?.role === 'moderator')
 const queryError = computed(
   () =>
@@ -501,7 +510,13 @@ function formatDate(value: string) {
         <PixelAlert v-if="joinError" tone="error">{{ joinError }}</PixelAlert>
       </PixelEmptyState>
       <section v-else class="conversation" aria-label="Room messages">
-        <div ref="listEl" class="message-list" role="log" aria-live="polite">
+        <div
+          ref="listEl"
+          class="message-list"
+          role="log"
+          aria-live="polite"
+          @scroll="readState.measure"
+        >
           <PixelEmptyState v-if="loading" class="message-state"
             >Loading conversation...</PixelEmptyState
           >
@@ -517,7 +532,7 @@ function formatDate(value: string) {
           >
             {{ loadingOlder ? 'LOADING...' : '↑ LOAD OLDER MESSAGES' }}
           </button>
-          <div v-for="(message, index) in messages" :key="message.id">
+          <div v-for="(message, index) in messages" :key="message.id" :data-message-id="message.id">
             <div
               v-if="
                 index === 0 ||
@@ -560,6 +575,16 @@ function formatDate(value: string) {
             />
           </div>
         </div>
+        <PixelAlert v-if="readState.error.value" tone="error">
+          Read progress could not be saved. {{ readState.error.value }}
+          <PixelButton :disabled="!!readState.retryAfter.value" @click="readState.retry">
+            {{
+              readState.retryAfter.value
+                ? `RETRY IN ${readState.retryAfter.value}s`
+                : 'RETRY READ STATE'
+            }}
+          </PixelButton>
+        </PixelAlert>
         <MessageComposer
           v-model="draft"
           :disabled="!room"
