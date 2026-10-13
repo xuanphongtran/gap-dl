@@ -4,6 +4,8 @@ References: [frontend specification](./SPEC.md) and the deployed [Swagger JSON](
 
 The latest reviewed operation matrix and unresolved runtime checks are in [docs/API_CONTRACT.md](./docs/API_CONTRACT.md).
 
+**Sandbox acceptance update (2026-10-13):** [Browser acceptance evidence](./docs/ACCEPTANCE_2026-10-13.md) verifies the Phase 3 manager/reload checks and Phase 4 multi-tab/retry journeys on `https://chat-sb.xuanphong.io.vn`. Sandbox routes and CORS pass; CI at `2da84f3` passes. Private-room re-invitation after removal is blocked: the backend returns the old accepted invitation while the removed member remains unauthorized. Swagger now reports 31 paths and 41 operations, including attachment and notification/preference endpoints. Rapid room switches and overlapping read-write tests remain open.
+
 **Current frontend baseline (2026-10-02):** Vue 3, TypeScript, Router, Pinia session state, Axios transport, Vue Query server state, pixel UI, ESLint, Prettier, Vitest, and GitHub Actions are in place. Basic REST rooms, invitations, membership actions, profile, text messages, pagination, and latest-page polling are implemented. Two-account HTTP behavior was verified on the target deployment; browser end-to-end behavior remains open. WebSocket and SSE are deferred.
 
 ## 0. Frontend source and component foundation — P0, implement first
@@ -44,8 +46,8 @@ Keep endpoint functions in `src/lib/api.ts`, Axios transport in `src/lib/http.ts
 - [x] Inspect the deployed Swagger JSON: the latest 2026-10-02 snapshot reports API 1.0 with 24 paths and 31 operations, including message edit/delete, room read state, room presence, message search, and system readiness routes. The error schema currently exposes an `error` string.
 - [x] Recheck Swagger at implementation time; record target deployment version and compare request/response schemas with `src/types.ts` and `src/lib/api.ts`, including nullable deleted authors and message revision/tombstone fields. Verify the current text-chat contracts with authenticated HTTP requests.
 - [ ] Confirm target origin, CORS, HTTPS, route availability, `expires_at`, refresh rotation, `before` ordering/limit, validation bounds, `Retry-After`, `X-Request-ID`, and stable error shape. Most items were observed; final-host CORS, boundary responses, and `Retry-After` still need verification. Refresh did not rotate the refresh token in the sampled request.
-- [ ] Create disposable development accounts and room fixtures. Register/login/refresh, create/invite/accept/send/history/leave/profile/delete-conflict, private-room concealment, role changes, removal, owner transfer, and public join passed via HTTP. Browser invitation/send/history remains to be completed.
-- [x] Keep `npm run check` green locally. Add focused mocked HTTP contract tests and an opt-in live Swagger check; remote CI remains to be verified after push.
+- [x] Create development accounts and room fixtures. The earlier authenticated HTTP baseline and the 2026-10-13 sandbox browser create/invite/accept/send/history/leave journeys passed. The owner and removed-member fixture remain for blocker reproduction; auxiliary accounts were deleted. Re-invitation after removal remains blocked and is recorded in the acceptance report.
+- [x] Keep `npm run check` green locally. Add focused mocked HTTP contract tests and an opt-in live Swagger check. Local checks and remote CI at `2da84f3` passed on 2026-10-13.
 
 **Exit gate:** A versioned contract matrix identifies deployed routes and fields; existing text-chat journeys work with two accounts, or response-backed mismatches are recorded as blockers.
 
@@ -73,7 +75,7 @@ Keep endpoint functions in `src/lib/api.ts`, Axios transport in `src/lib/http.ts
 - [x] Add edit/delete controls to eligible message rows with keyboard support, edit draft preservation, destructive confirmation, and clear edited/deleted display.
 - [x] Merge history, newest-page, and mutation responses by message ID and increasing revision. Keep tombstones ID-stable and content-free. Preserve scroll position while older pages load. Event merging remains in deferred Phase 5.
 - [x] On revision conflict, preserve the local edit and display the fresh server version with explicit retry/discard choices. A repeated delete returned the same tombstone in the live smoke.
-- [ ] Test author/manager/forbidden cases, concurrent edits, delete while viewing, out-of-order results, page overlap, and reload. Author and forbidden-member behavior, concurrent revision conflict, repeated delete, and tombstone history passed against the deployed API; mocked tests cover owner controls, draft preservation, page overlap, and stale results. Manager authorization and browser reload remain to verify.
+- [x] Test author/manager/forbidden cases, concurrent edits, delete while viewing, out-of-order results, page overlap, and reload. Earlier HTTP and mocked checks cover forbidden members, repeated delete, overlap, and stale results. The 2026-10-13 sandbox browser smoke verifies author edits, explicit conflict retry with draft preservation, owner/moderator deletion, forbidden moderator edits, and edited/tombstone reloads.
 
 **Phase 3 verification (2026-10-02):** A disposable account joined an existing public room, sent, edited, retried a stale revision, deleted twice, and read the tombstone; a second two-account check confirmed non-author edit/delete return `403`. All three test accounts left and were deleted. The live browser URL `https://chat.xuanphong.io.vn/login` returned Vercel `404: NOT_FOUND` before Vue loaded; the repository now includes an SPA rewrite. Confirm direct `/login` and room routes after deployment.
 
@@ -85,7 +87,8 @@ Keep endpoint functions in `src/lib/api.ts`, Axios transport in `src/lib/http.ts
 
 - [x] Add typed `GET/PUT /api/v1/rooms/{id}/read-state` functions and room-scoped Vue Query keys. PUT sends `{ last_read_message_id }`; consume `{ room_id, last_read_message_id, unread_count }`. Advance a cursor only when messages are viewed; debounce writes without moving backward.
 - [x] Add unread badges to the room list using server state or a documented full-history calculation. Do not infer exact counts from the newest-page cache. Exclude own messages and preserve tombstone-by-ID behavior.
-- [x] Clear read state on logout, account switch, and membership loss. Test rapid room switches, overlapping writes, reloads, two tabs, leave/rejoin, and failed writes.
+- [x] Clear read state on logout, account switch, and membership loss. Existing account-switch tests and the sandbox browser removal/logout checks verify cleanup. Browser reload, two-tab convergence after foregrounding, and explicit retry after an injected failed write passed on 2026-10-13.
+- [ ] Complete deterministic rapid-room-switch and overlapping-write checks. Retest private-room rejoin after the confirmed re-invitation blocker is resolved.
 
 **Completion record (2026-10-02):** Added room-scoped read-state queries, monotonic cursor merging, a debounced visible-message acknowledgement, membership revocation cleanup, and server-backed unread badges. The deployed two-account smoke verified own-message exclusion, tombstones counting by ID, monotonic stale writes, duplicate acknowledgement, membership denial, and cleanup of disposable accounts. Local checks cover cursor merging and API payloads; browser multi-tab convergence and final-host CORS remain release gates.
 

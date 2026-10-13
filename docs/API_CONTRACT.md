@@ -2,6 +2,12 @@
 
 This is the frontend's reviewed snapshot of the deployed [Swagger JSON](https://gogo-dl.onrender.com/swagger/doc.json). Recheck that document before changing endpoint code. The snapshot records documentation, not proof that authenticated operations work with real accounts.
 
+## Latest review: 2026-10-13
+
+Swagger still reports API version 1.0, now with 31 paths and 41 operations, SHA-256 `a1791d35c2d14d96664e806639a7c89415e716487c1b3142c74cff8df3c8a8de`. `npm run contract:check` passes the current client's required routes and core DTO fields. Attachment upload/complete/get/delete, notification inbox/read, and room/account notification preferences are now documented; runtime authorization, privacy, and provider behavior for these additions have not been accepted.
+
+[Sandbox browser acceptance](./ACCEPTANCE_2026-10-13.md) verifies invitation/send/history, lifecycle manager permissions and reloads, multi-tab read state, and explicit retry after an injected failed read-state write. Sandbox CORS and route fallback pass. Re-invitation after private-room removal is blocked: POST returns the original accepted invitation, the recipient has no pending invitation, and room access remains 404. A natural login 429 was observed with UI feedback; Retry-After/countdown remain unverified. An authenticated profile response exposes only Content-Length through CORS, leaving browser access to X-Request-ID and Retry-After unresolved. The sections below preserve the earlier snapshot and its historical findings.
+
 ## Snapshot and reachability
 
 | Item | Observed on 2026-10-02 |
@@ -86,8 +92,8 @@ Attachments, mentions, notification inbox, and WebSocket event schemas are absen
 - `Message` includes `id`, `room_id`, `content`, `created_at`, `username`, `revision` (minimum 1), nullable `user_id`, nullable `edited_at`, and nullable `deleted_at`. Phase 1 aligned the frontend type without adding lifecycle UI.
 - `GET /api/v1/rooms/{id}/messages` accepts `limit` from 1 to 100 (default 50) and `before` as a positive message ID. The frontend requests 40 and merges pages by ID. The authenticated sample excluded IDs at or above the cursor and returned a descending page.
 - `POST /api/v1/rooms/{id}/messages` documents nonblank content of at most 4,000 UTF-8 bytes after trimming. Content over that limit returns `400`; an oversized HTTP body returns `413`. Create room name is 1–100; registration username is 3–50 and password has minimum length 8.
-- `PATCH /api/v1/rooms/{id}/messages/{message_id}` takes `{ content, revision }`, returns a Message, and documents `409` for conflict. `DELETE` returns a Message tombstone. These endpoints are not used by the current UI.
-- `GET/PUT /api/v1/rooms/{id}/read-state` returns `{ room_id, last_read_message_id, unread_count }`; PUT requires a positive `last_read_message_id`. Read state is not used by the current UI.
+- `PATCH /api/v1/rooms/{id}/messages/{message_id}` takes `{ content, revision }`, returns a Message, and documents `409` for conflict. `DELETE` returns a Message tombstone. The Phase 3 UI uses both endpoints; the sandbox browser smoke verifies conflicts, permissions, and reload persistence.
+- `GET/PUT /api/v1/rooms/{id}/read-state` returns `{ room_id, last_read_message_id, unread_count }`; PUT requires a positive `last_read_message_id`. The Phase 4 UI uses these endpoints for visible-message acknowledgements and server-backed unread badges.
 - Successful membership, ownership, and account-deletion operations can return `204` with no body. The common error schema currently contains only an `error` string; field-specific error codes are not documented.
 
 ## Open verification gates
