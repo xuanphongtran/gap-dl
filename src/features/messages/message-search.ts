@@ -1,3 +1,4 @@
+import { queryClient, queryKeys } from '../../lib/query'
 import { messageContentBytes, mergeMessages } from '../../lib/messages'
 import type { Message, SearchMessagesResponse } from '../../types'
 
@@ -58,4 +59,10 @@ export function mergeSearchResults(pages: SearchMessagesResponse[], known: Messa
       )
     })
     .reverse()
+}
+
+export async function invalidateRoomSearch(roomId: number): Promise<void> {
+  const queryKey = queryKeys.messageSearch(roomId)
+  await queryClient.cancelQueries({ queryKey })
+  await queryClient.invalidateQueries({ queryKey })
 }
