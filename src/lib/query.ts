@@ -10,6 +10,9 @@ export const queryKeys = {
   room: (id: number) => ['room', id] as const,
   members: (id: number) => ['room', id, 'members'] as const,
   latestMessages: (id: number) => ['room', id, 'latest-messages'] as const,
+  messageSearch: (id: number) => ['room', id, 'message-search'] as const,
+  searchMessages: (id: number, userId: number, query: string) =>
+    ['room', id, 'message-search', userId, query] as const,
   messageHistory: (id: number) => ['room', id, 'message-history'] as const,
   readState: (id: number, userId: number) => ['room', id, 'read-state', userId] as const,
 }

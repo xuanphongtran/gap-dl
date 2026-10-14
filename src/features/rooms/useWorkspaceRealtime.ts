@@ -7,6 +7,7 @@ import { mergeMessages } from '../../lib/messages'
 import { clearRoomQueries, queryClient, queryKeys } from '../../lib/query'
 import { parseRealtimeFrame, websocketURL, type RealtimeEvent } from '../../lib/realtime'
 import { readSession } from '../../lib/session'
+import { invalidateRoomSearch } from '../messages/message-search'
 import { retainReadCursor } from '../messages/read-state'
 import { recoverMessageGap, refreshRetainedMessages } from '../messages/recoverMessageGap'
 import type { Message, ReadState } from '../../types'
@@ -279,6 +280,7 @@ export function useWorkspaceRealtime(): RealtimeContext {
       queryClient.setQueryData(queryKeys.latestMessages(room.id), merged.slice(-40))
       if (history && refreshedHistory)
         queryClient.setQueryData(queryKeys.messageHistory(room.id), refreshedHistory)
+      void invalidateRoomSearch(room.id)
       room.applyRecovered(merged)
       gapRoomId.value = null
       room.setPaused(false)

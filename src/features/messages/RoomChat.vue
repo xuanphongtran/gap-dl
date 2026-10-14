@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed, inject, nextTick, onUnmounted, ref, watch } from 'vue'
+import { useEventListener } from '@vueuse/core'
+import RoomMessageSearch from './RoomMessageSearch.vue'
 import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/vue-query'
 import { useRoute, useRouter } from 'vue-router'
 import PixelAlert from '../../components/base/PixelAlert.vue'
@@ -9,9 +11,11 @@ import PixelEmptyState from '../../components/base/PixelEmptyState.vue'
 import PixelField from '../../components/base/PixelField.vue'
 import MessageComposer from './MessageComposer.vue'
 import MessageRow from './MessageRow.vue'
+import { invalidateRoomSearch } from './message-search'
 import { useViewedReadState } from './useViewedReadState'
 import { realtimeKey } from '../rooms/realtime-context'
 import { api, ApiError, errorMessage } from '../../lib/api'
+import { readSession } from '../../lib/session'
 import { MAX_MESSAGE_BYTES, mergeMessages, messageContentBytes } from '../../lib/messages'
 import { clearRoomQueries, queryClient, queryKeys } from '../../lib/query'
 import { useActionCooldown, useKeyedActionCooldown } from '../../lib/rate-limit'
@@ -19,6 +23,36 @@ import type { Message } from '../../types'
 
 const realtime = inject(realtimeKey, undefined)
 const realtimePaused = ref(false)
+const searchOpen = ref(false)
+const searchButton = ref<InstanceType<typeof PixelButton> | null>(null)
+let searchScrollTop = 0
+function openSearch() {
+  if (!canReadPrivateData.value || !profile.value?.id) return
+  searchScrollTop = listEl.value?.scrollTop || 0
+  searchOpen.value = true
+}
+function closeSearch(restore = true) {
+  if (!searchOpen.value) return
+  const id = roomId.value,
+    user = profile.value?.id
+  searchOpen.value = false
+  if (!restore) return
+  restoringScroll = true
+  void nextTick(() => {
+    if (id === roomId.value && user === profile.value?.id && isMember.value && !searchOpen.value) {
+      if (listEl.value) listEl.value.scrollTop = searchScrollTop
+      const button = searchButton.value?.$el
+      if (button instanceof HTMLElement) button.focus()
+    }
+    void nextTick(() => {
+      restoringScroll = false
+    })
+  })
+}
+useEventListener(window, 'session:changed', (event: Event) => {
+  if (!readSession() || (event instanceof CustomEvent && event.detail?.accountChanged === true))
+    closeSearch(false)
+})
 const seenEpoch = ref(0)
 let recoveringScrollTop = 0
 let restoringScroll = false
@@ -113,7 +147,7 @@ const listEl = ref<HTMLElement | null>(null)
 const readState = useViewedReadState(
   roomId,
   computed(() => profile.value?.id),
-  canReadPrivateData,
+  computed(() => canReadPrivateData.value && !searchOpen.value),
   listEl,
   messages,
   loseRoomAccess,
@@ -135,6 +169,7 @@ const visibleError = computed(
 watch(
   roomId,
   (id, oldId) => {
+    closeSearch(false)
     if (oldId) draftByRoom.set(oldId, draft.value)
     draft.value = draftByRoom.get(id) || ''
     error.value = ''
@@ -147,6 +182,8 @@ watch(
   },
   { flush: 'sync' },
 )
+
+watch([() => profile.value?.id, isMember], () => closeSearch(false), { flush: 'sync' })
 
 watch(
   [roomId, () => profile.value?.id, isMember],
@@ -210,6 +247,7 @@ function openEditor(message: Message) {
 function loseRoomAccess(id: number) {
   if (id !== roomId.value || accessLost.value) return
   accessLost.value = true
+  closeSearch(false)
   draft.value = ''
   draftByRoom.delete(id)
   seenMessages.delete(id)
@@ -226,6 +264,7 @@ watch(messages, (_next, previous) => {
   if (realtimePaused.value || restoringScroll) return
   const editing = _next.find((message) => message.id === editingMessageId.value)
   if (editing?.deleted_at && !editConflict.value) editConflict.value = editing
+  if (searchOpen.value) return
   if (previous.length && _next.at(-1)?.id === previous.at(-1)?.id) return
   const element = listEl.value
   const nearBottom =
@@ -234,8 +273,10 @@ watch(messages, (_next, previous) => {
 })
 
 function scrollBottom() {
+  if (searchOpen.value) return
   nextTick(() => {
-    if (listEl.value && !realtimePaused.value) listEl.value.scrollTop = listEl.value.scrollHeight
+    if (listEl.value && !realtimePaused.value && !searchOpen.value)
+      listEl.value.scrollTop = listEl.value.scrollHeight
   })
 }
 
@@ -282,6 +323,7 @@ function applyMessageResult(id: number, message: Message) {
   queryClient.setQueryData<Message[]>(queryKeys.latestMessages(id), (current) =>
     mergeMessages(current || [], [message]),
   )
+  void invalidateRoomSearch(id)
   void queryClient.invalidateQueries({ queryKey: queryKeys.messageHistory(id), exact: true })
 }
 
@@ -552,6 +594,16 @@ function formatDate(value: string) {
         </p>
       </div>
       <PixelButton
+        ref="searchButton"
+        v-if="isMember"
+        class="header-action"
+        aria-label="Search room messages"
+        :aria-expanded="searchOpen"
+        :disabled="!canReadPrivateData"
+        @click="searchOpen ? closeSearch() : openSearch()"
+        >⌕ <span>SEARCH</span></PixelButton
+      >
+      <PixelButton
         v-if="isMember"
         class="header-action"
         :aria-expanded="showMembers"
@@ -581,7 +633,18 @@ function formatDate(value: string) {
         <PixelAlert v-if="joinError" tone="error">{{ joinError }}</PixelAlert>
       </PixelEmptyState>
       <section v-else class="conversation" aria-label="Room messages">
+        <RoomMessageSearch
+          v-if="searchOpen"
+          :key="`${roomId}:${profile?.id}`"
+          :room-id="roomId"
+          :user-id="profile?.id"
+          :enabled="canReadPrivateData"
+          :known-messages="messages"
+          @close="closeSearch()"
+          @access-lost="loseRoomAccess"
+        />
         <div
+          v-show="!searchOpen"
           ref="listEl"
           class="message-list"
           role="log"
