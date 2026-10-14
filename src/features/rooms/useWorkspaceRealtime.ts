@@ -16,6 +16,7 @@ export function useWorkspaceRealtime(): RealtimeContext {
   const status = ref<RealtimeStatus>('connecting')
   const gapRoomId = ref<number | null>(null)
   const url = shallowRef<string>()
+  const synchronizedAnchors = new Map<number, number>()
   let active: RealtimeRoom | undefined
   let generation = 0
   let roomGeneration = 0
@@ -66,6 +67,7 @@ export function useWorkspaceRealtime(): RealtimeContext {
   function closeSocket() {
     intentionalClose = true
     socket.close()
+    socket.data.value = null
     intentionalClose = false
     joined = undefined
   }
@@ -115,6 +117,7 @@ export function useWorkspaceRealtime(): RealtimeContext {
       userId = profile.id
       if (active && active.userId !== userId) {
         const previous = active
+        synchronizedAnchors.clear()
         active = undefined
         roomGeneration++
         previous.setPaused(true)
@@ -134,8 +137,11 @@ export function useWorkspaceRealtime(): RealtimeContext {
     }
   }
   function revoke(id: number) {
-    if (joined === id) socket.send(JSON.stringify({ type: 'leave', room_id: String(id) }), false)
-    joined = undefined
+    synchronizedAnchors.delete(id)
+    if (joined === id) {
+      socket.send(JSON.stringify({ type: 'leave', room_id: String(id) }), false)
+      joined = undefined
+    }
     if (active?.id === id) {
       const room = active
       active = undefined
@@ -225,6 +231,9 @@ export function useWorkspaceRealtime(): RealtimeContext {
       roomGeneration === roomEpoch &&
       active === room
     const known = room.messages().slice()
+    const anchor = synchronizedAnchors.get(room.id)
+    // A polled newest page is not proof that the disconnect gap was bridged.
+    const baseline = anchor === undefined ? known : known.filter((message) => message.id <= anchor)
     if (suspend) {
       room.setPaused(true)
       status.value = 'recovering'
@@ -242,7 +251,7 @@ export function useWorkspaceRealtime(): RealtimeContext {
         queryKeys.messageHistory(room.id),
       )
       const [result, members, readState, pages] = await Promise.all([
-        recoverMessageGap(room.id, reset ? [] : known, controller.signal),
+        recoverMessageGap(room.id, reset ? [] : baseline, controller.signal),
         api.members(room.id, controller.signal),
         api.readState(room.id, controller.signal),
         Promise.all(
@@ -260,7 +269,8 @@ export function useWorkspaceRealtime(): RealtimeContext {
         status.value = 'fallback'
         return
       }
-      const merged = mergeMessages(result.messages, pages.flat())
+      const merged = mergeMessages(reset ? [] : known, [...result.messages, ...pages.flat()])
+      synchronizedAnchors.set(room.id, Math.max(0, ...result.messages.map((message) => message.id)))
       queryClient.setQueryData(queryKeys.room(room.id), authorized)
       queryClient.setQueryData(queryKeys.members(room.id), members)
       queryClient.setQueryData<ReadState>(queryKeys.readState(room.id, room.userId), (current) =>
@@ -332,6 +342,7 @@ export function useWorkspaceRealtime(): RealtimeContext {
     userId = undefined
     const next = readSession()
     if (!next || (event instanceof CustomEvent && event.detail?.accountChanged === true)) {
+      synchronizedAnchors.clear()
       const previous = active
       active = undefined
       queryClient.clear()

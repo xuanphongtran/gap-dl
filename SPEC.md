@@ -1,6 +1,6 @@
 # Frontend product specification: Gogo DL Web Chat
 
-**Status:** Frontend planning update, 2026-10-02. The REST contract source is the deployed [Swagger JSON](https://gogo-dl.onrender.com/swagger/doc.json), checked after the API update on 2026-10-02 (Swagger 2.0, API version 1.0, 24 paths, 31 operations). Check it again before implementing each feature and verify authenticated behavior against the API at `VITE_API_BASE_URL`. WebSocket and SSE remain frontend TODOs.
+**Status:** Frontend planning update, 2026-10-02. The REST contract source is the deployed [Swagger JSON](https://gogo-dl.onrender.com/swagger/doc.json), checked after the API update on 2026-10-02 (Swagger 2.0, API version 1.0, 24 paths, 31 operations). Check it again before implementing each feature and verify authenticated behavior against the API at `VITE_API_BASE_URL`. The first WebSocket slice is implemented on `feat/websocket-integration` with REST recovery; SSE and presence/typing UI remain TODOs. See [the reviewed WS contract](./docs/WEBSOCKET_CONTRACT.md).
 
 Swagger documents `PATCH/DELETE /api/v1/rooms/{id}/messages/{message_id}`, `GET/PUT /api/v1/rooms/{id}/read-state`, `GET /api/v1/rooms/{id}/presence`, and `GET /api/v1/rooms/{id}/messages/search`. Attachment, mention/inbox, and WebSocket event contracts are not present in this REST document. Endpoint presence in Swagger does not confirm authenticated runtime behavior.
 
@@ -64,7 +64,7 @@ The initial base set covers buttons, form fields, panels, alerts, empty/loading 
 - `GET/PUT /api/v1/rooms/{id}/read-state` returns `{ room_id, last_read_message_id, unread_count }`; PUT takes `{ last_read_message_id }` with a positive integer. Advance the room cursor only when messages are actually viewed, never merely because a list query loaded. Keep writes monotonic and retry safely. The returned cursor can be `0`; own messages are excluded from unread; tombstones still count by ID.
 - Scope read state to current account and membership; clear it on logout or room removal. Show unread counts from an authoritative API projection or a documented full-history calculation, never only from the newest 40-message cache.
 - Presence is visible only to current room members and aggregates a user's subscriptions across tabs. Reconnection requires an authorized snapshot. Typing is ephemeral, throttled, and expires; it is not durable Vue Query state.
-- Presence and typing UI remain TODO until frontend WebSocket integration. REST read state can ship independently.
+- Presence and typing UI remain TODO until their published schemas match the deployed runtime. The first WebSocket slice uses REST read state independently.
 
 ## 7. Search, attachments, and inbox
 
@@ -75,9 +75,9 @@ The initial base set covers buttons, form fields, panels, alerts, empty/loading 
 ## 8. Transport, state, and privacy
 
 - Keep typed endpoints in `src/lib/api.ts`, Axios transport and refresh in `src/lib/http.ts`, Vue Query keys in `src/lib/query.ts`, and Pinia for session state. Component refs own drafts and panels. Pass query abort signals to cancellable reads and clear private cache on account change.
-- Poll only the newest message page every five seconds while visible; older pages load on demand. The current `before` cursor cannot recover a gap larger than one newest page. Add a recovery prompt or full history reload until a confirmed `after` cursor or snapshot contract exists.
-- Frontend WebSocket and SSE remain TODO. When requested, use `@vueuse/core` for WebSocket lifecycle after confirming URL, auth transport, origin, command/event schemas, reconnect behavior, and whether HTTP remains the write path. Never send fabricated authoritative events from the browser.
-- On eventual reconnect, reauthorize subscriptions, reload an authorized snapshot/history/read state, deduplicate by ID/revision, and apply membership revocation before displaying further private data. Sequence/recovery metadata and cross-instance guarantees are contract gates, not assumptions. SSE requires its own backend contract.
+- Poll the newest message page every five seconds while visible; older pages load on demand. WebSocket recovery bridges gaps with `before` from a synchronized history anchor, at most ten additional 40-message pages. Beyond that bound, require explicit conversation reload while preserving the composer draft.
+- Use `@vueuse/core` for the authorized per-tab WebSocket lifecycle. Treat documented best-effort events as signals to reconcile REST state; keep REST writes and polling until lifecycle/read-state event coverage is complete. Send unbuffered join/leave commands only for authorized active rooms; never fabricate authoritative events. SSE remains deferred.
+- On reconnect or foreground recovery, reauthorize subscriptions, reconcile history/read state, deduplicate by ID/revision, and apply membership revocation before displaying further private data. Preserve drafts during token refresh, but clear them immediately on an explicit account change. Sequence/recovery metadata and cross-instance guarantees are contract gates, not assumptions. SSE requires its own backend contract.
 - Safe reads may retry transient failures; writes require confirmed idempotency before automatic replay. Honor `Retry-After` and use bounded backoff for readiness failures.
 
 ## 9. Visual and accessibility requirements

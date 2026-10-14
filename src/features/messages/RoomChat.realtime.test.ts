@@ -206,3 +206,13 @@ it('does not reset reading position during an ordinary live update', async () =>
   await expect.poll(() => host.textContent).toContain('Private 2')
   expect(list.scrollTop).toBe(500)
 })
+
+it('explains offline recovery inside the conversation when mobile navigation is hidden', async () => {
+  const { host } = await mount()
+  vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false)
+  window.dispatchEvent(new Event('offline'))
+  await nextTick()
+  expect(host.querySelector('.conversation')?.textContent).toContain('Offline')
+  expect((host.querySelector('.composer textarea') as HTMLTextAreaElement).disabled).toBe(true)
+  expect(host.querySelector('.message-list')?.textContent).not.toContain('Private 1')
+})

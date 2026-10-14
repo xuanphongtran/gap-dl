@@ -94,16 +94,18 @@ Keep endpoint functions in `src/lib/api.ts`, Axios transport in `src/lib/http.ts
 
 **Exit gate:** Read cursor and unread count converge with the backend after retries/reloads; no other user's private state is shown.
 
-## 5. Deferred real-time integration — TODO
+## 5. WebSocket-assisted REST integration — P1
 
-**Start only when the user brings frontend WebSocket/SSE work into scope.** The existence of a backend protocol alone does not change this boundary.
+**Scope approved on 2026-10-13.** [Reviewed contract and verification](./docs/WEBSOCKET_CONTRACT.md) and [approved design](./docs/superpowers/specs/2026-10-13-websocket-design.md) define the first release. SSE, presence/typing presentation, and distributed-delivery guarantees remain deferred.
 
-- [ ] Confirm WebSocket URL, auth transport, allowed origins, join/leave commands, error events, room/presence/typing/lifecycle envelopes, reconnect rules, and server revision/sequence metadata. Decide whether SSE has a supported role.
-- [ ] Use `@vueuse/core` for WebSocket lifecycle. Keep REST as the recovery path and, unless the contract changes, the write path. Subscribe only to authorized rooms; close/revoke on logout or membership loss.
-- [ ] Reconcile snapshots/history/read state after reconnect, dedupe by ID/revision, and handle gaps/unknown schema by pausing private rendering and refetching. Retain HTTP polling until the replacement is verified, then remove redundant traffic.
-- [ ] Add bounded reconnect/backoff, offline UI, multi-tab presence, typing expiry, and tests for revocation, stale events, missed updates, and server drain (`1001`). Do not claim cross-instance guarantees before they are verified against the deployed service.
+- [x] Confirm URL, access-JWT query transport, origin handling, join/leave commands, documented envelopes, newline batching, no replay, and drain 1001. Authenticated sandbox-origin upgrade and native development-origin browser connections passed. Runtime presence envelopes are absent from AsyncAPI; lifecycle events lack complete revision/tombstone coverage.
+- [x] Use `@vueuse/core` for one connection per authenticated tab. Subscribe only after REST authorization, close on logout/account change, and process membership revocation before data events. Keep REST for durable state and all writes.
+- [x] Reconcile history/read state after reconnect and foreground recovery; preserve drafts/scroll, dedupe by ID/revision, bridge up to ten additional pages, and expose explicit reload beyond the bound. Keep HTTP polling because lifecycle/read-state event coverage is incomplete.
+- [x] Add bounded reconnect/backoff and offline/retry UI. Tests cover token rotation, account/room races, stale frames, malformed batches, revocation, missed pages, failed connections, and drain 1001. Local-branch browser smoke with the deployed backend covers invitations, message events, reconnect, revocation, and logout at desktop/mobile sizes.
+- [ ] Verify the changed frontend after deployment to the final host, including multiple real browser tabs. The origin handshake check does not prove that this feature branch is deployed there.
+- [ ] Verify published presence/typing/lifecycle schemas and distributed recovery before their UI or delivery guarantees enter scope. SSE has no verified contract.
 
-**Exit gate:** Two accounts and multiple tabs converge after reconnect and membership changes without private-data leaks; degraded transport has an explicit REST fallback.
+**Exit gate for this slice:** Authorized REST state converges after connection loss and membership changes, stale private callbacks cannot repopulate another account, and transport failure exposes guarded REST recovery. Final deployed-browser acceptance remains open; the independent private-room re-invitation blocker remains a release limitation.
 
 ## 6. Search, attachments, and inbox — P2
 
@@ -128,7 +130,8 @@ Keep endpoint functions in `src/lib/api.ts`, Axios transport in `src/lib/http.ts
 Source structure + base components → Contract inventory → Hardening/membership
                                              └───────→ Message lifecycle → REST read state
                                              └───────→ Search → Attachments → Inbox
-Deferred by product scope: WebSocket/SSE → Presence/typing → Distributed recovery
+Current transport slice: WebSocket-assisted REST updates
+Deferred: SSE → Presence/typing → Distributed recovery
 ```
 
-Complete the source and base-component foundation first. Swagger already documents lifecycle and read-state routes; those slices still need authenticated verification. Rich messaging waits for API release and provider gates. WebSocket/SSE remains a TODO under the current frontend scope.
+Complete the source and base-component foundation first. Swagger already documents lifecycle and read-state routes; those slices still need authenticated verification. Rich messaging waits for API release and provider gates. The first WebSocket slice is implemented with REST recovery; SSE, presence/typing, and distributed guarantees remain deferred.

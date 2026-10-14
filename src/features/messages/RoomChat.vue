@@ -588,6 +588,9 @@ function formatDate(value: string) {
             <span v-if="realtime?.gapRoomId.value === roomId"
               >Some conversation history needs to be reloaded.</span
             >
+            <span v-else-if="realtime?.status.value === 'offline'"
+              >Offline. Reconnect to restore this conversation.</span
+            >
             <span v-else>Checking conversation access and updates…</span>
             <PixelButton
               v-if="realtime?.gapRoomId.value === roomId"

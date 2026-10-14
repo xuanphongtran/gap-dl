@@ -379,3 +379,105 @@ it('clears the active private room immediately for an explicit account switch', 
   expect(h.revoked.value).toBe(true)
   expect(queryClient.getQueryData(queryKeys.latestMessages(7))).toBeUndefined()
 })
+
+it('bridges from the last synchronized anchor even if polling already exposed a newer page', async () => {
+  const h = setup(),
+    socket = await connected()
+  await expect.poll(() => h.context.status.value).toBe('connected')
+  h.known.value = [message(1), message(46)]
+  queryClient.setQueryData(queryKeys.latestMessages(7), [message(46)])
+  server = Array.from({ length: 46 }, (_, i) => message(46 - i))
+  mock.onGet('/api/v1/rooms/7/messages').reply((config) => [
+    200,
+    {
+      messages: server
+        .filter((m) => config.params.before === undefined || m.id < config.params.before)
+        .slice(0, 40),
+    },
+  ])
+  socket.message(
+    JSON.stringify({
+      type: 'message',
+      room_id: '7',
+      payload: {
+        id: 46,
+        user_id: 1,
+        username: 'owner',
+        content: 'hint',
+        created_at: '2026-10-14T00:00:00Z',
+      },
+    }),
+  )
+  await expect
+    .poll(() => h.known.value.map((m) => m.id))
+    .toEqual(Array.from({ length: 46 }, (_, i) => i + 1))
+})
+
+it('keeps the active subscription when a late revocation concerns another room', async () => {
+  const h = setup(),
+    socket = await connected()
+  await expect.poll(() => h.context.status.value).toBe('connected')
+  h.unregister()
+  h.context.registerRoom({
+    id: 8,
+    userId: 2,
+    messages: () => [],
+    setPaused: () => {},
+    applyRecovered: () => {},
+    reset: () => {},
+    onAccessLost: () => {},
+  })
+  await expect
+    .poll(() => socket.sent.map((s) => JSON.parse(s)))
+    .toContainEqual({ type: 'join', room_id: '8' })
+  socket.message(
+    JSON.stringify({
+      type: 'error',
+      room_id: '7',
+      payload: { code: 'membership_revoked', message: 'old room' },
+    }),
+  )
+  h.context.registerRoom({
+    id: 9,
+    userId: 2,
+    messages: () => [],
+    setPaused: () => {},
+    applyRecovered: () => {},
+    reset: () => {},
+    onAccessLost: () => {},
+  })
+  expect(socket.sent.map((s) => JSON.parse(s))).toContainEqual({ type: 'leave', room_id: '8' })
+})
+
+it('retains the synchronized anchor when returning to a previously viewed room', async () => {
+  const h = setup()
+  await connected()
+  await expect.poll(() => h.context.status.value).toBe('connected')
+  h.unregister()
+  h.known.value = [message(1), message(46)]
+  server = Array.from({ length: 46 }, (_, i) => message(46 - i))
+  mock.onGet('/api/v1/rooms/7/messages').reply((config) => [
+    200,
+    {
+      messages: server
+        .filter((m) => config.params.before === undefined || m.id < config.params.before)
+        .slice(0, 40),
+    },
+  ])
+  h.context.registerRoom({
+    id: 7,
+    userId: 2,
+    messages: () => h.known.value,
+    setPaused: (p) => {
+      h.paused.value = p
+    },
+    applyRecovered: (m) => {
+      h.known.value = m
+    },
+    reset: () => {},
+    onAccessLost: () => {},
+  })
+  await expect
+    .poll(() => h.known.value.map((m) => m.id))
+    .toEqual(Array.from({ length: 46 }, (_, i) => i + 1))
+})
