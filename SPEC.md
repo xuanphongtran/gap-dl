@@ -2,7 +2,7 @@
 
 **Status:** Frontend planning update, 2026-10-02. The REST contract source is the deployed [Swagger JSON](https://gogo-dl.onrender.com/swagger/doc.json), checked after the API update on 2026-10-02 (Swagger 2.0, API version 1.0, 24 paths, 31 operations). Check it again before implementing each feature and verify authenticated behavior against the API at `VITE_API_BASE_URL`. The first WebSocket slice is implemented on `feat/websocket-integration` with REST recovery; SSE and presence/typing UI remain TODOs. See [the reviewed WS contract](./docs/WEBSOCKET_CONTRACT.md).
 
-Swagger documents `PATCH/DELETE /api/v1/rooms/{id}/messages/{message_id}`, `GET/PUT /api/v1/rooms/{id}/read-state`, `GET /api/v1/rooms/{id}/presence`, and `GET /api/v1/rooms/{id}/messages/search`. Attachment, mention/inbox, and WebSocket event contracts are not present in this REST document. Endpoint presence in Swagger does not confirm authenticated runtime behavior.
+Swagger documents `PATCH/DELETE /api/v1/rooms/{id}/messages/{message_id}`, `GET/PUT /api/v1/rooms/{id}/read-state`, `GET /api/v1/rooms/{id}/presence`, and `GET /api/v1/rooms/{id}/messages/search`. The 2026-10-14 review also covers attachment reservation/metadata/completion, typed mention sends, notification inbox/read, and notification preferences: see [rich messaging evidence](./docs/RICH_MESSAGING_CONTRACT.md). Uploads remain scanner-blocked; mentions/inbox are eligible for frontend design. WebSocket schemas are reviewed separately in AsyncAPI. Endpoint presence in Swagger does not confirm authenticated runtime behavior.
 
 The reviewed frontend operation and DTO matrix is in [docs/API_CONTRACT.md](./docs/API_CONTRACT.md).
 

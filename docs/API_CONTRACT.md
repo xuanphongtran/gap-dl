@@ -2,7 +2,11 @@
 
 This is the frontend's reviewed snapshot of the deployed [Swagger JSON](https://gogo-dl.onrender.com/swagger/doc.json). Recheck that document before changing endpoint code. The snapshot records documentation, not proof that authenticated operations work with real accounts.
 
-## Latest review: 2026-10-13
+## Rich messaging review: 2026-10-14
+
+The current Swagger hash and operation count are unchanged from 2026-10-13. [Authenticated rich messaging probes](./RICH_MESSAGING_CONTRACT.md) verify typed mention sends, idempotent retry/conflicts, asynchronous private notification delivery, cursor pagination, read ownership/idempotence, preference booleans, deleted references, and public leave/rejoin generation isolation. Attachments remain blocked: valid reservation requests return 503 while the scanner is pending. Mentions/inbox can proceed to frontend design independently. HTTP checks do not close browser/release gates; the evidence records an interrupted fixture-cleanup limitation.
+
+## Previous review: 2026-10-13
 
 Swagger still reports API version 1.0, now with 31 paths and 41 operations, SHA-256 `a1791d35c2d14d96664e806639a7c89415e716487c1b3142c74cff8df3c8a8de`. `npm run contract:check` passes the current client's required routes and core DTO fields. Attachment upload/complete/get/delete, notification inbox/read, and room/account notification preferences are now documented; runtime authorization, privacy, and provider behavior for these additions have not been accepted.
 
