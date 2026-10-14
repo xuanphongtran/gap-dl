@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, inject, nextTick, onUnmounted, ref, watch } from 'vue'
 import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/vue-query'
 import { useRoute, useRouter } from 'vue-router'
 import PixelAlert from '../../components/base/PixelAlert.vue'
@@ -10,12 +10,18 @@ import PixelField from '../../components/base/PixelField.vue'
 import MessageComposer from './MessageComposer.vue'
 import MessageRow from './MessageRow.vue'
 import { useViewedReadState } from './useViewedReadState'
+import { realtimeKey } from '../rooms/realtime-context'
 import { api, ApiError, errorMessage } from '../../lib/api'
 import { MAX_MESSAGE_BYTES, mergeMessages, messageContentBytes } from '../../lib/messages'
 import { clearRoomQueries, queryClient, queryKeys } from '../../lib/query'
 import { useActionCooldown, useKeyedActionCooldown } from '../../lib/rate-limit'
 import type { Message } from '../../types'
 
+const realtime = inject(realtimeKey, undefined)
+const realtimePaused = ref(false)
+const seenEpoch = ref(0)
+let recoveringScrollTop = 0
+let restoringScroll = false
 const route = useRoute()
 const router = useRouter()
 const roomId = computed(() => Number(route.params.id))
@@ -28,7 +34,9 @@ const roomQuery = useQuery({
   enabled: canReadRoom,
 })
 const isMember = computed(() => !!roomQuery.data.value?.role && !accessLost.value)
-const canReadPrivateData = computed(() => canReadRoom.value && isMember.value)
+const canReadPrivateData = computed(
+  () => canReadRoom.value && isMember.value && !realtimePaused.value,
+)
 const membersQuery = useQuery({
   queryKey: computed(() => queryKeys.members(roomId.value)),
   queryFn: ({ signal }) => api.members(roomId.value, signal),
@@ -61,11 +69,16 @@ const profile = computed(() => profileQuery.data.value)
 const seenMessages = new Map<number, Message[]>()
 const messages = computed(() => {
   if (!isMember.value) return []
-  const history = historyQuery.data.value?.pages.flat() || []
-  const merged = mergeMessages(seenMessages.get(roomId.value) || [], [
-    ...history,
-    ...(latestQuery.data.value || []),
-  ])
+  void seenEpoch.value
+  const history = historyQuery.data.value
+    ? queryClient
+        .getQueryData<{ pages: Message[][] }>(queryKeys.messageHistory(roomId.value))
+        ?.pages.flat() || []
+    : []
+  const latest = latestQuery.data.value
+    ? queryClient.getQueryData<Message[]>(queryKeys.latestMessages(roomId.value)) || []
+    : []
+  const merged = mergeMessages(seenMessages.get(roomId.value) || [], [...history, ...latest])
   seenMessages.set(roomId.value, merged)
   return merged
 })
@@ -127,7 +140,50 @@ watch(roomId, (id, oldId) => {
   lastMemberCooldownKey.value = ''
   joinError.value = ''
   accessLost.value = false
+  realtimePaused.value = false
   closeEditor()
+})
+
+watch(
+  [roomId, () => profile.value?.id, isMember],
+  ([id, userId, member], _previous, onCleanup) => {
+    if (!realtime || !member || !userId) return
+    const unregister = realtime.registerRoom({
+      id,
+      userId,
+      messages: () => messages.value,
+      setPaused: (paused) => {
+        if (id !== roomId.value) return
+        if (paused && !realtimePaused.value) recoveringScrollTop = listEl.value?.scrollTop || 0
+        const resume = !paused && realtimePaused.value
+        realtimePaused.value = paused
+        if (resume) restoringScroll = true
+        if (resume)
+          void nextTick(() => {
+            if (id === roomId.value && listEl.value) listEl.value.scrollTop = recoveringScrollTop
+            void nextTick(() => {
+              restoringScroll = false
+            })
+          })
+      },
+      applyRecovered: (incoming) => {
+        if (id !== roomId.value) return
+        seenMessages.set(id, mergeMessages(seenMessages.get(id) || [], incoming))
+        seenEpoch.value++
+      },
+      reset: () => {
+        seenMessages.delete(id)
+        seenEpoch.value++
+        closeEditor()
+      },
+      onAccessLost: () => loseRoomAccess(id),
+    })
+    onCleanup(unregister)
+  },
+  { immediate: true, flush: 'sync' },
+)
+onUnmounted(() => {
+  realtimePaused.value = false
 })
 
 function closeEditor() {
@@ -163,8 +219,10 @@ watch(queryError, (cause) => {
 })
 
 watch(messages, (_next, previous) => {
+  if (realtimePaused.value || restoringScroll) return
   const editing = _next.find((message) => message.id === editingMessageId.value)
   if (editing?.deleted_at && !editConflict.value) editConflict.value = editing
+  if (previous.length && _next.at(-1)?.id === previous.at(-1)?.id) return
   const element = listEl.value
   const nearBottom =
     !element || element.scrollHeight - element.scrollTop - element.clientHeight < 120
@@ -173,7 +231,7 @@ watch(messages, (_next, previous) => {
 
 function scrollBottom() {
   nextTick(() => {
-    if (listEl.value) listEl.value.scrollTop = listEl.value.scrollHeight
+    if (listEl.value && !realtimePaused.value) listEl.value.scrollTop = listEl.value.scrollHeight
   })
 }
 
@@ -231,6 +289,7 @@ async function saveEdit() {
   if (
     messageId === null ||
     !isMember.value ||
+    realtimePaused.value ||
     editMutation.isPending.value ||
     editCooldowns.remaining(cooldownKey) ||
     editConflict.value?.deleted_at ||
@@ -276,6 +335,7 @@ async function deleteMessage(message: Message) {
   const cooldownKey = `${id}:${message.id}:delete`
   if (
     !isMember.value ||
+    realtimePaused.value ||
     message.deleted_at ||
     deleteMutation.isPending.value ||
     deleteCooldowns.remaining(cooldownKey) ||
@@ -316,7 +376,14 @@ async function joinPublicRoom() {
 const sending = computed(() => sendMutation.isPending.value)
 async function send() {
   const content = draft.value.trim()
-  if (!content || sending.value || !room.value || sendCooldown.remaining.value) return
+  if (
+    !content ||
+    sending.value ||
+    !isMember.value ||
+    realtimePaused.value ||
+    sendCooldown.remaining.value
+  )
+    return
   if (messageContentBytes(content) > MAX_MESSAGE_BYTES) {
     error.value = 'Message exceeds the 4000-byte UTF-8 limit.'
     return
@@ -517,7 +584,21 @@ function formatDate(value: string) {
           aria-live="polite"
           @scroll="readState.measure"
         >
-          <PixelEmptyState v-if="loading" class="message-state"
+          <PixelEmptyState v-if="realtimePaused" class="message-state">
+            <span v-if="realtime?.gapRoomId.value === roomId"
+              >Some conversation history needs to be reloaded.</span
+            >
+            <span v-else>Checking conversation access and updates…</span>
+            <PixelButton
+              v-if="realtime?.gapRoomId.value === roomId"
+              @click="realtime.reloadConversation"
+              >RELOAD CONVERSATION</PixelButton
+            >
+            <PixelButton v-else-if="realtime?.status.value === 'fallback'" @click="realtime.retry"
+              >RETRY</PixelButton
+            >
+          </PixelEmptyState>
+          <PixelEmptyState v-else-if="loading" class="message-state"
             >Loading conversation...</PixelEmptyState
           >
           <PixelEmptyState v-else-if="!messages.length && !visibleError" class="message-state">
@@ -525,14 +606,18 @@ function formatDate(value: string) {
             ><span>Say hello to get started!</span>
           </PixelEmptyState>
           <button
-            v-if="hasOlder && messages.length"
+            v-if="!realtimePaused && hasOlder && messages.length"
             class="load-older"
             :disabled="loadingOlder"
             @click="loadOlder"
           >
             {{ loadingOlder ? 'LOADING...' : '↑ LOAD OLDER MESSAGES' }}
           </button>
-          <div v-for="(message, index) in messages" :key="message.id" :data-message-id="message.id">
+          <div
+            v-for="(message, index) in realtimePaused ? [] : messages"
+            :key="message.id"
+            :data-message-id="message.id"
+          >
             <div
               v-if="
                 index === 0 ||
@@ -587,7 +672,7 @@ function formatDate(value: string) {
         </PixelAlert>
         <MessageComposer
           v-model="draft"
-          :disabled="!room"
+          :disabled="!isMember || realtimePaused"
           :sending="sending"
           :cooldown-seconds="sendCooldown.remaining.value"
           :error="visibleError || ''"

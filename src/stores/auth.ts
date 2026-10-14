@@ -10,14 +10,14 @@ export const useAuthStore = defineStore('auth', () => {
   async function login(email: string, password: string): Promise<void> {
     const pair = await api.login(email, password)
     queryClient.clear()
-    saveSession(pair)
+    saveSession(pair, true)
     signedIn.value = true
   }
 
   async function register(email: string, username: string, password: string): Promise<void> {
     const pair = await api.register(email, username, password)
     queryClient.clear()
-    saveSession(pair)
+    saveSession(pair, true)
     signedIn.value = true
   }
 

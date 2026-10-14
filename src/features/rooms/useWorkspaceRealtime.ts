@@ -25,7 +25,6 @@ export function useWorkspaceRealtime(): RealtimeContext {
   let joined: number | undefined
   let socketToken: string | undefined
   let userId: number | undefined
-  let refreshIdentity = readSession()?.refresh_token
   let retryTimer: ReturnType<typeof setTimeout> | undefined
   let eventTimer: ReturnType<typeof setTimeout> | undefined
   let connectController: AbortController | undefined
@@ -115,10 +114,14 @@ export function useWorkspaceRealtime(): RealtimeContext {
       if (epoch !== generation || disposed || controller.signal.aborted) return
       userId = profile.id
       if (active && active.userId !== userId) {
-        active.setPaused(true)
+        const previous = active
         active = undefined
         roomGeneration++
+        previous.setPaused(true)
+        clearRoomQueries(previous.id)
+        previous.onAccessLost()
       }
+      queryClient.setQueryData(queryKeys.profile, profile)
       socketToken = readSession()?.access_token
       if (!socketToken) return
       url.value = websocketURL(apiBaseURL, socketToken)
@@ -321,20 +324,21 @@ export function useWorkspaceRealtime(): RealtimeContext {
       gapRoomId.value = null
     }
   }
-  function sessionChanged() {
+  function sessionChanged(event: Event) {
     generation++
     cancelWork()
     closeSocket()
     active?.setPaused(true)
     userId = undefined
     const next = readSession()
-    if (!next || next.refresh_token !== refreshIdentity) {
-      queryClient.clear()
+    if (!next || (event instanceof CustomEvent && event.detail?.accountChanged === true)) {
+      const previous = active
       active = undefined
+      queryClient.clear()
+      previous?.onAccessLost()
       roomGeneration++
       gapRoomId.value = null
     }
-    refreshIdentity = next?.refresh_token
     attempts = 0
     if (next) void connect()
     else status.value = 'fallback'
@@ -348,9 +352,10 @@ export function useWorkspaceRealtime(): RealtimeContext {
   }
   async function reloadConversation() {
     if (!active) return
-    active.reset()
+    active.setPaused(true)
     queryClient.removeQueries({ queryKey: queryKeys.latestMessages(active.id), exact: true })
     queryClient.removeQueries({ queryKey: queryKeys.messageHistory(active.id), exact: true })
+    active.reset()
     await recover(true, true)
   }
   useEventListener(window, 'session:changed', sessionChanged)

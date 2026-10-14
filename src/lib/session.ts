@@ -17,9 +17,9 @@ export function readSession(): TokenPair | null {
   }
 }
 
-export function saveSession(pair: TokenPair): void {
+export function saveSession(pair: TokenPair, accountChanged = false): void {
   sessionStorage.setItem(key, JSON.stringify(pair))
-  window.dispatchEvent(new Event('session:changed'))
+  window.dispatchEvent(new CustomEvent('session:changed', { detail: { accountChanged } }))
 }
 
 export function clearSession(): void {

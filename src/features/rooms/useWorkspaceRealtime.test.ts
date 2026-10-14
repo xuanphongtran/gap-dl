@@ -354,3 +354,28 @@ it('discards a delayed room authorization result after switching rooms', async (
   expect(queryClient.getQueryData(queryKeys.room(7))).toEqual(room)
   expect(newMessages.value).toEqual([])
 })
+
+it('preserves same-account registration when the refresh token rotates', async () => {
+  const h = setup(),
+    socket = await connected()
+  await expect.poll(() => h.context.status.value).toBe('connected')
+  saveSession({ access_token: 'rotated-access', refresh_token: 'rotated-refresh', expires_at: 0 })
+  expect(socket.readyState).toBe(3)
+  await expect.poll(() => TestSocket.instances.length).toBe(2)
+  const next = TestSocket.instances[1]!
+  next.open()
+  await expect.poll(() => h.paused.value).toBe(false)
+  expect(next.sent.map((s) => JSON.parse(s))).toContainEqual({ type: 'join', room_id: '7' })
+})
+
+it('clears the active private room immediately for an explicit account switch', async () => {
+  const h = setup()
+  await connected()
+  await expect.poll(() => h.context.status.value).toBe('connected')
+  saveSession(
+    { access_token: 'other-account', refresh_token: 'other-refresh', expires_at: 0 },
+    true,
+  )
+  expect(h.revoked.value).toBe(true)
+  expect(queryClient.getQueryData(queryKeys.latestMessages(7))).toBeUndefined()
+})
