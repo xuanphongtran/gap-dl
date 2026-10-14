@@ -9,6 +9,7 @@ const props = withDefaults(
     modelValue: string
     disabled: boolean
     sending: boolean
+    locked?: boolean
     error: string
     cooldownSeconds?: number
   }>(),
@@ -37,7 +38,7 @@ function update(event: Event) {
         maxlength="4000"
         rows="1"
         placeholder="Write a message..."
-        :disabled="disabled || sending"
+        :disabled="disabled || sending || locked"
         :aria-invalid="overLimit || undefined"
         :aria-describedby="overLimit ? 'message-size-error' : undefined"
         @input="update"
@@ -47,7 +48,9 @@ function update(event: Event) {
         variant="primary"
         class="send-button"
         type="submit"
-        :disabled="!modelValue.trim() || overLimit || disabled || sending || cooldownSeconds > 0"
+        :disabled="
+          !modelValue.trim() || overLimit || disabled || sending || locked || cooldownSeconds > 0
+        "
         :aria-label="
           sending
             ? 'Sending'
