@@ -45,11 +45,11 @@
 - `validateSearchPage(page: SearchMessagesResponse, roomId: number, before?: number): void` rejects unsafe/wrong-room IDs, results outside the exclusive cursor, and unsafe/nonadvancing non-null `next_before`. A non-null cursor requires nonempty results and must not exceed the oldest returned ID. Reject invalid pages before caching; never use page length to guess an end.
 - `mergeSearchResults(pages: SearchMessagesResponse[], known: Message[]): Message[]` deduplicates by ID/revision, sorts descending, excludes tombstones, and suppresses a result if canonical conversation state has a higher revision or a tombstone. It must not substitute new canonical text into an old match.
 
-- [ ] Write failing API/key tests: default `q/limit=20`, optional `before`, exact AbortSignal propagation, DTO preservation, different account/query keys, and `clearRoomQueries(7)` removing all Search keys for 7 while retaining room 8.
-- [ ] Write failing helper tests: `normalizeSearchQuery('  hello  ').query === 'hello'`; blank input fails; 256 ASCII bytes pass; 257 fail; 128 `á` characters pass and 129 fail. Assert descending dedupe, newer revision retention, tombstone suppression and suppression of an old match whose canonical message was edited. Assert terminal null cursor, valid exclusive cursor, empty non-null cursor, unsafe IDs and repeated/nonadvancing cursor rejection.
-- [ ] Run `npm test -- src/lib/api.test.ts src/features/messages/message-search.test.ts`. Expected: new tests fail because Search functions/keys/helpers do not exist, with valid fixtures.
-- [ ] Implement the interfaces above in the named files. Keep response validation in the feature helper consumed by the query function; do not change generic Axios handling.
-- [ ] Run the focused command and `npm test`. Expected: all tests pass, including existing auth, WS, membership and read-state suites. Commit the verified task.
+- [x] Write failing API/key tests: default `q/limit=20`, optional `before`, exact AbortSignal propagation, DTO preservation, different account/query keys, and `clearRoomQueries(7)` removing all Search keys for 7 while retaining room 8.
+- [x] Write failing helper tests: `normalizeSearchQuery('  hello  ').query === 'hello'`; blank input fails; 256 ASCII bytes pass; 257 fail; 128 `á` characters pass and 129 fail. Assert descending dedupe, newer revision retention, tombstone suppression and suppression of an old match whose canonical message was edited. Assert terminal null cursor, valid exclusive cursor, empty non-null cursor, unsafe IDs and repeated/nonadvancing cursor rejection.
+- [x] Run `npm test -- src/lib/api.test.ts src/features/messages/message-search.test.ts`. Expected: new tests fail because Search functions/keys/helpers do not exist, with valid fixtures.
+- [x] Implement the interfaces above in the named files. Keep response validation in the feature helper consumed by the query function; do not change generic Axios handling.
+- [x] Run the focused command and `npm test`. Expected: all tests pass, including existing auth, WS, membership and read-state suites. Commit the verified task.
 
 ## Task 2: Cancellable submitted-query search state
 
