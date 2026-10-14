@@ -1,5 +1,14 @@
 import { request } from './http'
-import type { Invitation, Message, Profile, ReadState, Room, RoomMember, TokenPair } from '../types'
+import type {
+  Invitation,
+  Message,
+  Profile,
+  ReadState,
+  Room,
+  RoomMember,
+  SearchMessagesResponse,
+  TokenPair,
+} from '../types'
 
 export { ApiError, errorMessage, request } from './http'
 
@@ -26,6 +35,11 @@ export const api = {
   messages: (id: number, limit = 40, before?: number, signal?: AbortSignal) =>
     request<{ messages: Message[] }>(`/api/v1/rooms/${id}/messages`, {
       params: { limit, ...(before !== undefined ? { before } : {}) },
+      signal,
+    }),
+  searchMessages: (id: number, query: string, limit = 20, before?: number, signal?: AbortSignal) =>
+    request<SearchMessagesResponse>(`/api/v1/rooms/${id}/messages/search`, {
+      params: { q: query, limit, ...(before !== undefined ? { before } : {}) },
       signal,
     }),
   sendMessage: (id: number, content: string) =>

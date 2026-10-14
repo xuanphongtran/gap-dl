@@ -62,3 +62,8 @@ export interface RoomMember {
   role: RoomRole
   joined_at: string
 }
+
+export interface SearchMessagesResponse {
+  messages: Message[]
+  next_before: number | null
+}

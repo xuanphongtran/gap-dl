@@ -138,3 +138,19 @@ describe('Axios session refresh', () => {
     )
   })
 })
+
+it('passes the search query, cursor and cancellation through the existing transport', async () => {
+  const { api } = await import('./api')
+  privateMock
+    .onGet('/api/v1/rooms/7/messages/search')
+    .reply(200, { messages: [], next_before: null })
+  const controller = new AbortController()
+  expect(await api.searchMessages(7, 'hello', undefined, undefined, controller.signal)).toEqual({
+    messages: [],
+    next_before: null,
+  })
+  expect(privateMock.history.get[0]?.params).toEqual({ q: 'hello', limit: 20 })
+  expect(privateMock.history.get[0]?.signal).toBe(controller.signal)
+  await api.searchMessages(7, 'hello', 10, 42)
+  expect(privateMock.history.get[1]?.params).toEqual({ q: 'hello', limit: 10, before: 42 })
+})
