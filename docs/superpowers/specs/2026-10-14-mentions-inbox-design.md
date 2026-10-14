@@ -1,6 +1,6 @@
 # Mentions, inbox, and notification preferences design
 
-Status: proposed for user review. No product implementation is included. Phase 6 contract evidence is in [the rich messaging review](../../RICH_MESSAGING_CONTRACT.md).
+Status: approved by the user on 2026-10-14. The [implementation plan](../plans/2026-10-14-mentions-inbox.md) awaits review on `feat/mentions-inbox`; no product implementation is included. Phase 6 contract evidence is in [the rich messaging review](../../RICH_MESSAGING_CONTRACT.md).
 
 ## Scope and approaches
 
