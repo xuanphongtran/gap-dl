@@ -6,6 +6,8 @@ The latest reviewed operation matrix and unresolved runtime checks are in [docs/
 
 **Sandbox acceptance update (2026-10-13):** [Browser acceptance evidence](./docs/ACCEPTANCE_2026-10-13.md) verifies the Phase 3 manager/reload checks and Phase 4 multi-tab/retry journeys on `https://chat-sb.xuanphong.io.vn`. Sandbox routes and CORS pass; CI at `2da84f3` passes. Private-room re-invitation after removal is blocked: the backend returns the old accepted invitation while the removed member remains unauthorized. Swagger now reports 31 paths and 41 operations, including attachment and notification/preference endpoints. Rapid room switches and overlapping read-write tests remain open.
 
+**Continuation update (2026-10-14):** The WebSocket transport slice is implemented and independently reviewed; see [the WS evidence](./docs/WEBSOCKET_CONTRACT.md). Phase 4 deterministic rapid-room-switch and overlapping-write checks now pass in [the read-state race record](./docs/READ_STATE_RACES_2026-10-14.md). Private-room re-invitation, deployed WebSocket multi-tab acceptance, and remaining contract/release gates stay open. Search is the next independent P2 feature after authenticated contract verification.
+
 **Current frontend baseline (2026-10-02):** Vue 3, TypeScript, Router, Pinia session state, Axios transport, Vue Query server state, pixel UI, ESLint, Prettier, Vitest, and GitHub Actions are in place. Basic REST rooms, invitations, membership actions, profile, text messages, pagination, and latest-page polling are implemented. Two-account HTTP behavior was verified on the target deployment; browser end-to-end behavior remains open. WebSocket and SSE are deferred.
 
 ## 0. Frontend source and component foundation — P0, implement first
@@ -88,7 +90,8 @@ Keep endpoint functions in `src/lib/api.ts`, Axios transport in `src/lib/http.ts
 - [x] Add typed `GET/PUT /api/v1/rooms/{id}/read-state` functions and room-scoped Vue Query keys. PUT sends `{ last_read_message_id }`; consume `{ room_id, last_read_message_id, unread_count }`. Advance a cursor only when messages are viewed; debounce writes without moving backward.
 - [x] Add unread badges to the room list using server state or a documented full-history calculation. Do not infer exact counts from the newest-page cache. Exclude own messages and preserve tombstone-by-ID behavior.
 - [x] Clear read state on logout, account switch, and membership loss. Existing account-switch tests and the sandbox browser removal/logout checks verify cleanup. Browser reload, two-tab convergence after foregrounding, and explicit retry after an injected failed write passed on 2026-10-13.
-- [ ] Complete deterministic rapid-room-switch and overlapping-write checks. Retest private-room rejoin after the confirmed re-invitation blocker is resolved.
+- [x] Complete deterministic rapid-room-switch and overlapping-write checks. Eight mounted-composable tests exercise real Vue Query, Axios cancellation, viewport measurement, and debounce behavior. Temporary removal of cancellation/generation protection and monotonic merging causes the expected failures; production source is restored.
+- [ ] Retest private-room rejoin after the confirmed re-invitation blocker is resolved.
 
 **Completion record (2026-10-02):** Added room-scoped read-state queries, monotonic cursor merging, a debounced visible-message acknowledgement, membership revocation cleanup, and server-backed unread badges. The deployed two-account smoke verified own-message exclusion, tombstones counting by ID, monotonic stale writes, duplicate acknowledgement, membership denial, and cleanup of disposable accounts. Local checks cover cursor merging and API payloads; browser multi-tab convergence and final-host CORS remain release gates.
 
