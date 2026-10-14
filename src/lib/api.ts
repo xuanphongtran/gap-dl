@@ -1,6 +1,11 @@
 import { request } from './http'
 import type {
   Invitation,
+  MentionSendOptions,
+  Notification,
+  NotificationFeed,
+  NotificationPreferences,
+  RoomNotificationPreferences,
   Message,
   Profile,
   ReadState,
@@ -42,8 +47,35 @@ export const api = {
       params: { q: query, limit, ...(before !== undefined ? { before } : {}) },
       signal,
     }),
-  sendMessage: (id: number, content: string) =>
-    request<Message>(`/api/v1/rooms/${id}/messages`, { method: 'POST', data: { content } }),
+  sendMessage: (id: number, content: string, mentions?: MentionSendOptions) =>
+    request<Message>(`/api/v1/rooms/${id}/messages`, {
+      method: 'POST',
+      data: { content, ...(mentions ? { mention_user_ids: mentions.mentionUserIds } : {}) },
+      ...(mentions ? { headers: { 'Idempotency-Key': mentions.idempotencyKey } } : {}),
+    }),
+  notifications: (limit = 20, before?: number, unreadOnly = false, signal?: AbortSignal) =>
+    request<NotificationFeed>('/api/v1/users/me/notifications', {
+      params: { limit, ...(before !== undefined ? { before } : {}), unread_only: unreadOnly },
+      signal,
+    }),
+  readNotification: (id: number) =>
+    request<Notification>(`/api/v1/users/me/notifications/${id}/read`, { method: 'PUT' }),
+  notificationPreferences: (signal?: AbortSignal) =>
+    request<NotificationPreferences>('/api/v1/users/me/notification-preferences', { signal }),
+  updateNotificationPreferences: (mentionsEnabled: boolean) =>
+    request<NotificationPreferences>('/api/v1/users/me/notification-preferences', {
+      method: 'PUT',
+      data: { mentions_enabled: mentionsEnabled },
+    }),
+  roomNotificationPreferences: (roomId: number, signal?: AbortSignal) =>
+    request<RoomNotificationPreferences>(`/api/v1/rooms/${roomId}/notification-preferences`, {
+      signal,
+    }),
+  updateRoomNotificationPreferences: (roomId: number, muted: boolean) =>
+    request<RoomNotificationPreferences>(`/api/v1/rooms/${roomId}/notification-preferences`, {
+      method: 'PUT',
+      data: { muted },
+    }),
   editMessage: (roomId: number, messageId: number, content: string, revision: number) =>
     request<Message>(`/api/v1/rooms/${roomId}/messages/${messageId}`, {
       method: 'PATCH',

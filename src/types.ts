@@ -67,3 +67,27 @@ export interface SearchMessagesResponse {
   messages: Message[]
   next_before: number | null
 }
+
+export interface MentionSendOptions {
+  mentionUserIds: number[]
+  idempotencyKey: string
+}
+export interface Notification {
+  id: number
+  kind: string
+  room_id: number
+  message_id: number
+  created_at: string
+  read_at: string | null
+  availability: 'available' | 'deleted'
+}
+export interface NotificationFeed {
+  notifications: Notification[]
+  next_before: number | null
+}
+export interface NotificationPreferences {
+  mentions_enabled: boolean
+}
+export interface RoomNotificationPreferences {
+  muted: boolean
+}

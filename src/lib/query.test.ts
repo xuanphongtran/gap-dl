@@ -60,3 +60,15 @@ it('clears private cache when final authentication failure clears the session', 
     unbind()
   }
 })
+
+it('evicts all account inbox pages on room loss without clearing unrelated rooms', () => {
+  queryClient.setQueryData(queryKeys.notificationFeed(1, false), { pages: [] })
+  queryClient.setQueryData(queryKeys.notificationFeed(2, true), { pages: [] })
+  queryClient.setQueryData(queryKeys.roomNotificationPreferences(7, 1), { muted: false })
+  queryClient.setQueryData(queryKeys.room(8), { id: 8 })
+  clearRoomQueries(7)
+  expect(queryClient.getQueriesData({ queryKey: ['notifications'] })).toEqual([])
+  expect(queryClient.getQueryData(queryKeys.roomNotificationPreferences(7, 1))).toBeUndefined()
+  expect(queryClient.getQueryData(queryKeys.room(8))).toEqual({ id: 8 })
+  expect(queryKeys.notificationFeed(1, true)).not.toEqual(queryKeys.notificationFeed(2, true))
+})

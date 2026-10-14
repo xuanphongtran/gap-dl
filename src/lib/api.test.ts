@@ -154,3 +154,42 @@ it('passes the search query, cursor and cancellation through the existing transp
   await api.searchMessages(7, 'hello', 10, 42)
   expect(privateMock.history.get[1]?.params).toEqual({ q: 'hello', limit: 10, before: 42 })
 })
+
+describe('notification contracts', () => {
+  it('adds typed recipients and retry key without changing plain sends', async () => {
+    const { api } = await import('./api')
+    privateMock.onPost('/api/v1/rooms/7/messages').reply(201, { id: 1 })
+    await api.sendMessage(7, 'plain')
+    await api.sendMessage(7, 'mention', {
+      mentionUserIds: [8],
+      idempotencyKey: 'retry-key-0123456789',
+    })
+    expect(JSON.parse(privateMock.history.post[0]!.data)).toEqual({ content: 'plain' })
+    expect(JSON.parse(privateMock.history.post[1]!.data)).toEqual({
+      content: 'mention',
+      mention_user_ids: [8],
+    })
+    expect(privateMock.history.post[1]!.headers?.['Idempotency-Key']).toBe('retry-key-0123456789')
+  })
+  it('propagates feed filters and cancellation and explicit false preferences', async () => {
+    const { api } = await import('./api')
+    privateMock
+      .onGet('/api/v1/users/me/notifications')
+      .reply(200, { notifications: [], next_before: null })
+    privateMock.onPut().reply(200, {})
+    const signal = new AbortController().signal
+    await api.notifications(20, 9, true, signal)
+    expect(privateMock.history.get[0]!.params).toEqual({ limit: 20, before: 9, unread_only: true })
+    expect(privateMock.history.get[0]!.signal).toBe(signal)
+    await api.updateNotificationPreferences(false)
+    await api.updateRoomNotificationPreferences(7, false)
+    await api.readNotification(9)
+    expect(
+      privateMock.history.put.map((c) => [c.url, c.data ? JSON.parse(c.data) : undefined]),
+    ).toEqual([
+      ['/api/v1/users/me/notification-preferences', { mentions_enabled: false }],
+      ['/api/v1/rooms/7/notification-preferences', { muted: false }],
+      ['/api/v1/users/me/notifications/9/read', undefined],
+    ])
+  })
+})

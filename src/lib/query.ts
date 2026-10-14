@@ -4,6 +4,12 @@ import { readSession } from './session'
 import type { Room } from '../types'
 
 export const queryKeys = {
+  notifications: (userId: number) => ['notifications', userId] as const,
+  notificationFeed: (userId: number, unreadOnly: boolean) =>
+    ['notifications', userId, unreadOnly] as const,
+  notificationPreferences: (userId: number) => ['notification-preferences', userId] as const,
+  roomNotificationPreferences: (id: number, userId: number) =>
+    ['room', id, 'notification-preferences', userId] as const,
   profile: ['profile'] as const,
   rooms: ['rooms'] as const,
   invitations: ['invitations'] as const,
@@ -31,6 +37,8 @@ export const queryClient = new QueryClient({
 })
 
 export function clearRoomQueries(id: number): void {
+  void queryClient.cancelQueries({ queryKey: ['notifications'] })
+  queryClient.removeQueries({ queryKey: ['notifications'] })
   queryClient.removeQueries({ queryKey: queryKeys.room(id) })
   queryClient.setQueryData<{ rooms: Room[] }>(queryKeys.rooms, (current) =>
     current
