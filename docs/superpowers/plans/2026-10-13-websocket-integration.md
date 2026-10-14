@@ -103,3 +103,40 @@
 ## Execution handoff
 
 Recommended method: implement inline in this session, then request one independent whole-branch review. The tasks depend on a shared room-registration interface and no per-task parallel implementation is needed. Await the user's plan review before installing product dependencies or writing product code.
+
+
+## Execution record
+
+Pre-flight: Task 1 parser/gap interfaces match Task 2 consumers.
+
+Pre-flight: Task 2 registration callbacks match Task 3 integration; no shared interface conflicts.
+
+Pre-flight: Task 4 records contracts and checks from Tasks 1–3.
+
+Execution: inline; user approved plan and requested current-checkout feature branch.
+
+Task 1: complete (commits bd544e1..efef0d9, tests: npm test →    Duration  1.82s (environment 61%, transform 17%, import 13%, tests 9%, worker 1%))
+
+Task 2: complete (commits efef0d9..464e319, tests: npm test -- --exclude src/features/rooms/RealtimeStatus.test.ts --exclude src/features/messages/RoomChat.realtime.test.ts →    Duration  9.11s (environment 42%, tests 34%, transform 15%, import 9%))
+
+Task 3: Ruling: mark login/register session events as accountChanged and keep refresh events unmarked — refresh-token rotation is not account identity, and drafts must survive it — cost if wrong: same-account re-login clears its room draft, which is the safe account-boundary behavior.
+
+Task 3: complete (commits 464e319..73162cc, tests: npm run check → ✓ built in 325ms)
+
+Final review: independent fresh-context review of 5bf05ef..1da68ff by review_websocket; no Critical findings, two Important and one Minor. Severity accepted after checking user-visible effects.
+
+Final: fixed cached private room content exposed during room-switch authorization — gates cached private content while authorizing a room switch RED→GREEN (isolated run), suite 85/85.
+
+Final: fixed stale revisions/tombstones in displaced history and bridged ranges — refreshes retained history and bridged ranges on subsequent recovery RED→GREEN, suite 85/85.
+
+Final: minor (deferred): unregistering the active room during a pending recovery can leave the workspace status at Checking conversation updates until another room/reconnect is selected; no private data is exposed.
+
+Final: Ruling: presence/typing, inbox/SSE, distributed delivery and replay remain deferred — the approved scope implements authenticated transport and REST reconciliation, while the backend contract lacks the required guarantees — cost if wrong: users do not get those features or delivery guarantees.
+
+Final: Ruling: do not deploy this branch or claim final-host/multi-tab browser acceptance — deployment is not authorized; local two-account browser checks and automated multi-tab checks provide scoped evidence — cost if wrong: release acceptance remains outstanding.
+
+Final: Ruling: leave private-room re-invitation as a documented backend blocker — client changes cannot create the missing pending invitation returned by REST — cost if wrong: removed members remain unable to accept a new invitation.
+
+Final live rerun: eight Chrome checks passed after both review fixes; no failures or browser exceptions. Guest messages deleted (3), guest account deleted (204); owner/room 6 retained. Artifacts: /tmp/gogo-ws-acceptance-RvLsfq.
+
+Task 4: complete (commits 73162cc..a4ba0aa, tests: npm run check → ✓ built in 313ms)
