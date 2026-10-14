@@ -8,7 +8,7 @@ import { clearRoomQueries, queryClient, queryKeys } from '../../lib/query'
 import { parseRealtimeFrame, websocketURL, type RealtimeEvent } from '../../lib/realtime'
 import { readSession } from '../../lib/session'
 import { retainReadCursor } from '../messages/read-state'
-import { recoverMessageGap } from '../messages/recoverMessageGap'
+import { recoverMessageGap, refreshRetainedMessages } from '../messages/recoverMessageGap'
 import type { Message, ReadState } from '../../types'
 import type { RealtimeContext, RealtimeRoom, RealtimeStatus } from './realtime-context'
 
@@ -250,17 +250,14 @@ export function useWorkspaceRealtime(): RealtimeContext {
       const history = queryClient.getQueryData<InfiniteData<Message[], number | null>>(
         queryKeys.messageHistory(room.id),
       )
-      const [result, members, readState, pages] = await Promise.all([
+      const retained = mergeMessages(known, history?.pages.flat() || [])
+      const [result, members, readState, refreshedHistory] = await Promise.all([
         recoverMessageGap(room.id, reset ? [] : baseline, controller.signal),
         api.members(room.id, controller.signal),
         api.readState(room.id, controller.signal),
-        Promise.all(
-          (reset ? [] : history?.pageParams || []).map((before) =>
-            api
-              .messages(room.id, 40, before ?? undefined, controller.signal)
-              .then((data) => data.messages || []),
-          ),
-        ),
+        suspend && !reset
+          ? refreshRetainedMessages(room.id, retained, controller.signal)
+          : Promise.resolve(undefined),
       ])
       if (!valid()) return
       if (result.gap) {
@@ -269,7 +266,10 @@ export function useWorkspaceRealtime(): RealtimeContext {
         status.value = 'fallback'
         return
       }
-      const merged = mergeMessages(reset ? [] : known, [...result.messages, ...pages.flat()])
+      const merged = mergeMessages(reset ? [] : known, [
+        ...result.messages,
+        ...(refreshedHistory?.pages.flat() || []),
+      ])
       synchronizedAnchors.set(room.id, Math.max(0, ...result.messages.map((message) => message.id)))
       queryClient.setQueryData(queryKeys.room(room.id), authorized)
       queryClient.setQueryData(queryKeys.members(room.id), members)
@@ -277,8 +277,8 @@ export function useWorkspaceRealtime(): RealtimeContext {
         retainReadCursor(current, readState),
       )
       queryClient.setQueryData(queryKeys.latestMessages(room.id), merged.slice(-40))
-      if (history && !reset)
-        queryClient.setQueryData(queryKeys.messageHistory(room.id), { ...history, pages })
+      if (history && refreshedHistory)
+        queryClient.setQueryData(queryKeys.messageHistory(room.id), refreshedHistory)
       room.applyRecovered(merged)
       gapRoomId.value = null
       room.setPaused(false)

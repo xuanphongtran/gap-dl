@@ -30,20 +30,20 @@ Runtime also emits `presence`, `presence_snapshot`, and `read_state`; neither ap
 
 - Retry disconnects, including drain code 1001, with exponential backoff and jitter, at most five retries, capped at 30 seconds per delay. Then expose explicit retry. Offline pauses attempts; returning online reconnects.
 - Do not send application heartbeat messages: only join/leave commands are documented.
-- Revalidate session and room access, refresh loaded pages/read state, and merge by ID/revision before resuming private rendering after reconnect/foreground recovery. Preserve composer draft and reading position.
+- Revalidate session and room access, refresh all retained message ranges with stable exclusive cursors and refresh read state, and merge by ID/revision before resuming private rendering after reconnect/foreground recovery. Preserve composer draft and reading position.
 - Bridge a disconnect gap backward from a synchronized history anchor using `before`, up to ten additional 40-message pages. A polled newest page does not establish that a gap is complete. If the bridge limit is exceeded, require explicit conversation reload; discard stale loaded pages and preserve the composer draft.
 - Retain five-second newest-page/read-state polling while the socket is healthy, because the protocol does not provide complete lifecycle/read-state events. REST remains the transport fallback after authorization succeeds. Hidden tabs pause HTTP polling and reconcile when foregrounded.
 
 ## Verification evidence
 
-Automated tests cover newline batches, validation, revision/tombstone retention, bounded/aborted gap bridging, event bursts, immediate revocation, stale account/room callbacks, token rotation, account switches, offline/retry limits, drain 1001, UI draft/scroll preservation, and explicit history reload. `npm run check` passed with 81 tests in 18 files, plus formatting, lint, typecheck, and production build.
+Automated tests cover newline batches, validation, revision/tombstone retention, bounded/aborted gap bridging, event bursts, immediate revocation, stale account/room callbacks, token rotation, account switches, offline/retry limits, drain 1001, UI draft/scroll preservation, cached-room authorization gating, edits/deletions in displaced and bridged history, and explicit history reload. `npm run check` passed with 85 tests in 18 files, plus formatting, lint, typecheck, and production build.
 
-Eight live headless-Chrome checks passed against the deployed backend with this branch served at the allowed development origin `http://localhost:3000`:
+Eight live headless-Chrome checks passed again after the review fixes against the deployed backend with this branch served at the allowed development origin `http://localhost:3000`:
 
 1. Two-account browser login and native authenticated WS connections.
 2. Private-room creation, authorized recovery, and room subscription.
 3. Invitation arriving without browser reload and automatic member-list updates after acceptance.
-4. A server message event followed by authoritative REST-rendered content; one measured update took about 816 ms (a smoke observation, not a latency guarantee).
+4. A server message event followed by authoritative REST-rendered content; one measured update took about 622 ms on the post-review rerun (a smoke observation, not a latency guarantee).
 5. Offline disconnect, missed messages, and reconnect recovery preserving the composer draft.
 6. Desktop and 390 × 844 mobile conversation layouts without document horizontal overflow.
 7. Socket membership revocation navigating the removed member away and removing private message content.
@@ -56,3 +56,10 @@ Guest test messages were deleted and the disposable guest account was deleted wi
 ## Opt-in upgrade probe
 
 `npm run ws:contract:check` is outside deterministic CI. Provide `WS_ACCESS_TOKEN` through private local environment configuration, or `WS_FIXTURE_FILE` pointing to a private JSON file with `{ apiOrigin, accounts: [{ session: { access_token } }] }`. `WS_ORIGIN` defaults to `http://localhost:3000`; `WS_API_BASE_URL` overrides the default API origin when not supplied by the fixture. The probe validates the 101 upgrade/accept header, closes without subscribing, and performs no durable writes. Expired tokens or disallowed origins correctly fail the probe; do not put token-bearing URLs into reports.
+
+
+## Independent review
+
+The final independent review identified two Important findings: cached private content could appear during a room switch before REST authorization, and displaced/bridged retained history could miss later edits or tombstones. Both were reproduced with failing tests and fixed; the full 85-test check and eight browser smoke checks passed afterward.
+
+Deferred minor: leaving the active conversation during a pending recovery can leave the workspace status at "Checking conversation updates" until another room or reconnect is selected. The private conversation is unregistered; this is a status issue.

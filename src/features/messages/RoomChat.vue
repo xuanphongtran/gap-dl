@@ -132,17 +132,21 @@ const visibleError = computed(
     (validRoom.value ? queryError.value && errorMessage(queryError.value) : 'Invalid room ID.'),
 )
 
-watch(roomId, (id, oldId) => {
-  if (oldId) draftByRoom.set(oldId, draft.value)
-  draft.value = draftByRoom.get(id) || ''
-  error.value = ''
-  actionError.value = ''
-  lastMemberCooldownKey.value = ''
-  joinError.value = ''
-  accessLost.value = false
-  realtimePaused.value = false
-  closeEditor()
-})
+watch(
+  roomId,
+  (id, oldId) => {
+    if (oldId) draftByRoom.set(oldId, draft.value)
+    draft.value = draftByRoom.get(id) || ''
+    error.value = ''
+    actionError.value = ''
+    lastMemberCooldownKey.value = ''
+    joinError.value = ''
+    accessLost.value = false
+    realtimePaused.value = false
+    closeEditor()
+  },
+  { flush: 'sync' },
+)
 
 watch(
   [roomId, () => profile.value?.id, isMember],

@@ -481,3 +481,34 @@ it('retains the synchronized anchor when returning to a previously viewed room',
     .poll(() => h.known.value.map((m) => m.id))
     .toEqual(Array.from({ length: 46 }, (_, i) => i + 1))
 })
+
+it('refreshes retained history and bridged ranges on subsequent recovery', async () => {
+  server = Array.from({ length: 40 }, (_, i) => message(40 - i))
+  mock.onGet('/api/v1/rooms/7/messages').reply((config) => [
+    200,
+    {
+      messages: server
+        .filter((m) => config.params.before === undefined || m.id < config.params.before)
+        .slice(0, 40),
+    },
+  ])
+  const h = setup()
+  h.known.value = [...server].reverse()
+  queryClient.setQueryData(queryKeys.messageHistory(7), { pages: [server], pageParams: [null] })
+  await connected()
+  await expect.poll(() => h.context.status.value).toBe('connected')
+  server = Array.from({ length: 125 }, (_, i) => message(125 - i))
+  h.context.retry()
+  await expect.poll(() => h.known.value.length).toBe(125)
+  server = server.map((m) =>
+    m.id === 20
+      ? { ...m, content: '', revision: 2, deleted_at: '2026-10-14T01:00:00Z' }
+      : m.id === 65
+        ? { ...m, content: 'Edited bridge', revision: 2 }
+        : m,
+  )
+  h.context.retry()
+  await expect.poll(() => h.context.status.value).toBe('connected')
+  expect(h.known.value.find((m) => m.id === 20)?.deleted_at).toBe('2026-10-14T01:00:00Z')
+  expect(h.known.value.find((m) => m.id === 65)?.content).toBe('Edited bridge')
+})

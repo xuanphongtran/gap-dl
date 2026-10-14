@@ -97,8 +97,8 @@
 - [x] Record the reviewed AsyncAPI URL/version and runtime discrepancy, supported commands/events, safe origin/token configuration, polling rationale, retry/recovery limits, and remaining presence/typing gates. Mark only independently verified Phase 5 items complete.
 - [x] Run local frontend browser smoke against the deployed backend with the configured allowed development origin, using test fixtures. Verify message/invitation-triggered refresh, revocation, logout, interrupted connection recovery, and polling fallback at desktop/mobile sizes. Avoid re-inviting the retained removed account; preserve the known re-invitation blocker rather than bypassing it in acceptance claims.
 - [x] Verify origin and query-token handshake on sandbox as a contract probe. Do not claim the changed frontend is deployed there until its bundle is actually deployed; do not deploy without the user's deployment authorization.
-- [ ] Run `npm run check` and `git diff --check`, inspect results, and complete one independent whole-branch review. Resolve critical/important findings with reproducing RED→GREEN tests and rerun the full check.
-- [ ] Commit verified changes on the feature branch. Report tests, live checks, any unverified deployment gates, and retained fixture lifecycle. Do not merge or push unless requested.
+- [x] Run `npm run check` and `git diff --check`, inspect results, and complete one independent whole-branch review. Resolve critical/important findings with reproducing RED→GREEN tests and rerun the full check.
+- [x] Commit verified changes on the feature branch. Report tests, live checks, any unverified deployment gates, and retained fixture lifecycle. Do not merge or push unless requested.
 
 ## Execution handoff
 

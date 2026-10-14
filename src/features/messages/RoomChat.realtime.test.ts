@@ -2,7 +2,7 @@
 import { createApp, h, nextTick } from 'vue'
 import { createPinia } from 'pinia'
 import { createMemoryHistory, createRouter, RouterView } from 'vue-router'
-import { VueQueryPlugin } from '@tanstack/vue-query'
+import { onlineManager, VueQueryPlugin } from '@tanstack/vue-query'
 import MockAdapter from 'axios-mock-adapter'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { http } from '../../lib/http'
@@ -30,6 +30,7 @@ function message(id: number): Message {
   }
 }
 beforeEach(() => {
+  onlineManager.setOnline(true)
   vi.stubGlobal('WebSocket', TestSocket)
   TestSocket.instances = []
   saveSession({ access_token: 'test', refresh_token: 'refresh', expires_at: 0 })
@@ -215,4 +216,40 @@ it('explains offline recovery inside the conversation when mobile navigation is 
   expect(host.querySelector('.conversation')?.textContent).toContain('Offline')
   expect((host.querySelector('.composer textarea') as HTMLTextAreaElement).disabled).toBe(true)
   expect(host.querySelector('.message-list')?.textContent).not.toContain('Private 1')
+})
+
+it('gates cached private content while authorizing a room switch', async () => {
+  const { host, router } = await mount()
+  const room8 = {
+    id: 8,
+    name: 'Second private',
+    visibility: 'private',
+    role: 'member',
+    created_by: 1,
+    created_at: '2026-10-14T00:00:00Z',
+  }
+  const private8 = { ...message(8), room_id: 8, content: 'Cached secret eight' }
+  queryClient.setQueryData(queryKeys.room(8), room8)
+  queryClient.setQueryData(queryKeys.latestMessages(8), [private8])
+  queryClient.setQueryData(queryKeys.messageHistory(8), { pages: [[private8]], pageParams: [null] })
+  queryClient.setQueryData(queryKeys.members(8), { members: [] })
+  let authorize!: (response: [number, typeof room8]) => void
+  const authorization = new Promise<[number, typeof room8]>((resolve) => {
+    authorize = resolve
+  })
+  mock.onGet('/api/v1/rooms/8').reply(() => authorization)
+  mock.onGet('/api/v1/rooms/8/members').reply(200, { members: [] })
+  mock.onGet('/api/v1/rooms/8/messages').reply(200, { messages: [private8] })
+  mock
+    .onGet('/api/v1/rooms/8/read-state')
+    .reply(200, { room_id: 8, last_read_message_id: 0, unread_count: 0 })
+  await router.push('/app/rooms/8')
+  await new Promise((resolve) => setTimeout(resolve, 100))
+  expect(host.querySelector('.message-list')?.textContent).not.toContain('Cached secret eight')
+  expect((host.querySelector('.composer textarea') as HTMLTextAreaElement).disabled).toBe(true)
+  authorize([200, room8])
+  await expect
+    .poll(() => host.querySelector('.message-list')?.textContent)
+    .toContain('Cached secret eight')
+  expect((host.querySelector('.composer textarea') as HTMLTextAreaElement).disabled).toBe(false)
 })

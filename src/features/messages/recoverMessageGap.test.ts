@@ -4,7 +4,7 @@ import MockAdapter from 'axios-mock-adapter'
 import { http } from '../../lib/http'
 import { saveSession } from '../../lib/session'
 import type { Message } from '../../types'
-import { recoverMessageGap } from './recoverMessageGap'
+import { recoverMessageGap, refreshRetainedMessages } from './recoverMessageGap'
 
 function message(id: number, revision = 1): Message {
   return {
@@ -77,4 +77,24 @@ it('does not turn an aborted recovery into a partial success', async () => {
   controller.abort()
   await expect(recoverMessageGap(7, [message(1)], controller.signal)).rejects.toBeDefined()
   expect(mock.history.get).toHaveLength(0)
+})
+
+it('refreshes sparse retained ranges with stable cursors despite newer arrivals', async () => {
+  serve(Array.from({ length: 200 }, (_, i) => 200 - i))
+  const result = await refreshRetainedMessages(
+    7,
+    [message(1), message(85)],
+    new AbortController().signal,
+  )
+  expect(result.pages.flat().map((m) => m.id)).toEqual(Array.from({ length: 85 }, (_, i) => 85 - i))
+  expect(result.pageParams).toEqual([86, 46, 6])
+})
+it('rejects a nonadvancing retained-history cursor without reporting recovery success', async () => {
+  serve([])
+  mock
+    .onGet('/api/v1/rooms/7/messages')
+    .reply(200, { messages: Array.from({ length: 40 }, () => message(85)) })
+  await expect(
+    refreshRetainedMessages(7, [message(1), message(85)], new AbortController().signal),
+  ).rejects.toThrow('cursor did not advance')
 })
