@@ -6,10 +6,9 @@ import axios, {
 import { clearSession, readSession, saveSession } from './session'
 import type { TokenPair } from '../types'
 
-const baseURL = (import.meta.env.VITE_API_BASE_URL || 'https://gogo-dl.onrender.com').replace(
-  /\/$/,
-  '',
-)
+export const apiBaseURL = (
+  import.meta.env.VITE_API_BASE_URL || 'https://gogo-dl.onrender.com'
+).replace(/\/$/, '')
 
 export class ApiError extends Error {
   constructor(
@@ -54,8 +53,8 @@ function normalizeError(error: unknown): unknown {
   )
 }
 
-export const publicHttp = axios.create({ baseURL, timeout: 30_000 })
-export const http = axios.create({ baseURL, timeout: 30_000 })
+export const publicHttp = axios.create({ baseURL: apiBaseURL, timeout: 30_000 })
+export const http = axios.create({ baseURL: apiBaseURL, timeout: 30_000 })
 
 publicHttp.interceptors.response.use(undefined, (error: unknown) =>
   Promise.reject(normalizeError(error)),
