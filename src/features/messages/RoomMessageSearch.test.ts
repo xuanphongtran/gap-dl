@@ -140,3 +140,45 @@ it('shows pagination progress separately and preserves already loaded results', 
   await expect.poll(() => host.textContent).toContain('Second result')
   expect(host.textContent).toContain('End of results')
 })
+
+it('restores Search scroll after a refetch hides rows and resets it for a new query', async () => {
+  const rows = Array.from({ length: 20 }, (_, i) => ({
+    ...result,
+    id: 100 - i,
+    content: `Result ${i}`,
+  }))
+  mock.onGet('/api/v1/rooms/7/messages/search').reply(200, { messages: rows, next_before: null })
+  const { host } = await mount()
+  await submit(host)
+  await expect.poll(() => host.querySelectorAll('.search-results .message-row').length).toBe(20)
+  const panel = host.querySelector('.room-search') as HTMLElement
+  let top = 1000
+  Object.defineProperty(panel, 'scrollTop', {
+    get: () => {
+      if (!host.querySelectorAll('.search-results .message-row').length) top = 0
+      return top
+    },
+    set: (value) => {
+      top = value
+    },
+  })
+  let resolve!: (response: [number, object]) => void
+  mock.onGet('/api/v1/rooms/7/messages/search').reply(
+    () =>
+      new Promise<[number, object]>((r) => {
+        resolve = r
+      }),
+  )
+  const refetch = queryClient.invalidateQueries({ queryKey: queryKeys.messageSearch(7) })
+  await expect.poll(() => host.textContent).toContain('Searching...')
+  expect(panel.scrollTop).toBe(0)
+  resolve([200, { messages: rows, next_before: null }])
+  await refetch
+  await nextTick()
+  expect(panel.scrollTop).toBe(1000)
+  mock.onGet('/api/v1/rooms/7/messages/search').reply(200, { messages: rows, next_before: null })
+  await submit(host, 'other')
+  await expect.poll(() => host.querySelectorAll('.search-results .message-row').length).toBe(20)
+  await nextTick()
+  expect(panel.scrollTop).toBe(0)
+})

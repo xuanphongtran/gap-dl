@@ -1,0 +1,85 @@
+<!doctype html>
+<html>
+  <body>
+    <div id="app" style="height: 400px; display: flex; flex-direction: column"></div>
+    <pre id="report"></pre>
+    <script type="module">
+      import { createApp, h } from 'vue'
+      import { VueQueryPlugin } from '@tanstack/vue-query'
+      import MockAdapter from 'axios-mock-adapter'
+      import { http } from './src/lib/http'
+      import { queryClient } from './src/lib/query'
+      import { saveSession } from './src/lib/session'
+      import RoomMessageSearch from './src/features/messages/RoomMessageSearch.vue'
+      import './src/style.css'
+      saveSession({ access_token: 'fake', refresh_token: 'fake', expires_at: 0 })
+      let calls = 0
+      const report = {}
+      const mock = new MockAdapter(http)
+      mock.onAny().reply(async (config) => {
+        if (!config.url.endsWith('/search')) return [500, {}]
+        calls++
+        if (calls > 1) await new Promise((r) => setTimeout(r, 600))
+        return [
+          200,
+          {
+            messages: Array.from({ length: 20 }, (_, i) => ({
+              id: 100 - i,
+              room_id: 7,
+              user_id: 1,
+              username: 'Reader',
+              content: 'Long search message '.repeat(15),
+              revision: 1,
+              created_at: '2026-10-14T00:00:00Z',
+              edited_at: null,
+              deleted_at: null,
+            })),
+            next_before: 80,
+          },
+        ]
+      })
+      createApp({
+        render: () =>
+          h(RoomMessageSearch, { roomId: 7, userId: 2, enabled: true, knownMessages: [] }),
+      })
+        .use(VueQueryPlugin, { queryClient })
+        .mount('#app')
+      const input = document.querySelector('input')
+      input.value = 'hello'
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+      setTimeout(
+        () =>
+          document
+            .querySelector('form')
+            .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })),
+        100,
+      )
+      setTimeout(() => {
+        const panel = document.querySelector('.room-search')
+        panel.scrollTop = 1000
+        report.before = panel.scrollTop
+      }, 1500)
+      setTimeout(() => {
+        const panel = document.querySelector('.room-search')
+        report.during = panel.scrollTop
+        report.duringRows = panel.querySelectorAll('.message-row').length
+      }, 5400)
+      setTimeout(() => {
+        const panel = document.querySelector('.room-search')
+        report.after = panel.scrollTop
+        report.afterRows = panel.querySelectorAll('.message-row').length
+        report.callsBeforeNewQuery = calls
+        input.value = 'other'
+        input.dispatchEvent(new Event('input', { bubbles: true }))
+        document
+          .querySelector('form')
+          .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+      }, 7000)
+      setTimeout(() => {
+        report.newQueryTop = document.querySelector('.room-search').scrollTop
+        report.calls = calls
+        document.querySelector('#report').textContent = JSON.stringify(report)
+      }, 9000)
+    </script>
+  </body>
+</html>

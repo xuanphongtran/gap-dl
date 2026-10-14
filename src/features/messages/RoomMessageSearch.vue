@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, toRef } from 'vue'
+import { onMounted, ref, toRef, watch } from 'vue'
 import PixelField from '../../components/base/PixelField.vue'
 import PixelButton from '../../components/base/PixelButton.vue'
 import PixelAlert from '../../components/base/PixelAlert.vue'
@@ -23,6 +23,33 @@ const search = useRoomMessageSearch({
   knownMessages: toRef(props, 'knownMessages'),
   onAccessLost: (id) => emit('accessLost', id),
 })
+let savedSearchTop = 0
+let displayedResults = false
+watch(
+  [search.submitted, search.pending, toRef(props, 'enabled'), search.error],
+  ([text, pending, enabled], [previousText, previousPending, previousEnabled, previousError]) => {
+    if (text !== previousText) {
+      savedSearchTop = 0
+      displayedResults = false
+    }
+    if (pending || !enabled) {
+      if (displayedResults && !previousPending && previousEnabled && !previousError)
+        savedSearchTop = panel.value?.scrollTop || 0
+      return
+    }
+  },
+  { flush: 'sync' },
+)
+watch(
+  [search.submitted, search.pending, toRef(props, 'enabled'), search.error],
+  ([text, pending, enabled, error]) => {
+    if (panel.value && text && !pending && enabled && !error) {
+      panel.value.scrollTop = savedSearchTop
+      displayedResults = true
+    }
+  },
+  { flush: 'post' },
+)
 onMounted(() => panel.value?.querySelector('input')?.focus())
 function time(value: string) {
   const date = new Date(value)

@@ -20,7 +20,7 @@
 - Current account and current authorized membership are required for requests and rendering. Hide results while recovering authorization; never redisplay old results before a fresh successful search.
 - Cancel reads on close, room/account/query changes and access loss; prevent removed query instances and stale errors from updating a new room/account.
 - Retain visible-only five-second Search polling until lifecycle events are complete. REST remains authoritative; no WS payload is rendered as search data.
-- Search rows never acknowledge read state. Preserve composer/draft and conversation scroll; do not add routes, persistent query storage, telemetry or query text in URLs.
+- Search rows never acknowledge read state. Preserve composer/draft and conversation scroll; do not add routes, persistent query storage, telemetry or query text in browser navigation URLs.
 - No global search, edit/delete controls in results, arbitrary history jumps, attachments/inbox or unrelated refactoring. No push, merge or deployment without the corresponding instruction.
 
 ## Review Focus
@@ -86,11 +86,11 @@
 - [x] Recheck deployed Swagger/contract and use restricted test fixtures. Run the current feature branch at an allowed development origin against the real backend with two accounts. Verify Search finds matches beyond the newest 40 messages, cursor pages/query changes, edits/deletions no longer matching, removal while Search is open, draft/scroll preservation, keyboard focus/Escape and desktop/mobile layout without horizontal overflow. Do not re-invite an already removed guest or claim deployed frontend acceptance.
 - [x] Clean up disposable guest messages/accounts and record remaining owner/room fixture lifecycle. Keep credentials, tokens, query text and raw private responses out of Git and user-facing logs. Document actual test/artifact evidence and any failed/open gates; mark Search UI complete only after its automated and live acceptance succeeds.
 - [x] Run `npm run check` and `git diff --check`. Expected: all pass. Commit the independently verified task.
-- [ ] Request one fresh-context whole-branch review against the Search task base (`74bfaa0`), with the approved spec, this plan, Review Focus and recorded rulings. Re-grade findings by user impact; fix Critical/Important once using reproducing RED→GREEN tests and a passing full check. Record deferred Minors and scoped/unverified contracts. No per-task agents or second review.
-- [ ] Commit review fixes and execution evidence. Keep `feat/message-search` clean without pushing/merging/deploying. Report checks, live results, remaining deployment/backend gates and any deferred findings.
+- [x] Request one fresh-context whole-branch review against the Search task base (`74bfaa0`), with the approved spec, this plan, Review Focus and recorded rulings. Re-grade findings by user impact; fix Critical/Important once using reproducing RED→GREEN tests and a passing full check. Record deferred Minors and scoped/unverified contracts. No per-task agents or second review.
+- [x] Commit review fixes and execution evidence. Keep `feat/message-search` clean without pushing/merging/deploying. Report checks, live results, remaining deployment/backend gates and any deferred findings.
 
 ## Self-review and handoff
 
 The four tasks cover the approved interaction, source boundaries, freshness/privacy and acceptance sections. API/keys/helpers are defined before composable consumers; the panel/composable interfaces match parent integration. All five Review Focus cases have owning regression steps. This plan introduces no new dependencies or generic transport/realtime abstraction.
 
-Execution remains inline, with one independent final reviewer. The user has approved the design; this implementation plan is ready for user review before product changes start.
+Execution remains inline, with one independent final reviewer. The user approved both design and plan. Tasks 1–4 are complete; the independent review identified two Important findings, reproduced and fixed with a green full check and native browser scroll evidence. Final-host deployment remains open.

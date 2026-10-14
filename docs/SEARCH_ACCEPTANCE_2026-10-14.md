@@ -30,7 +30,7 @@ Temporary diagnostics collected only epoch/fetch/visibility booleans and were re
 
 ## Automated checks and fixtures
 
-Final `npm run check`: 135 tests in 23 files, plus format, lint, typecheck and production build. `git diff --check` passes. The new suites exercise API/cursor bounds, revisions and erased authors, account/room/query isolation, removed cache identities, cancellation, foreground/recovery, read-state suppression, draft/editor/scroll preservation, semantic fields and pagination/error states.
+Final `npm run check`: 137 tests in 23 files, plus format, lint, typecheck and production build. `git diff --check` passes. The new suites exercise API/cursor bounds, revisions and erased authors, account/room/query isolation, removed cache identities, cancellation, foreground/recovery, read-state suppression, draft/editor/scroll preservation, semantic fields and pagination/error states.
 
 The final run deleted all 47 test messages (46 seeded plus one missed while offline) and deleted the disposable guest account with 204. Earlier diagnostic guests/messages were also cleaned up. Existing owner and private room 6 remain; credentials are in the restricted Git-ignored fixture directory. The backend has no room-delete endpoint. The known private-room re-invitation blocker remains unchanged; a removed guest was never re-invited.
 
@@ -39,3 +39,15 @@ Final full-run artifacts: `/tmp/gogo-search-acceptance-poNMKm/report.json`, `des
 ## Remaining gates
 
 Deployment and final-host browser acceptance, distributed recovery/presence/typing, attachments/inbox and backend re-invitation remain separate work. Search does not provide global search, highlighted HTML, total counts, result edit/delete controls or arbitrary history jumps.
+
+
+## Independent review and fix verification
+
+The independent final review identified two Important findings and no Critical or Minor findings. Both were reproduced with failing tests and fixed:
+
+- Search polling now preserves the same submitted query's reading position while private rows are hidden during refresh, then restores scroll after the fresh DOM is rendered. A new query resets scroll to zero. The native Chrome mocked-HTTP probe reported before/after scroll 1000, zero visible rows during refetch, 20 fresh rows afterward, and new-query scroll zero. Evidence: `/tmp/gogo-search-scroll-FyF3UM/report.json`.
+- All automatic Search requests honor cooldown. Polling and invalidation are disabled during `Retry-After`; a defensive query-function guard also blocks a request before observer options update. A 60-second mocked cooldown stays at one request after five seconds and invalidation, then resumes successfully after expiry.
+
+`npm run search:scroll:check` reproduces the native layout check without calling the backend or loading real credentials. It requires installed dev dependencies and Chrome (`CHROME_PATH` overrides the default Linux binary). This opt-in check is separate from deterministic CI.
+
+An additional live owner-browser keyboard check passed native Enter form submission, Escape closing/focus return, and Enter reopening the focused header control. Evidence: `/tmp/gogo-search-acceptance-y5J7vY/report.json`. Its single test message was deleted with 200; no new account was registered. Earlier keyboard harness attempts were corrected for readiness and CDP Enter text; their individual test messages were also deleted.

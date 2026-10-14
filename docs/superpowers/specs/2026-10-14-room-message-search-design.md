@@ -1,6 +1,6 @@
 # Room message search design
 
-Status: approved by the user on 2026-10-14. The [implementation plan](../plans/2026-10-14-room-message-search.md) is ready for review; no product implementation has started.
+Status: approved by the user on 2026-10-14. The approved [implementation plan](../plans/2026-10-14-room-message-search.md) is implemented on `feat/message-search`; [local acceptance](../../SEARCH_ACCEPTANCE_2026-10-14.md) passed. Final-host deployment remains open.
 
 ## Purpose and scope
 
@@ -27,7 +27,7 @@ Changing the submitted query restarts cursor pagination. Closing the panel cance
 ## Source and state boundaries
 
 - Add a typed `SearchMessagesResponse` DTO and `api.searchMessages(roomId, query, limit, before, signal)` in the existing types/API modules. Continue using the existing Axios transport and single-flight auth refresh.
-- Extend `queryKeys` with room/account/query-scoped search keys nested under the room prefix so `clearRoomQueries` removes them. The raw query must never be written to URLs, persistent storage, analytics, or diagnostics.
+- Extend `queryKeys` with room/account/query-scoped search keys nested under the room prefix so `clearRoomQueries` removes them. The raw query must never be written to browser navigation URLs, persistent storage, analytics, or diagnostics.
 - Add a feature composable and `RoomMessageSearch.vue` under `src/features/messages/`. Use Vue Query for server results and cursor state; refs hold open state, input and submitted query. Base controls remain presentation-only.
 - `RoomChat.vue` owns panel visibility, scroll/focus restoration and authorization props. Search emits current-room access loss into the existing cleanup path. Neither API modules nor base controls import feature UI.
 

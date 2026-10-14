@@ -1,5 +1,5 @@
 import { computed, onScopeDispose, ref, watch, type Ref } from 'vue'
-import { useInfiniteQuery, type InfiniteData } from '@tanstack/vue-query'
+import { CancelledError, useInfiniteQuery, type InfiniteData } from '@tanstack/vue-query'
 import { useEventListener } from '@vueuse/core'
 import { api, ApiError, errorMessage } from '../../lib/api'
 import { queryClient, queryKeys } from '../../lib/query'
@@ -37,6 +37,8 @@ export function useRoomMessageSearch(options: SearchOptions) {
       !!submitted.value,
   )
 
+  const automaticAllowed = computed(() => allowed.value && !cooldown.remaining.value)
+
   function cancelKey(oldKey: readonly unknown[], remove: boolean) {
     void queryClient.cancelQueries({ queryKey: oldKey, exact: true })
     if (remove) queryClient.removeQueries({ queryKey: oldKey, exact: true })
@@ -71,11 +73,11 @@ export function useRoomMessageSearch(options: SearchOptions) {
   const query = useInfiniteQuery(
     computed(() => ({
       queryKey: key.value,
-      enabled: allowed.value,
+      enabled: automaticAllowed.value,
       initialPageParam: undefined as number | undefined,
       staleTime: 0,
       retry: false,
-      refetchInterval: allowed.value ? 5000 : false,
+      refetchInterval: automaticAllowed.value ? 5000 : false,
       queryFn: async ({
         signal,
         pageParam,
@@ -83,6 +85,7 @@ export function useRoomMessageSearch(options: SearchOptions) {
         signal: AbortSignal
         pageParam: number | undefined
       }) => {
+        if (cooldown.remaining.value) throw new CancelledError({ revert: true })
         const id = options.roomId.value,
           user = options.userId.value,
           text = submitted.value,
@@ -125,8 +128,12 @@ export function useRoomMessageSearch(options: SearchOptions) {
     return queryClient.getQueryState<InfiniteData<SearchMessagesResponse>>(key.value)
   })
   const error = computed(() =>
-    options.open.value && submitted.value && state.value?.error
-      ? errorMessage(state.value.error)
+    options.open.value && submitted.value
+      ? cooldown.remaining.value
+        ? errorMessage(new ApiError(429, '', undefined, cooldown.remaining.value))
+        : state.value?.error
+          ? errorMessage(state.value.error)
+          : ''
       : '',
   )
   const pending = computed(
