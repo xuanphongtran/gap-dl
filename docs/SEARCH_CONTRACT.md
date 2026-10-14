@@ -35,4 +35,4 @@ All three probe messages were deleted; the guest account was deleted with 204. T
 - Pause and hide private search results while realtime authorization recovery is pending. Responses from earlier rooms, accounts, searches, and cache instances must not restore snippets.
 - Refresh active search on local edit/delete and realtime REST reconciliation. Keep visible-page polling while complete lifecycle events remain undocumented.
 - Search matches must not advance the normal conversation's read cursor or change exact unread counts.
-- Search UI, keyboard/mobile acceptance, and automated client privacy tests are not implemented yet.
+- Search UI and automated privacy tests are implemented; [local-branch Chrome acceptance](./SEARCH_ACCEPTANCE_2026-10-14.md) passed with the deployed backend. Final-host deployment acceptance remains open.

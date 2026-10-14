@@ -68,7 +68,7 @@ The initial base set covers buttons, form fields, panels, alerts, empty/loading 
 
 ## 7. Search, attachments, and inbox
 
-- **Search:** room-scoped authorized search with bounded query and documented cursor pagination. Handle edits, tombstones, revoked membership, and stale snippets without leaking content. Verify the newly documented endpoint with test accounts before frontend implementation.
+- **Search:** room-scoped authorized search with bounded query and documented cursor pagination. Handle edits, tombstones, revoked membership, and stale snippets without leaking content. Implemented on `feat/message-search` with [verified API and browser evidence](./docs/SEARCH_ACCEPTANCE_2026-10-14.md); deployment acceptance remains separate. Search preserves conversation drafts/scroll and does not acknowledge found messages.
 - **Attachments:** add progress/cancel/retry, scanning states, quotas, and authorized download only after private immutable storage, scanning, and cleanup are verified. Signed URLs stay ephemeral and out of durable caches/logs/events. Keep text-only sending; attachment-only sending needs a separate contract.
 - **Mentions/inbox:** select recipients by typed identity, not username parsing. Add private paginated feed and preferences when endpoints exist; deleted or revoked items must not reappear after reconnect. External email/push is outside scope.
 

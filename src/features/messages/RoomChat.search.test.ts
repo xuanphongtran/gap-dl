@@ -353,3 +353,63 @@ it('invalidates Search when a pending local delete completes', async () => {
     .poll(() => host.querySelector('.room-search')?.textContent)
     .toContain('No matching messages')
 })
+
+it('preserves an unsaved message editor draft while Search is opened and closed', async () => {
+  server = [{ ...message(1), user_id: 2, username: 'reader' }]
+  stubSearch()
+  const { host } = await mount()
+  button(host, 'Edit').click()
+  await nextTick()
+  const editor = host.querySelector('.message-editor textarea') as HTMLTextAreaElement
+  editor.value = 'Unsaved editor draft'
+  editor.dispatchEvent(new Event('input', { bubbles: true }))
+  await nextTick()
+  await search(host)
+  button(host, 'CLOSE SEARCH').click()
+  await nextTick()
+  expect((host.querySelector('.message-editor textarea') as HTMLTextAreaElement).value).toBe(
+    'Unsaved editor draft',
+  )
+})
+
+it('revalidates a changed query after paginated results and a bubbling foreground event', async () => {
+  mock.onGet('/api/v1/rooms/7/messages/search').reply((config) => [
+    200,
+    {
+      messages:
+        config.params.before === undefined
+          ? Array.from({ length: 20 }, (_, i) => ({
+              ...message(99 - i),
+              content: 'Found old text',
+            }))
+          : [{ ...message(79), content: 'Found old text' }],
+      next_before: config.params.before === undefined ? 80 : null,
+    },
+  ])
+  const { host, socket } = await mount()
+  await search(host)
+  button(host, 'LOAD MORE').click()
+  await expect.poll(() => host.querySelectorAll('.search-results .message-row').length).toBe(21)
+  const input = host.querySelector('.room-search input') as HTMLInputElement
+  input.value = 'specific'
+  input.dispatchEvent(new Event('input', { bubbles: true }))
+  input.closest('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+  await expect.poll(() => mock.history.get.some((c) => c.params?.q === 'specific')).toBe(true)
+  const visibility = vi.spyOn(document, 'visibilityState', 'get')
+  visibility.mockReturnValue('hidden')
+  document.dispatchEvent(new Event('visibilitychange', { bubbles: true }))
+  await nextTick()
+  mock.onGet('/api/v1/rooms/7/messages/search').reply(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 200))
+    return [200, { messages: [], next_before: null }]
+  })
+  visibility.mockReturnValue('visible')
+  document.dispatchEvent(new Event('visibilitychange', { bubbles: true }))
+  setTimeout(
+    () => socket.message(JSON.stringify({ type: 'presence_snapshot', room_id: '7', payload: {} })),
+    50,
+  )
+  await expect
+    .poll(() => host.querySelector('.room-search')?.textContent)
+    .toContain('No matching messages')
+})

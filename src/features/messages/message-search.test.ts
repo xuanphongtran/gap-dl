@@ -70,3 +70,12 @@ it('scopes search to room, account and query and removes it with room cleanup', 
   expect(queryClient.getQueriesData({ queryKey: queryKeys.messageSearch(7) })).toEqual([])
   expect(queryClient.getQueryData(other)).toEqual({ messages: [] })
 })
+
+it('does not restore an erased author from a stale search page at the same revision', () => {
+  const result = mergeSearchResults(
+    [{ messages: [message(3)], next_before: null }],
+    [{ ...message(3), user_id: null, username: '' }],
+  )
+  expect(result[0]?.user_id).toBeNull()
+  expect(result[0]?.content).toBe('matching text')
+})

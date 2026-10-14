@@ -313,3 +313,20 @@ it('rejects a pending response and error after changing the submitted query', as
   expect(h.search.error.value).toBe('')
   expect(queryClient.getQueryData(queryKeys.searchMessages(7, 2, 'first'))).toBeUndefined()
 })
+
+it('recovers verification when an external room cancellation interrupts a resumed search', async () => {
+  const h = await mount()
+  await submit(h)
+  h.enabled.value = false
+  await settle()
+  const resolve = delay()
+  h.enabled.value = true
+  await settle()
+  await queryClient.cancelQueries({ queryKey: queryKeys.room(7) })
+  mock.onGet(/\/messages\/search$/).reply(200, page([5]))
+  await queryClient.invalidateQueries({ queryKey: queryKeys.messageSearch(7) })
+  resolve([200, page([99])])
+  await settle()
+  expect(h.search.pending.value).toBe(false)
+  expect(h.search.results.value.map((m) => m.id)).toEqual([5])
+})

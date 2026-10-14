@@ -58,6 +58,11 @@ export function mergeSearchResults(pages: SearchMessagesResponse[], known: Messa
         (!current || current.revision <= message.revision)
       )
     })
+    .map((message) =>
+      canonical.get(message.id)?.user_id === null
+        ? { ...message, user_id: null, username: '' }
+        : message,
+    )
     .reverse()
 }
 
