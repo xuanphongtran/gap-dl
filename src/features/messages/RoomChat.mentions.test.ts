@@ -175,3 +175,22 @@ it('requires confirmation before discarding an uncertain mention', async () => {
   expect(field.disabled).toBe(false)
   expect(field.value).toBe('pending')
 })
+
+it('offers room mute preferences to an ordinary member in the member panel', async () => {
+  mock.onGet('/api/v1/rooms/7/notification-preferences').reply(200, { muted: false })
+  mock.onPut('/api/v1/rooms/7/notification-preferences').reply(200, { muted: true })
+  const { host } = await mount()
+  button(host, 'MEMBERS').click()
+  await expect.poll(() => host.textContent).toContain('MUTE MENTIONS')
+  const checkbox = host.querySelector<HTMLInputElement>('input[type=checkbox]')!
+  checkbox.checked = true
+  checkbox.dispatchEvent(new Event('change'))
+  await nextTick()
+  button(host, 'SAVE PREFERENCES').click()
+  await expect
+    .poll(() => mock.history.put.some((c) => c.url?.endsWith('/notification-preferences')))
+    .toBe(true)
+  expect(
+    JSON.parse(mock.history.put.find((c) => c.url?.endsWith('/notification-preferences'))!.data),
+  ).toEqual({ muted: true })
+})

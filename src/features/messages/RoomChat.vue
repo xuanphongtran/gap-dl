@@ -10,6 +10,7 @@ import PixelButton from '../../components/base/PixelButton.vue'
 import PixelEmptyState from '../../components/base/PixelEmptyState.vue'
 import PixelField from '../../components/base/PixelField.vue'
 import MessageComposer from './MessageComposer.vue'
+import NotificationPreferencesControl from '../notifications/NotificationPreferencesControl.vue'
 import MentionRecipientPicker from './MentionRecipientPicker.vue'
 import { useMentionSend } from './useMentionSend'
 import MessageRow from './MessageRow.vue'
@@ -774,6 +775,12 @@ function formatDate(value: string) {
             ×
           </button>
         </div>
+        <NotificationPreferencesControl
+          :user-id="profile?.id"
+          :room-id="roomId"
+          :enabled="canReadPrivateData"
+          @access-lost="loseRoomAccess"
+        />
         <p class="muted panel-subtitle">{{ members.length }} people in this room</p>
         <div class="member-list">
           <div v-for="member in members" :key="member.user_id" class="member-row">
