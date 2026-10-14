@@ -12,6 +12,10 @@ Swagger still reports API version 1.0, now with 31 paths and 41 operations, SHA-
 
 The [WS contract record](./WEBSOCKET_CONTRACT.md) describes the first event-triggered REST integration. Eight local-branch browser smoke checks with the deployed backend passed; a separate authenticated sandbox-origin upgrade returned 101. The new frontend has not been deployed to sandbox. REST remains authoritative for writes, revision/tombstone merging, and read state, and five-second polling stays enabled. Published AsyncAPI omits the presence envelopes observed at runtime and complete lifecycle/read-state events; those gates remain open.
 
+## Search review: 2026-10-14
+
+[Authenticated Search evidence](./SEARCH_CONTRACT.md) verifies query bounds, complete Message DTOs, descending-ID exclusive cursor pagination, plain-text AND matching, edits/deletion exclusion, invited access, and private/public nonmember denial. Twelve checks passed; disposable messages and the guest account were cleaned up. Frontend Search implementation and browser acceptance remain open.
+
 ## Snapshot and reachability
 
 | Item | Observed on 2026-10-02 |

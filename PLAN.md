@@ -112,7 +112,8 @@ Keep endpoint functions in `src/lib/api.ts`, Axios transport in `src/lib/http.ts
 
 ## 6. Search, attachments, and inbox — P2
 
-- [ ] **Search:** The endpoint is now documented; verify authorization and deletion-aware responses with test accounts, then add a room-scoped query form, cursor pagination, loading/empty states, and revoked-membership cleanup. Test edits/tombstones and result privacy.
+- [x] **Search contract:** Verify authenticated authorization, query bounds, cursor pagination, edit freshness and deletion-aware responses with test accounts. Twelve live checks passed on 2026-10-14; see [the contract evidence](./docs/SEARCH_CONTRACT.md).
+- [ ] **Search UI:** Add a room-scoped query form, cursor pagination, loading/empty states, and revoked-membership cleanup. Test edits/tombstones and result privacy. [Proposed design](./docs/superpowers/specs/2026-10-14-room-message-search-design.md) is ready for review; product implementation has not started.
 - [ ] **Attachments:** Wait for provider, scanner, quota, reservation, and signed-download contracts. Add upload progress/cancel/retry and scan states; keep signed URLs ephemeral/private. Test scan failure, expiry, leave during upload, duplicate retry, and cleanup-visible states.
 - [ ] **Mentions/inbox:** Wait for typed recipient/generation and feed/preference endpoints. Add recipient picker, private paginated inbox, preference controls, and retry-safe read actions. Test leave/rejoin and deleted references. Do not infer mentions by parsing names in text.
 
