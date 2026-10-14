@@ -94,3 +94,50 @@
 The four tasks cover the approved interaction, source boundaries, freshness/privacy and acceptance sections. API/keys/helpers are defined before composable consumers; the panel/composable interfaces match parent integration. All five Review Focus cases have owning regression steps. This plan introduces no new dependencies or generic transport/realtime abstraction.
 
 Execution remains inline, with one independent final reviewer. The user approved both design and plan. Tasks 1–4 are complete; the independent review identified two Important findings, reproduced and fixed with a green full check and native browser scroll evidence. Final-host deployment remains open.
+
+
+## Execution record
+
+Execution: approved inline execution; existing feature branch feat/message-search in the current checkout is the isolation requested by this session. Base df250b5.
+
+Pre-flight: Task 1 API/key/helper signatures match Task 2 query consumers.
+
+Pre-flight: Task 2 readonly-ref options/output match Task 3 panel/parent interfaces.
+
+Pre-flight: Task 3 search prefix and access gating match Task 4 privacy/live acceptance.
+
+Task 1: complete (commits df250b5..a01e977, tests: npm test →    Duration  10.77s (environment 45%, tests 29%, transform 15%, import 11%))
+
+Task 2: complete (commits a01e977..3b56b8a, tests: npm test →    Duration  10.79s (environment 42%, tests 30%, transform 18%, import 10%))
+
+Task 3: complete (commits 3b56b8a..92afbcf, tests: npm run check → ✓ built in 381ms)
+
+Task 4: additional erased-author privacy test RED→GREEN; stale Search cannot restore known erased author identity at equal revision.
+
+Task 4: Chrome harness selector corrected after first run; fixture cleanup 46/46 and guest 204.
+
+Task 4: initial remote-edit freshness wait timed out at 9 seconds. Two reduced live probes and controlled cancellation/foreground tests passed; final full Chrome run passed 11/11 with an 18-second freshness wait. No latency guarantee inferred.
+
+Task 4: full-run cleanup 47/47 test messages, guest account deleted 204. Existing owner/room 6 retained.
+
+Task 4: Ruling: interpret URL privacy as browser navigation URLs, not the API request URL — the verified and approved GET endpoint necessarily sends q; frontend history/storage/logs remain query-free — cost if wrong: backend/proxy request-log handling may retain queries and cannot be guaranteed by this frontend.
+
+Final review: independent read-only review 74bfaa0..fa70697; Critical none, two Important, Minor none. Re-graded both Important by ordinary reading/rate-limit impact.
+
+Final: Ruling: leave final-host deployment, CORS and multi-tab deployed acceptance open — no deployment was authorized; current evidence is local-branch Chrome against deployed API — cost if wrong: release-host behavior remains unverified.
+
+Final: Ruling: backend authorization implementation and request-log privacy remain outside this checkout — twelve authenticated API checks support sampled behavior, while server internals/logging were not audited — cost if wrong: backend authorization defects or query retention cannot be repaired by these client guards.
+
+Final: Ruling: distributed recovery, presence/typing and backend re-invitation remain deferred — separate contracts/backend work are required and this approved slice is room Search — cost if wrong: no distributed delivery guarantee or new presence/typing UI; removed users can remain blocked on re-invitation.
+
+Final: Ruling: global search, attachments/inbox, highlighting, result editing and historical-context navigation remain deferred — the approved release searches active-room text with readonly results — cost if wrong: users need later slices for those features.
+
+Final: fixed polling resets Search scroll — restores Search scroll after a refetch hides rows and resets it for a new query RED→GREEN; native Chrome before/after=1000, duringRows=0, newQueryTop=0; suite 137/137.
+
+Final: fixed automatic requests bypass cooldown — blocks polling and invalidation during a long Retry-After and resumes after expiry RED→GREEN; suite 137/137.
+
+Final: no deferred minors from this Search review. Existing WS workspace status minor remains documented separately.
+
+Final: native Enter/Escape/header Enter passed on the live owner browser; single test message deleted 200, no new account created.
+
+Task 4: complete (commits 92afbcf..5084cd2, tests: npm run check → ✓ built in 324ms)
