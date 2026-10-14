@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, provide, ref, watch } from 'vue'
 import { useMutation, useQuery } from '@tanstack/vue-query'
 import { useRoute, useRouter } from 'vue-router'
 import PixelAlert from '../../components/base/PixelAlert.vue'
@@ -8,11 +8,16 @@ import PixelButton from '../../components/base/PixelButton.vue'
 import PixelField from '../../components/base/PixelField.vue'
 import PixelPanel from '../../components/base/PixelPanel.vue'
 import RoomUnreadBadge from './RoomUnreadBadge.vue'
+import RealtimeStatus from './RealtimeStatus.vue'
+import { realtimeKey } from './realtime-context'
+import { useWorkspaceRealtime } from './useWorkspaceRealtime'
 import { api, errorMessage } from '../../lib/api'
 import { queryClient, queryKeys } from '../../lib/query'
 import { useActionCooldown, useKeyedActionCooldown } from '../../lib/rate-limit'
 import { useAuthStore } from '../../stores/auth'
 
+const realtime = useWorkspaceRealtime()
+provide(realtimeKey, realtime)
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
@@ -153,6 +158,7 @@ function toggleJoin() {
         <div class="workspace-label"><span class="status-dot"></span> WORKSPACE / ONLINE</div>
       </div>
 
+      <RealtimeStatus :status="realtime.status.value" @retry="realtime.retry" />
       <div class="sidebar-scroll">
         <div class="section-heading">
           <span>CHAT ROOMS</span

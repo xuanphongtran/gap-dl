@@ -8,6 +8,10 @@ Swagger still reports API version 1.0, now with 31 paths and 41 operations, SHA-
 
 [Sandbox browser acceptance](./ACCEPTANCE_2026-10-13.md) verifies invitation/send/history, lifecycle manager permissions and reloads, multi-tab read state, and explicit retry after an injected failed read-state write. Sandbox CORS and route fallback pass. Re-invitation after private-room removal is blocked: POST returns the original accepted invitation, the recipient has no pending invitation, and room access remains 404. A natural login 429 was observed with UI feedback; Retry-After/countdown remain unverified. An authenticated profile response exposes only Content-Length through CORS, leaving browser access to X-Request-ID and Retry-After unresolved. The sections below preserve the earlier snapshot and its historical findings.
 
+## WebSocket review: 2026-10-14
+
+The [WS contract record](./WEBSOCKET_CONTRACT.md) describes the first event-triggered REST integration. Eight local-branch browser smoke checks with the deployed backend passed; a separate authenticated sandbox-origin upgrade returned 101. The new frontend has not been deployed to sandbox. REST remains authoritative for writes, revision/tombstone merging, and read state, and five-second polling stays enabled. Published AsyncAPI omits the presence envelopes observed at runtime and complete lifecycle/read-state events; those gates remain open.
+
 ## Snapshot and reachability
 
 | Item | Observed on 2026-10-02 |
