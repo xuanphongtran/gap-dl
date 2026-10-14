@@ -1,6 +1,6 @@
 # Room message search design
 
-Status: proposed for user review. No product implementation has started.
+Status: approved by the user on 2026-10-14. The [implementation plan](../plans/2026-10-14-room-message-search.md) is ready for review; no product implementation has started.
 
 ## Purpose and scope
 
