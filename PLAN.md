@@ -10,6 +10,8 @@ The latest reviewed operation matrix and unresolved runtime checks are in [docs/
 
 **Current frontend baseline (2026-10-02):** Vue 3, TypeScript, Router, Pinia session state, Axios transport, Vue Query server state, pixel UI, ESLint, Prettier, Vitest, and GitHub Actions are in place. Basic REST rooms, invitations, membership actions, profile, text messages, pagination, and latest-page polling are implemented. Two-account HTTP behavior was verified on the target deployment; browser end-to-end behavior remains open. WebSocket and SSE are deferred.
 
+**Backend follow-up (2026-10-15):** [Backend handoff](./docs/BACKEND_HANDOFF.md) tracks CORS, private-room re-invitation, attachment readiness, legacy fixture cleanup, and pending deployment verification with acceptance criteria.
+
 ## 0. Frontend source and component foundation — P0, implement first
 
 The app already runs, but route views contain repeated pixel controls and much of the feature UI. Refactor the existing implementation before adding new API-driven behavior. Preserve routes, visible copy, mobile layout, and request semantics while moving code.
