@@ -512,3 +512,43 @@ it('refreshes retained history and bridged ranges on subsequent recovery', async
   expect(h.known.value.find((m) => m.id === 20)?.deleted_at).toBe('2026-10-14T01:00:00Z')
   expect(h.known.value.find((m) => m.id === 65)?.content).toBe('Edited bridge')
 })
+
+it('does not cancel an unrelated room preference read during message reconciliation', async () => {
+  const h = setup(),
+    socket = await connected()
+  await expect.poll(() => h.context.status.value).toBe('connected')
+  let resolve!: (value: { muted: boolean }) => void
+  let signal!: AbortSignal
+  const pending = queryClient
+    .fetchQuery({
+      queryKey: queryKeys.roomNotificationPreferences(7, 2),
+      queryFn: ({ signal: currentSignal }) => {
+        signal = currentSignal
+        return new Promise<{ muted: boolean }>((r) => (resolve = r))
+      },
+    })
+    .then(
+      (value) => ({ value, error: undefined }),
+      (error) => ({ value: undefined, error }),
+    )
+  await tick()
+  expect(signal.aborted).toBe(false)
+  server = [message(2), message(1)]
+  socket.message(JSON.stringify({ type: 'message', room_id: '7', payload: { id: 2 } }))
+  await expect.poll(() => h.known.value.some((row) => row.id === 2)).toBe(true)
+  expect(signal.aborted).toBe(false)
+  resolve({ muted: false })
+  expect((await pending).value).toEqual({ muted: false })
+})
+
+it('initializes cancelled first history from the authorized recovered page', async () => {
+  const h = setup()
+  await connected()
+  await expect.poll(() => h.context.status.value).toBe('connected')
+  expect(
+    queryClient
+      .getQueryData<{ pages: Message[][] }>(queryKeys.messageHistory(7))
+      ?.pages.flat()
+      .map((row) => row.id),
+  ).toEqual([1])
+})

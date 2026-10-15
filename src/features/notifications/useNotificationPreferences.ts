@@ -4,7 +4,7 @@ import { useEventListener } from '@vueuse/core'
 import { api, ApiError, errorMessage } from '../../lib/api'
 import { queryClient, queryKeys } from '../../lib/query'
 import { readSession } from '../../lib/session'
-import { useActionCooldown } from '../../lib/rate-limit'
+import { useKeyedActionCooldown } from '../../lib/rate-limit'
 import type { NotificationPreferences, RoomNotificationPreferences } from '../../types'
 
 export function useNotificationPreferences(options: {
@@ -17,15 +17,18 @@ export function useNotificationPreferences(options: {
     verified = ref(-1),
     pending = shallowRef<object>(),
     saveError = ref('')
-  const readCooldown = useActionCooldown(),
-    saveCooldown = useActionCooldown()
+  const readCooldown = useKeyedActionCooldown(),
+    saveCooldown = useKeyedActionCooldown()
   const key = computed(() =>
     options.roomId
       ? queryKeys.roomNotificationPreferences(options.roomId.value, options.userId.value || 0)
       : queryKeys.notificationPreferences(options.userId.value || 0),
   )
+  const cooldownKey = computed(() => JSON.stringify(key.value))
   const allowed = computed(() => options.enabled.value && !!options.userId.value && !!readSession())
-  const automatic = computed(() => allowed.value && !readCooldown.remaining.value && !pending.value)
+  const automatic = computed(
+    () => allowed.value && !readCooldown.remaining(cooldownKey.value) && !pending.value,
+  )
   function cancel(oldKey: readonly unknown[]) {
     void queryClient.cancelQueries({ queryKey: oldKey, exact: true })
   }
@@ -67,6 +70,7 @@ export function useNotificationPreferences(options: {
       enabled: automatic.value,
       retry: false,
       staleTime: 10_000,
+      refetchOnMount: 'always',
       queryFn: async ({ signal }: { signal: AbortSignal }) => {
         if (!automatic.value) throw new CancelledError({ revert: true })
         const user = options.userId.value,
@@ -92,7 +96,7 @@ export function useNotificationPreferences(options: {
           return response
         } catch (cause) {
           if (current()) {
-            readCooldown.start(cause)
+            readCooldown.start(cooldownKey.value, cause)
             if (
               room !== undefined &&
               cause instanceof ApiError &&
@@ -123,8 +127,8 @@ export function useNotificationPreferences(options: {
     if (
       !allowed.value ||
       pending.value ||
-      saveCooldown.remaining.value ||
-      readCooldown.remaining.value
+      saveCooldown.remaining(cooldownKey.value) ||
+      readCooldown.remaining(cooldownKey.value)
     )
       return
     const user = options.userId.value,
@@ -149,7 +153,7 @@ export function useNotificationPreferences(options: {
       verified.value = capturedEpoch
     } catch (cause) {
       if (current()) {
-        saveCooldown.start(cause)
+        saveCooldown.start(cooldownKey.value, cause)
         saveError.value = errorMessage(cause)
         if (room !== undefined && cause instanceof ApiError && [403, 404].includes(cause.status))
           options.onAccessLost?.(room)
@@ -173,7 +177,7 @@ export function useNotificationPreferences(options: {
       : undefined,
   )
   const cooldownSeconds = computed(() =>
-    Math.max(readCooldown.remaining.value, saveCooldown.remaining.value),
+    Math.max(readCooldown.remaining(cooldownKey.value), saveCooldown.remaining(cooldownKey.value)),
   )
   const error = computed(() =>
     cooldownSeconds.value

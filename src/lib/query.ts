@@ -37,6 +37,8 @@ export const queryClient = new QueryClient({
 })
 
 export function clearRoomQueries(id: number): void {
+  if (typeof window !== 'undefined')
+    window.dispatchEvent(new CustomEvent('room:access-lost', { detail: { roomId: id } }))
   void queryClient.cancelQueries({ queryKey: ['notifications'] })
   queryClient.removeQueries({ queryKey: ['notifications'] })
   queryClient.removeQueries({ queryKey: queryKeys.room(id) })

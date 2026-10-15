@@ -33,7 +33,7 @@ beforeEach(() => {
   onlineManager.setOnline(true)
   vi.stubGlobal('WebSocket', TestSocket)
   TestSocket.instances = []
-  saveSession({ access_token: 'test', refresh_token: 'refresh', expires_at: 0 })
+  saveSession({ access_token: 'test', refresh_token: 'refresh', expires_at: 0 }, true)
   server = [message(1)]
   mock.onGet('/api/v1/users/me').reply(200, {
     id: 2,
@@ -193,4 +193,24 @@ it('offers room mute preferences to an ordinary member in the member panel', asy
   expect(
     JSON.parse(mock.history.put.find((c) => c.url?.endsWith('/notification-preferences'))!.data),
   ).toEqual({ muted: true })
+})
+
+it('preserves uncertain retry identity across settings navigation', async () => {
+  mock.onPost('/api/v1/rooms/7/messages').networkError()
+  const { host, router } = await mount()
+  const field = host.querySelector<HTMLTextAreaElement>('#message-input')!
+  field.value = 'pending'
+  field.dispatchEvent(new Event('input', { bubbles: true }))
+  const picker = host.querySelector('select')!
+  picker.value = '1'
+  picker.dispatchEvent(new Event('change'))
+  await nextTick()
+  field.dispatchEvent(
+    new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }),
+  )
+  await expect.poll(() => host.textContent).toContain('DISCARD PENDING SEND')
+  await router.push('/app/settings')
+  await router.push('/app/rooms/7')
+  await expect.poll(() => host.textContent).toContain('Private 1')
+  expect(host.textContent).toContain('DISCARD PENDING SEND')
 })

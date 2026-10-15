@@ -27,20 +27,39 @@ interface Intent {
   createdAt: number
   epoch: number
   pending: boolean
+  uncertain: boolean
   error: string
 }
 
+const intents = reactive(new Map<number, Intent>())
+let intentEpoch = 0
+let intentUser: number | undefined
+function clearIntents() {
+  intentEpoch++
+  intentUser = undefined
+  intents.clear()
+}
+window.addEventListener('session:changed', (event: Event) => {
+  if (!readSession() || (event as CustomEvent<{ accountChanged?: boolean }>).detail?.accountChanged)
+    clearIntents()
+})
+window.addEventListener('room:access-lost', (event: Event) => {
+  intents.delete((event as CustomEvent<{ roomId: number }>).detail.roomId)
+})
+
 export function useMentionSend(options: Options) {
   const selectedIds = ref<number[]>([])
-  const intents = reactive(new Map<number, Intent>())
   const error = ref('')
   const cooldown = useActionCooldown()
   const now = useTimestamp({ scheduler: (callback) => useIntervalFn(callback, 1000) })
-  let epoch = 0
   const current = computed(() => intents.get(options.roomId.value))
   const sending = computed(() => current.value?.pending || false)
   const locked = computed(() => !!current.value?.key)
   const expired = computed(() => !!current.value && now.value - current.value.createdAt >= 86400000)
+  if (current.value) {
+    options.draft.value = current.value.content
+    selectedIds.value = [...current.value.ids]
+  }
   const mutation = useMutation({
     retry: false,
     networkMode: 'always',
@@ -52,12 +71,20 @@ export function useMentionSend(options: Options) {
       ),
   })
   function reset() {
-    epoch++
-    intents.clear()
+    clearIntents()
     selectedIds.value = []
     error.value = ''
   }
-  watch(options.userId, reset, { flush: 'sync' })
+  watch(
+    options.userId,
+    (user) => {
+      if (user && user !== intentUser) {
+        reset()
+        intentUser = user
+      }
+    },
+    { flush: 'sync', immediate: true },
+  )
   watch(
     options.roomId,
     () => {
@@ -87,7 +114,7 @@ export function useMentionSend(options: Options) {
     intent.pending = true
     error.value = ''
     const active = () =>
-      intent.epoch === epoch &&
+      intent.epoch === intentEpoch &&
       intent.userId === options.userId.value &&
       intents.get(intent.roomId) === intent
     try {
@@ -100,6 +127,7 @@ export function useMentionSend(options: Options) {
       if (!authorized) {
         if (!intent.key) intents.delete(intent.roomId)
         else {
+          intent.uncertain = true
           intent.error = 'Verify room access before retrying this pending send.'
           if (isCurrent) error.value = intent.error
         }
@@ -120,7 +148,8 @@ export function useMentionSend(options: Options) {
         return
       }
       const definite = cause instanceof ApiError && [400, 413, 429].includes(cause.status)
-      if (definite || !intent.key) intents.delete(intent.roomId)
+      if ((definite && !intent.uncertain) || !intent.key) intents.delete(intent.roomId)
+      else intent.uncertain = true
       intent.error =
         cause instanceof ApiError && cause.status === 409
           ? 'Retry key conflicts. Check the conversation before discarding this pending send.'
@@ -160,6 +189,7 @@ export function useMentionSend(options: Options) {
       error.value = 'Selected recipients are no longer room members. Review your selection.'
       return
     }
+    intentUser = options.userId.value
     intents.set(options.roomId.value, {
       roomId: options.roomId.value,
       userId: options.userId.value,
@@ -167,8 +197,9 @@ export function useMentionSend(options: Options) {
       ids,
       ...(ids.length ? { key: crypto.randomUUID() } : {}),
       createdAt: Date.now(),
-      epoch,
+      epoch: intentEpoch,
       pending: false,
+      uncertain: false,
       error: '',
     })
     await execute(intents.get(options.roomId.value)!)

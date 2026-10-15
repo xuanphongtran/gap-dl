@@ -18,7 +18,7 @@ async function settle() {
 beforeEach(() => {
   vi.useFakeTimers()
   onlineManager.setOnline(true)
-  saveSession({ access_token: 'test', refresh_token: 'refresh', expires_at: 0 })
+  saveSession({ access_token: 'test', refresh_token: 'refresh', expires_at: 0 }, true)
   vi.spyOn(crypto, 'randomUUID').mockReturnValue('12345678-1234-1234-1234-123456789012')
   mock.onPost().reply(201, { id: 9, room_id: 7 })
 })
@@ -193,4 +193,31 @@ it('retains retry identity when an accepted response arrives during authorizatio
     mock.history.post[0]!.headers?.['Idempotency-Key'],
   )
   expect(h.success).toHaveBeenCalledOnce()
+})
+
+it.each([400, 413, 429])(
+  'retains the original uncertain key after a rejected retry (%i)',
+  async (status) => {
+    mock.resetHandlers()
+    mock.onPost().networkErrorOnce()
+    mock.onPost().reply(status, { error: 'slow' }, { 'Retry-After': '60' })
+    const h = mount()
+    h.send.selectedIds.value = [2]
+    await h.send.send()
+    await h.send.retry()
+    expect(h.send.locked.value).toBe(true)
+  },
+)
+
+it('purges a pending send when its inactive room is revoked', async () => {
+  const { clearRoomQueries } = await import('../../lib/query')
+  mock.onPost().networkError()
+  const h = mount()
+  h.send.selectedIds.value = [2]
+  await h.send.send()
+  h.roomId.value = 8
+  clearRoomQueries(7)
+  h.roomId.value = 7
+  await settle()
+  expect(h.send.locked.value).toBe(false)
 })

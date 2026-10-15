@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { useEventListener } from '@vueuse/core'
 import { useQuery } from '@tanstack/vue-query'
 import { useRouter } from 'vue-router'
 import PixelButton from '../../components/base/PixelButton.vue'
@@ -19,20 +20,59 @@ const inbox = useNotificationInbox({
 })
 const list = ref<HTMLElement | null>(null)
 let top = 0
+let restoreFocus:
+  { id: string; action: string; user: number | undefined; filter: boolean } | undefined
+useEventListener(document, 'focusin', (event: FocusEvent) => {
+  if (restoreFocus && event.target !== document.body && event.target !== document.documentElement)
+    restoreFocus = undefined
+})
+useEventListener(document, 'pointerdown', () => {
+  restoreFocus = undefined
+})
+useEventListener(document, 'keydown', () => {
+  if (inbox.loading.value) restoreFocus = undefined
+})
 watch(
   [inbox.loading, inbox.unreadOnly],
   ([loading, filter], [wasLoading, previousFilter]) => {
     if (filter !== previousFilter) {
+      restoreFocus = undefined
       top = 0
       if (list.value) list.value.scrollTop = 0
-    } else if (loading && !wasLoading) top = list.value?.scrollTop || 0
+    } else if (loading && !wasLoading) {
+      top = list.value?.scrollTop || 0
+      const active = document.activeElement as HTMLElement | null
+      const row = active?.closest<HTMLElement>('[data-notification-id]')
+      if (row && active?.dataset.notificationAction)
+        restoreFocus = {
+          id: row.dataset.notificationId!,
+          action: active.dataset.notificationAction,
+          user: userId.value,
+          filter: filter,
+        }
+    }
   },
   { flush: 'sync' },
 )
 watch(
   inbox.loading,
   (loading) => {
-    if (!loading && list.value) list.value.scrollTop = top
+    if (!loading && list.value) {
+      list.value.scrollTop = top
+      const target = restoreFocus
+      restoreFocus = undefined
+      if (
+        target &&
+        target.user === userId.value &&
+        target.filter === inbox.unreadOnly.value &&
+        document.activeElement === document.body
+      ) {
+        const button = list.value.querySelector<HTMLButtonElement>(
+          `[data-notification-id="${target.id}"] [data-notification-action="${target.action}"]`,
+        )
+        if (button && !button.disabled) button.focus({ preventScroll: true })
+      }
+    }
   },
   { flush: 'post' },
 )
@@ -78,7 +118,12 @@ function date(value: string) {
       <p v-else-if="!inbox.rows.value.length && !inbox.error.value">
         No notifications in this view.
       </p>
-      <article v-for="row in inbox.rows.value" :key="row.id" class="notification-row">
+      <article
+        v-for="row in inbox.rows.value"
+        :key="row.id"
+        class="notification-row"
+        :data-notification-id="row.id"
+      >
         <strong>{{ row.kind === 'mention' ? 'Mention' : 'Notification' }}</strong>
         <span>{{ inbox.rooms.value.find((room) => room.id === row.room_id)?.name || 'Room' }}</span>
         <time :datetime="row.created_at">{{ date(row.created_at) }}</time>
@@ -87,12 +132,14 @@ function date(value: string) {
         <div class="inbox-actions">
           <PixelButton
             v-if="!row.read_at"
+            data-notification-action="read"
             :disabled="inbox.readingIds.value.includes(row.id) || !!inbox.cooldownSeconds.value"
             @click="inbox.markRead(row.id)"
             >MARK READ</PixelButton
           >
           <PixelButton
             v-if="row.availability === 'available'"
+            data-notification-action="open"
             :disabled="!!inbox.cooldownSeconds.value"
             @click="openRoom(row.room_id)"
             >OPEN ROOM</PixelButton
@@ -111,6 +158,7 @@ function date(value: string) {
 </template>
 <style scoped>
 .inbox-screen {
+  height: 100%;
   display: flex;
   flex-direction: column;
   gap: 1rem;

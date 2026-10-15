@@ -55,3 +55,27 @@ it('renders metadata safely, guards navigation, and preserves same-filter scroll
     app.unmount()
   }
 })
+
+it('retains keyboard focus through automatic polling', async () => {
+  const { vi } = await import('vitest')
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: [{ path: '/app/inbox', component: NotificationInbox }],
+  })
+  await router.push('/app/inbox')
+  const host = document.createElement('div')
+  document.body.append(host)
+  const app = createApp({ render: () => h(NotificationInbox) })
+  app.use(createPinia()).use(router).use(VueQueryPlugin, { queryClient }).mount(host)
+  try {
+    await settle()
+    const button = [...host.querySelectorAll('button')].find((b) => b.textContent === 'OPEN ROOM')!
+    button.focus()
+    expect(document.activeElement).toBe(button)
+    await vi.advanceTimersByTimeAsync(5000)
+    await settle()
+    expect(document.activeElement?.textContent).toBe('OPEN ROOM')
+  } finally {
+    app.unmount()
+  }
+})

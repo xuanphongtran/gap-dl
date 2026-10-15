@@ -13,6 +13,7 @@ const preferences = useNotificationPreferences({
     : {}),
   onAccessLost: (id) => emit('access-lost', id),
 })
+let operationEpoch = 0
 const id = useId(),
   desired = ref(false),
   dirty = ref(false)
@@ -26,14 +27,16 @@ watch(
 watch(
   [toRef(props, 'roomId'), toRef(props, 'userId'), toRef(props, 'enabled')],
   () => {
+    operationEpoch++
     dirty.value = false
     desired.value = preferences.value.value ?? false
   },
   { flush: 'sync' },
 )
 async function save() {
+  const operation = operationEpoch
   await preferences.save(desired.value)
-  if (!preferences.error.value) {
+  if (operation === operationEpoch && !preferences.error.value) {
     dirty.value = false
     desired.value = preferences.value.value ?? desired.value
   }

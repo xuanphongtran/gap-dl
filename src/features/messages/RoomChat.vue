@@ -433,6 +433,15 @@ const mentionSend = useMentionSend({
     if (id === roomId.value) scrollBottom()
   },
 })
+useEventListener(window, 'room:access-lost', (event: Event) => {
+  const id = (event as CustomEvent<{ roomId: number }>).detail.roomId
+  draftByRoom.delete(id)
+  seenMessages.delete(id)
+  if (id === roomId.value) {
+    draft.value = ''
+    mentionSend.discard()
+  }
+})
 const sending = mentionSend.sending
 async function send() {
   await mentionSend.send()
