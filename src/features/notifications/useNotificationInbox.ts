@@ -12,6 +12,7 @@ export function useNotificationInbox(options: {
   userId: Readonly<Ref<number | undefined>>
   enabled: Readonly<Ref<boolean>>
 }) {
+  let accountEpoch = 0
   const unreadOnly = ref(false)
   const visible = ref(document.visibilityState === 'visible')
   const online = ref(navigator.onLine)
@@ -72,6 +73,7 @@ export function useNotificationInbox(options: {
   watch(
     options.userId,
     () => {
+      accountEpoch++
       acknowledged.clear()
       pendingReads.clear()
     },
@@ -120,13 +122,24 @@ export function useNotificationInbox(options: {
           capturedEpoch === epoch.value &&
           queryClient.getQueryCache().find({ queryKey: capturedKey, exact: true }) === instance
         try {
+          const capturedAccount = accountEpoch
           await queryClient.fetchQuery({
             queryKey: queryKeys.rooms,
             staleTime: 0,
             retry: false,
             queryFn: async ({ signal: roomSignal }) => {
+              const roomInstance = queryClient
+                .getQueryCache()
+                .find({ queryKey: queryKeys.rooms, exact: true })
               const value = await api.rooms(roomSignal)
-              if (!current()) throw new CancelledError({ revert: true })
+              if (
+                roomSignal.aborted ||
+                user !== options.userId.value ||
+                capturedAccount !== accountEpoch ||
+                queryClient.getQueryCache().find({ queryKey: queryKeys.rooms, exact: true }) !==
+                  roomInstance
+              )
+                throw new CancelledError({ revert: true })
               return value
             },
           })
@@ -165,6 +178,7 @@ export function useNotificationInbox(options: {
       !readSession() ||
       (event as CustomEvent<{ accountChanged?: boolean }>).detail?.accountChanged
     ) {
+      accountEpoch++
       resetVerification()
       acknowledged.clear()
       pendingReads.clear()

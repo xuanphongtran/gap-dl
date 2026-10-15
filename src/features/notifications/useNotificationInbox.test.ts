@@ -166,3 +166,28 @@ it('cancels room authorization when account identity changes', async () => {
   resolve([200, room])
   expect(await pending).toBe(false)
 })
+
+it('returns to all notifications after filtering an acknowledged item', async () => {
+  const h = await mount()
+  await h.inbox.markRead(3)
+  await settle()
+  h.inbox.unreadOnly.value = true
+  await settle()
+  expect(h.inbox.rows.value.map((n) => n.id)).toEqual([2])
+  h.inbox.unreadOnly.value = false
+  await settle()
+  expect(h.inbox.rows.value.map((n) => n.id)).toEqual([3, 2])
+})
+
+it('shares a slow membership read safely across rapid filter changes', async () => {
+  const h = await mount()
+  let resolve!: (v: [number, object]) => void
+  mock.onGet('/api/v1/rooms').reply(() => new Promise<[number, object]>((r) => (resolve = r)))
+  h.inbox.unreadOnly.value = true
+  await settle()
+  h.inbox.unreadOnly.value = false
+  await settle()
+  resolve([200, { rooms: [room] }])
+  await settle()
+  expect(h.inbox.rows.value.map((n) => n.id)).toEqual([3, 2])
+})
