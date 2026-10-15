@@ -2,6 +2,10 @@
 
 This is the frontend's reviewed snapshot of the deployed [Swagger JSON](https://gogo-dl.onrender.com/swagger/doc.json). Recheck that document before changing endpoint code. The snapshot records documentation, not proof that authenticated operations work with real accounts.
 
+## Mentions/inbox continuation: 2026-10-15
+
+[Frontend acceptance](./MENTIONS_INBOX_ACCEPTANCE_2026-10-15.md) records reviewed implementation, 191 passing tests, and native Chrome functional acceptance through a temporary same-origin proxy. Direct browser sends remain blocked: backend CORS omits `Idempotency-Key` from allowed request headers for the frontend origins. Backend correction and direct/deployed acceptance remain required; the proxy does not close this gate.
+
 ## Rich messaging review: 2026-10-14
 
 The current Swagger hash and operation count are unchanged from 2026-10-13. [Authenticated rich messaging probes](./RICH_MESSAGING_CONTRACT.md) verify typed mention sends, idempotent retry/conflicts, asynchronous private notification delivery, cursor pagination, read ownership/idempotence, preference booleans, deleted references, and public leave/rejoin generation isolation. Attachments remain blocked: valid reservation requests return 503 while the scanner is pending. Mentions/inbox can proceed to frontend design independently. HTTP checks do not close browser/release gates; the evidence records an interrupted fixture-cleanup limitation.
