@@ -1,5 +1,8 @@
 # REST API contract baseline
 
+**Later recheck (2026-10-15, 07:49–07:54 UTC):** [Fresh backend evidence](./BACKEND_RECHECK_2026-10-15.md) confirms CORS header allowance, direct Chrome send/retry, private re-invitation, and response-header exposure. These fixes supersede the earlier blocker descriptions below; attachments, legacy cleanup and final deployment remain open.
+
+
 This is the frontend's reviewed snapshot of the deployed [Swagger JSON](https://gogo-dl.onrender.com/swagger/doc.json). Recheck that document before changing endpoint code. The snapshot records documentation, not proof that authenticated operations work with real accounts.
 
 ## Mentions/inbox continuation: 2026-10-15

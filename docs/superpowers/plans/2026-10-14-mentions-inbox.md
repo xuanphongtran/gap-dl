@@ -120,7 +120,7 @@
 
 ## Execution handoff
 
-Status: approved and implemented; Tasks 1–5 complete with [acceptance evidence](../../MENTIONS_INBOX_ACCEPTANCE_2026-10-15.md). Direct CORS and final deployment remain open release gates. Preserve native inline execution from the preceding feature work; use `superpowers:executing-plans` after user review, with one fresh final reviewer and no per-task implementation agents. Track task start/completion in `.superpowers/sdd/2026-10-14-mentions-inbox/progress.md`. The legacy fixture-cleanup issue does not justify fabricating credentials or blocking independent feature implementation.
+Status: approved and implemented; Tasks 1–5 complete with [acceptance evidence](../../MENTIONS_INBOX_ACCEPTANCE_2026-10-15.md). Direct CORS is now [reverified](../../BACKEND_RECHECK_2026-10-15.md); final deployment remains an open release gate. Preserve native inline execution from the preceding feature work; use `superpowers:executing-plans` after user review, with one fresh final reviewer and no per-task implementation agents. Track task start/completion in `.superpowers/sdd/2026-10-14-mentions-inbox/progress.md`. The legacy fixture-cleanup issue does not justify fabricating credentials or blocking independent feature implementation.
 
 ## Execution record
 
@@ -151,3 +151,5 @@ Final: shared membership query now uses account/cache identity independently of 
 Ruling: name acceptance document for actual run date2026-10-15 rather than planned14th — evidence should reflect when it was observed — cost if wrong: planned links need updating; all repository links updated.
 Final: no deferred Minor findings; seven review findings fixed. Direct CORS and final deployment stay open in PLAN, while frontend implementation and local proxy acceptance are complete.
 Task 5: complete (commits 0c91667..47a3408, tests: npm run check → ✓ built in 355ms)
+
+Backend follow-up 2026-10-15, 07:49–07:54 UTC: direct Chrome CORS send/accepted-response-loss retry and private re-invitation pass; prior execution-record CORS/re-invitation blockers are superseded by [fresh evidence](../../BACKEND_RECHECK_2026-10-15.md). No frontend source changes. Final hosting remains open.

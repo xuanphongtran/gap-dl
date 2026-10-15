@@ -10,6 +10,8 @@ The latest reviewed operation matrix and unresolved runtime checks are in [docs/
 
 **Current frontend baseline (2026-10-02):** Vue 3, TypeScript, Router, Pinia session state, Axios transport, Vue Query server state, pixel UI, ESLint, Prettier, Vitest, and GitHub Actions are in place. Basic REST rooms, invitations, membership actions, profile, text messages, pagination, and latest-page polling are implemented. Two-account HTTP behavior was verified on the target deployment; browser end-to-end behavior remains open. WebSocket and SSE are deferred.
 
+**Backend recheck (2026-10-15, 07:49–07:54 UTC):** [Fresh probes](./docs/BACKEND_RECHECK_2026-10-15.md) close the Idempotency-Key CORS and private re-invitation blockers. Attachments still return 503; account 36 membership and cursor mismatch remain. Earlier dated findings below are historical.
+
 **Backend follow-up (2026-10-15):** [Backend handoff](./docs/BACKEND_HANDOFF.md) tracks CORS, private-room re-invitation, attachment readiness, legacy fixture cleanup, and pending deployment verification with acceptance criteria.
 
 ## 0. Frontend source and component foundation — P0, implement first
@@ -93,7 +95,7 @@ Keep endpoint functions in `src/lib/api.ts`, Axios transport in `src/lib/http.ts
 - [x] Add unread badges to the room list using server state or a documented full-history calculation. Do not infer exact counts from the newest-page cache. Exclude own messages and preserve tombstone-by-ID behavior.
 - [x] Clear read state on logout, account switch, and membership loss. Existing account-switch tests and the sandbox browser removal/logout checks verify cleanup. Browser reload, two-tab convergence after foregrounding, and explicit retry after an injected failed write passed on 2026-10-13.
 - [x] Complete deterministic rapid-room-switch and overlapping-write checks. Eight mounted-composable tests exercise real Vue Query, Axios cancellation, viewport measurement, and debounce behavior. Temporary removal of cancellation/generation protection and monotonic merging causes the expected failures; production source is restored.
-- [ ] Retest private-room rejoin after the confirmed re-invitation blocker is resolved.
+- [x] Retest private-room rejoin: fresh pending invitation, denial before acceptance, restored access and hidden old feed passed on 2026-10-15; see [backend recheck](./docs/BACKEND_RECHECK_2026-10-15.md).
 
 **Completion record (2026-10-02):** Added room-scoped read-state queries, monotonic cursor merging, a debounced visible-message acknowledgement, membership revocation cleanup, and server-backed unread badges. The deployed two-account smoke verified own-message exclusion, tombstones counting by ID, monotonic stale writes, duplicate acknowledgement, membership denial, and cleanup of disposable accounts. Local checks cover cursor merging and API payloads; browser multi-tab convergence and final-host CORS remain release gates.
 
@@ -119,7 +121,8 @@ Keep endpoint functions in `src/lib/api.ts`, Axios transport in `src/lib/http.ts
 - [ ] **Attachments:** Reservation verified on 2026-10-14: valid authenticated requests return scanner-pending 503. Provider, scanner, quota, binding, and signed-download gates remain open; see [rich messaging evidence](./docs/RICH_MESSAGING_CONTRACT.md). Add upload progress/cancel/retry and scan states only after those gates pass; keep signed URLs ephemeral/private. Test scan failure, expiry, leave during upload, duplicate retry, and cleanup-visible states.
 - [x] **Mentions/inbox contract:** Typed recipients, same-key send identity/conflicts, asynchronous private feed pagination, repeated read, false preference payloads, deleted references, and public leave/rejoin generation isolation verified on 2026-10-14. Final HTTP runs passed 40 private-room checks and 10 public-generation checks; [evidence and cleanup limitations](./docs/RICH_MESSAGING_CONTRACT.md). Private-room re-invitation remains blocked independently.
 - [x] **Mentions/inbox UI:** Typed recipient picker, private metadata-only inbox, explicit read/retry, and account/room preferences implemented and reviewed on `feat/mentions-inbox`. [Acceptance](./docs/MENTIONS_INBOX_ACCEPTANCE_2026-10-15.md) records 191 passing tests and native desktop/mobile checks through a temporary proxy.
-- [ ] **Mentions/inbox release:** Backend CORS must allow `Idempotency-Key`; rerun direct cross-origin two-account acceptance and final-host verification before release. Legacy fixture cleanup remains a separate admin gate.
+- [x] **Mentions/inbox direct CORS:** Header allowance and direct local-branch two-account Chrome send/response-loss retry verified on 2026-10-15; see [backend recheck](./docs/BACKEND_RECHECK_2026-10-15.md).
+- [ ] **Mentions/inbox release:** Final-host feature deployment and browser verification remain open. Legacy fixture cleanup remains a separate admin gate.
 
 **Exit gate:** Each slice has its own deployed API/privacy gate and can ship independently. External email/push and attachment-only sends stay outside this plan.
 

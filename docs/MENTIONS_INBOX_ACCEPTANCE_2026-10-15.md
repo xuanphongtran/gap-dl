@@ -1,5 +1,8 @@
 # Mentions and inbox acceptance — 2026-10-15
 
+**Later recheck (2026-10-15, 07:49–07:54 UTC):** [Fresh backend evidence](./BACKEND_RECHECK_2026-10-15.md) confirms CORS header allowance, direct Chrome send/retry, private re-invitation, and response-header exposure. These fixes supersede the earlier blocker descriptions below; attachments, legacy cleanup and final deployment remain open.
+
+
 Status: implemented on `feat/mentions-inbox`, independently reviewed and locally accepted against the deployed API through an explicit temporary same-origin proxy. **Release remains blocked by backend CORS.** No merge, push, or deployment was performed by this run.
 
 ## Implementation and verification
