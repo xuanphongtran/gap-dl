@@ -552,3 +552,39 @@ it('initializes cancelled first history from the authorized recovered page', asy
       .map((row) => row.id),
   ).toEqual([1])
 })
+
+it('hands fallback recovery to a new room when the previous recovery is still pending', async () => {
+  const h = setup()
+  await expect.poll(() => TestSocket.instances.length).toBe(1)
+  let release!: (value: [number, object]) => void
+  mock.onGet('/api/v1/rooms/7').reply(
+    () =>
+      new Promise<[number, object]>((r) => {
+        release = r
+      }),
+  )
+  TestSocket.instances[0]!.close(1006)
+  await expect.poll(() => h.context.status.value).toBe('recovering')
+  await expect.poll(() => mock.history.get.some((c) => c.url === '/api/v1/rooms/7')).toBe(true)
+  h.unregister()
+  const paused = ref(true)
+  h.context.registerRoom({
+    id: 8,
+    userId: 2,
+    messages: () => [],
+    setPaused: (value) => {
+      paused.value = value
+    },
+    applyRecovered: () => {},
+    reset: () => {},
+    onAccessLost: () => {},
+  })
+  try {
+    await expect.poll(() => paused.value, { timeout: 500 }).toBe(false)
+    expect(queryClient.getQueryData(queryKeys.latestMessages(8))).toEqual([])
+    expect(h.context.status.value).toBe('fallback')
+  } finally {
+    release([200, room])
+    await tick()
+  }
+})

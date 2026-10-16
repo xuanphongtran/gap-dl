@@ -58,12 +58,13 @@
 
 ## Task 3: Long-history resource baseline
 
-**Files:** Create `scripts/check-history-cost.mjs`, `scripts/fixtures/history-api.mjs`, `scripts/check-history-cost.test.mjs`; reuse Task 2's browser helper; modify `package.json`; create `docs/HISTORY_COST_2026-10-16.md` (use actual execution date if later).
+**Files:** Create `scripts/check-history-cost.mjs`, `scripts/fixtures/history-api.mjs`, `scripts/check-history-cost.test.mjs`; reuse Task 2's browser helper; modify `package.json`, `src/features/rooms/useWorkspaceRealtime.ts` and `useWorkspaceRealtime.test.ts` for the reproduced fallback handoff defect; create `docs/HISTORY_COST_2026-10-16.md` (use actual execution date if later).
 
 **Interfaces:** `startHistoryApi({ messageCount: 40 | 1000 })` returns `{ origin, snapshot(), close() }` with the same route-template count shape as Task 2's fixture. CLI `npm run acceptance:history` reports three runs per size: `messageCount`, `renderedRows`, `requestCounts`, `loadMs`, `idleRequestCounts`, `heapBytes: number | null`, and `heapUnavailableReason: string | null`. Heap samples are optional; no memory SLA is invented.
 
 - [ ] Write runner tests: the 1,000-message fixture pages in exclusive 40-message ranges with no duplicate IDs; report never includes message text/IDs/tokens; missing heap support yields null plus a reason, not zero. Run `npm test -- scripts/check-history-cost.test.mjs`; expect failures before implementation.
 - [ ] Implement both local scenarios using real LOAD OLDER interactions. Record an idle 15-second interval, then ten room switches, return to the initial room and sample after pending reads settle. Exclude startup traffic from idle counts; normalize query strings/room IDs to route templates before reporting.
+- [ ] Fix the observed fallback handoff defect only after `hands fallback recovery to a new room when the previous recovery is still pending` fails. Allow the new room to start REST recovery while the workspace status remains recovering from aborted old work; preserve generation guards. Rerun the real WebSocket suite and the native 1,000-row switch scenario.
 - [ ] Run `npm run acceptance:history` three times per size. Fail on missing rows, duplicates, unexpected browser exceptions, unhandled requests or failed fixture cleanup. Publish elapsed-time/request/heap ranges and known platform limitations. Do not mark optional heap failure as a product failure or silently skip row checks.
 - [ ] Compare visible/hidden polling and retained DOM/cache cost. Record any budget or virtualization proposal as a subsequent decision based on these measurements; do not change polling/retention in this task. Commit `test: record long-history resource baseline`.
 

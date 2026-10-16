@@ -16,6 +16,8 @@ Add an explicit workspace read-recovery action beside profile/room-list/invitati
 
 This action does not promise a new global rate-limit coordinator. Automatic 429 suppression already owned by Inbox, Search and preferences must remain intact; the verification matrix pins those boundaries. If the browser matrix exposes a new shared-query scheduling defect, record the reproducible case and amend the implementation plan before widening query ownership.
 
+Recovery ownership amendment (2026-10-16): native 1,000-row baseline and a failing mounted regression confirm that switching rooms while REST fallback recovery is pending can leave the new room paused forever. Transfer recovery to the newly authorized room even while the workspace status still describes the old recovery. Preserve account/room generation guards, abort the old work, and leave polling/history policies unchanged.
+
 ## Verification deliverables
 
 Provide an opt-in local recovery harness that serves the real app against a deterministic local API fixture. It must never direct mutations to the deployed API. Cover login 503 without automatic POST replay, workspace read failure/retry, mention accepted-response loss and explicit same-key retry, Inbox 429 with Retry-After 5, missing/malformed Retry-After, and logout/account change during delayed recovery. Missing Retry-After permits explicit retry without inventing a countdown. Browser errors and unexpected requests fail the check. Injected responses are labelled simulated; they do not close backend live gates.
