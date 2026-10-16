@@ -1,5 +1,8 @@
 # Backend recheck — 2026-10-15, 07:49–07:54 UTC
 
+**Hosted continuation (2026-10-16):** [Sandbox release acceptance](./SANDBOX_RELEASE_ACCEPTANCE_2026-10-16.md) closes the named sandbox's WebSocket multi-tab/reconnect and Mentions/Inbox deployment gates with native browser evidence. Earlier deployment limitations below are historical. Attachments and operational/distributed gates remain open.
+
+
 The deployed backend was rechecked after the reported update. No frontend source changes were required. Fresh evidence supersedes the earlier CORS and private re-invitation blockers; final-host deployment acceptance remains separate.
 
 | Item | Fresh observation | Status |

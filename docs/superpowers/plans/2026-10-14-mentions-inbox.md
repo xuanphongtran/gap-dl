@@ -120,7 +120,7 @@
 
 ## Execution handoff
 
-Status: approved and implemented; Tasks 1–5 complete with [acceptance evidence](../../MENTIONS_INBOX_ACCEPTANCE_2026-10-15.md). Direct CORS is now [reverified](../../BACKEND_RECHECK_2026-10-15.md); final deployment remains an open release gate. Preserve native inline execution from the preceding feature work; use `superpowers:executing-plans` after user review, with one fresh final reviewer and no per-task implementation agents. Track task start/completion in `.superpowers/sdd/2026-10-14-mentions-inbox/progress.md`. The legacy fixture-cleanup issue does not justify fabricating credentials or blocking independent feature implementation.
+Status: approved and implemented; Tasks 1–5 complete with [acceptance evidence](../../MENTIONS_INBOX_ACCEPTANCE_2026-10-15.md). Direct CORS is now [reverified](../../BACKEND_RECHECK_2026-10-15.md); [sandbox-host acceptance now passes](../../SANDBOX_RELEASE_ACCEPTANCE_2026-10-16.md). Preserve native inline execution from the preceding feature work; use `superpowers:executing-plans` after user review, with one fresh final reviewer and no per-task implementation agents. Track task start/completion in `.superpowers/sdd/2026-10-14-mentions-inbox/progress.md`. The legacy fixture-cleanup issue does not justify fabricating credentials or blocking independent feature implementation.
 
 ## Execution record
 
@@ -153,3 +153,5 @@ Final: no deferred Minor findings; seven review findings fixed. Direct CORS and 
 Task 5: complete (commits 0c91667..47a3408, tests: npm run check → ✓ built in 355ms)
 
 Backend follow-up 2026-10-15, 07:49–07:54 UTC: direct Chrome CORS send/accepted-response-loss retry and private re-invitation pass; prior execution-record CORS/re-invitation blockers are superseded by [fresh evidence](../../BACKEND_RECHECK_2026-10-15.md). No frontend source changes. Final hosting remains open.
+
+Hosted continuation 2026-10-16: the user deployed the byte-identical feature build. Sixteen native hosted journeys and a separate strengthened two-tab active-socket logout probe pass; fixtures from both main attempts are cleaned. The read-state harness was corrected to require focus and viewport visibility; historical aggregate socket-close counts were replaced by an active-connection check. No frontend source change was needed. Named sandbox deployment gates are closed; other production origins and backend/operations gates remain separate. [Evidence](../../SANDBOX_RELEASE_ACCEPTANCE_2026-10-16.md).

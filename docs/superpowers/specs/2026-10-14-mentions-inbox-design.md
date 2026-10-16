@@ -1,6 +1,6 @@
 # Mentions, inbox, and notification preferences design
 
-Status: approved by the user on 2026-10-14. The approved [implementation plan](../plans/2026-10-14-mentions-inbox.md) is implemented and independently reviewed on `feat/mentions-inbox`. [Local browser acceptance](../../MENTIONS_INBOX_ACCEPTANCE_2026-10-15.md) passes through a temporary proxy; backend CORS is now [reverified directly](../../BACKEND_RECHECK_2026-10-15.md); final deployment remains open. Phase 6 contract evidence is in [the rich messaging review](../../RICH_MESSAGING_CONTRACT.md).
+Status: approved by the user on 2026-10-14. The approved [implementation plan](../plans/2026-10-14-mentions-inbox.md) is implemented and independently reviewed on `feat/mentions-inbox`. [Local browser acceptance](../../MENTIONS_INBOX_ACCEPTANCE_2026-10-15.md) passes through a temporary proxy; backend CORS is now [reverified directly](../../BACKEND_RECHECK_2026-10-15.md); [sandbox-host acceptance now passes](../../SANDBOX_RELEASE_ACCEPTANCE_2026-10-16.md). Phase 6 contract evidence is in [the rich messaging review](../../RICH_MESSAGING_CONTRACT.md).
 
 ## Scope and approaches
 

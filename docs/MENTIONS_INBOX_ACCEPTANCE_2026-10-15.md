@@ -1,5 +1,8 @@
 # Mentions and inbox acceptance — 2026-10-15
 
+**Hosted continuation (2026-10-16):** [Sandbox release acceptance](./SANDBOX_RELEASE_ACCEPTANCE_2026-10-16.md) closes the named sandbox's WebSocket multi-tab/reconnect and Mentions/Inbox deployment gates with native browser evidence. Earlier deployment limitations below are historical. Attachments and operational/distributed gates remain open.
+
+
 **Later recheck (2026-10-15, 07:49–07:54 UTC):** [Fresh backend evidence](./BACKEND_RECHECK_2026-10-15.md) confirms CORS header allowance, direct Chrome send/retry, private re-invitation, and response-header exposure. These fixes supersede the earlier blocker descriptions below; attachments, legacy cleanup and final deployment remain open.
 
 
