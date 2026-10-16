@@ -5,6 +5,7 @@ import AppShell from './views/AppShell.vue'
 import EmptyView from './views/EmptyView.vue'
 import RoomView from './views/RoomView.vue'
 import SettingsView from './views/SettingsView.vue'
+import InboxView from './views/InboxView.vue'
 
 export const router = createRouter({
   history: createWebHistory(),
@@ -20,6 +21,7 @@ export const router = createRouter({
         { path: '', component: EmptyView },
         { path: 'rooms/:id', component: RoomView },
         { path: 'settings', component: SettingsView },
+        { path: 'inbox', component: InboxView },
       ],
     },
     { path: '/:pathMatch(.*)*', redirect: '/app' },

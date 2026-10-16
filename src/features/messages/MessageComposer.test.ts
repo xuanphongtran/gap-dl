@@ -67,3 +67,24 @@ it('blocks a draft that exceeds 4000 UTF-8 bytes and keeps it editable', async (
     app.unmount()
   }
 })
+
+it('freezes an uncertain send draft without treating it as an active request', () => {
+  const host = document.createElement('div')
+  const app = createApp({
+    render: () =>
+      h(MessageComposer, {
+        modelValue: 'pending',
+        disabled: false,
+        sending: false,
+        locked: true,
+        error: '',
+      }),
+  })
+  app.mount(host)
+  try {
+    expect(host.querySelector('textarea')?.disabled).toBe(true)
+    expect(host.querySelector('button')?.disabled).toBe(true)
+  } finally {
+    app.unmount()
+  }
+})

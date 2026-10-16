@@ -7,6 +7,7 @@ import PixelAvatar from '../../components/base/PixelAvatar.vue'
 import PixelButton from '../../components/base/PixelButton.vue'
 import PixelField from '../../components/base/PixelField.vue'
 import PixelPanel from '../../components/base/PixelPanel.vue'
+import NotificationPreferencesControl from '../notifications/NotificationPreferencesControl.vue'
 import { api, ApiError, errorMessage } from '../../lib/api'
 import { queryClient, queryKeys } from '../../lib/query'
 import { useActionCooldown } from '../../lib/rate-limit'
@@ -91,6 +92,7 @@ async function removeAccount() {
     <p class="eyebrow">PLAYER SETTINGS / 001</p>
     <h1>Your profile</h1>
     <p class="muted">Update how you appear in chat rooms.</p>
+    <NotificationPreferencesControl :user-id="profile?.id" :enabled="!!profile?.id" />
     <PixelPanel as="section" class="settings-card">
       <PixelAvatar class="settings-avatar" :name="profile?.username" />
       <form class="stack-lg" @submit.prevent="save">

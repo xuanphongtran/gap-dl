@@ -10,6 +10,9 @@ import PixelButton from '../../components/base/PixelButton.vue'
 import PixelEmptyState from '../../components/base/PixelEmptyState.vue'
 import PixelField from '../../components/base/PixelField.vue'
 import MessageComposer from './MessageComposer.vue'
+import NotificationPreferencesControl from '../notifications/NotificationPreferencesControl.vue'
+import MentionRecipientPicker from './MentionRecipientPicker.vue'
+import { useMentionSend } from './useMentionSend'
 import MessageRow from './MessageRow.vue'
 import { invalidateRoomSearch } from './message-search'
 import { useViewedReadState } from './useViewedReadState'
@@ -129,7 +132,7 @@ const showMembers = ref(false)
 const inviteId = ref('')
 const error = ref('')
 const actionError = ref('')
-const sendCooldown = useActionCooldown()
+
 const editCooldowns = useKeyedActionCooldown()
 const deleteCooldowns = useKeyedActionCooldown()
 const editingMessageId = ref<number | null>(null)
@@ -252,6 +255,7 @@ function loseRoomAccess(id: number) {
   draftByRoom.delete(id)
   seenMessages.delete(id)
   closeEditor()
+  mentionSend.discard()
   clearRoomQueries(id)
   void router.replace('/app')
 }
@@ -297,9 +301,6 @@ async function loadOlder() {
   }
 }
 
-const sendMutation = useMutation({
-  mutationFn: ({ id, content }: { id: number; content: string }) => api.sendMessage(id, content),
-})
 const editMutation = useMutation({
   mutationFn: ({
     roomId,
@@ -419,38 +420,39 @@ async function joinPublicRoom() {
     if (id === roomId.value) joinError.value = errorMessage(cause)
   }
 }
-const sending = computed(() => sendMutation.isPending.value)
-async function send() {
-  const content = draft.value.trim()
-  if (
-    !content ||
-    sending.value ||
-    !isMember.value ||
-    realtimePaused.value ||
-    sendCooldown.remaining.value
-  )
-    return
-  if (messageContentBytes(content) > MAX_MESSAGE_BYTES) {
-    error.value = 'Message exceeds the 4000-byte UTF-8 limit.'
-    return
-  }
-  error.value = ''
-  const id = roomId.value
-  try {
-    const message = await sendMutation.mutateAsync({ id, content })
+const mentionSend = useMentionSend({
+  roomId,
+  userId: computed(() => profile.value?.id),
+  enabled: canReadPrivateData,
+  members,
+  draft,
+  onAccessLost: loseRoomAccess,
+  onSuccess: (id, message) => {
     applyMessageResult(id, message)
-    if (id !== roomId.value) return
+    draftByRoom.delete(id)
+    if (id === roomId.value) scrollBottom()
+  },
+})
+useEventListener(window, 'room:access-lost', (event: Event) => {
+  const id = (event as CustomEvent<{ roomId: number }>).detail.roomId
+  draftByRoom.delete(id)
+  seenMessages.delete(id)
+  if (id === roomId.value) {
     draft.value = ''
-    scrollBottom()
-  } catch (cause) {
-    sendCooldown.start(cause)
-    if (cause instanceof ApiError && [403, 404].includes(cause.status)) loseRoomAccess(id)
-    else if (id === roomId.value)
-      error.value =
-        cause instanceof ApiError && cause.status === 400
-          ? 'Message must contain 1 to 4000 UTF-8 bytes after trimming.'
-          : errorMessage(cause)
+    mentionSend.discard()
   }
+})
+const sending = mentionSend.sending
+async function send() {
+  await mentionSend.send()
+}
+function discardPendingSend() {
+  if (
+    window.confirm(
+      'The original message may already have been accepted. Discard this pending send?',
+    )
+  )
+    mentionSend.discard()
 }
 
 const inviteMutation = useMutation({
@@ -740,12 +742,37 @@ function formatDate(value: string) {
             }}
           </PixelButton>
         </PixelAlert>
+        <MentionRecipientPicker
+          v-if="profile?.id && isMember"
+          v-model="mentionSend.selectedIds.value"
+          :members="members"
+          :user-id="profile.id"
+          :disabled="!canReadPrivateData || sending || mentionSend.locked.value"
+        />
+        <PixelAlert v-if="mentionSend.locked.value && !sending" tone="info">
+          {{
+            mentionSend.expired.value
+              ? 'Retry expired. Check the conversation before sending again.'
+              : 'This send may already have been accepted. Retry uses the original recipients and message.'
+          }}
+          <PixelButton
+            :disabled="
+              !canReadPrivateData ||
+              mentionSend.expired.value ||
+              !!mentionSend.cooldownSeconds.value
+            "
+            @click="mentionSend.retry"
+            >RETRY</PixelButton
+          >
+          <PixelButton @click="discardPendingSend">DISCARD PENDING SEND</PixelButton>
+        </PixelAlert>
         <MessageComposer
           v-model="draft"
           :disabled="!isMember || realtimePaused"
           :sending="sending"
-          :cooldown-seconds="sendCooldown.remaining.value"
-          :error="visibleError || ''"
+          :locked="mentionSend.locked.value"
+          :cooldown-seconds="mentionSend.cooldownSeconds.value"
+          :error="mentionSend.error.value || visibleError || ''"
           @send="send"
         />
       </section>
@@ -757,6 +784,12 @@ function formatDate(value: string) {
             ×
           </button>
         </div>
+        <NotificationPreferencesControl
+          :user-id="profile?.id"
+          :room-id="roomId"
+          :enabled="canReadPrivateData"
+          @access-lost="loseRoomAccess"
+        />
         <p class="muted panel-subtitle">{{ members.length }} people in this room</p>
         <div class="member-list">
           <div v-for="member in members" :key="member.user_id" class="member-row">

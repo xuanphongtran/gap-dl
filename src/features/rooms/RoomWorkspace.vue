@@ -167,6 +167,7 @@ function toggleJoin() {
         <p v-if="loadingRooms" class="sidebar-note">Loading rooms...</p>
         <p v-else-if="!rooms.length" class="sidebar-note">No rooms yet. Create your first room.</p>
         <nav class="room-list" aria-label="Room list">
+          <RouterLink class="text-button" to="/app/inbox">INBOX</RouterLink>
           <RouterLink
             v-for="room in rooms"
             :key="room.id"

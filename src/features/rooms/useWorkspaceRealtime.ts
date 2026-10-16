@@ -240,7 +240,10 @@ export function useWorkspaceRealtime(): RealtimeContext {
       status.value = 'recovering'
     }
     try {
-      await queryClient.cancelQueries({ queryKey: queryKeys.room(room.id) })
+      await queryClient.cancelQueries({
+        queryKey: queryKeys.room(room.id),
+        predicate: (query) => query.queryKey[2] !== 'notification-preferences',
+      })
       if (!valid()) return
       const authorized = await api.room(room.id, controller.signal)
       if (!valid()) return
@@ -280,6 +283,14 @@ export function useWorkspaceRealtime(): RealtimeContext {
       queryClient.setQueryData(queryKeys.latestMessages(room.id), merged.slice(-40))
       if (history && refreshedHistory)
         queryClient.setQueryData(queryKeys.messageHistory(room.id), refreshedHistory)
+      else if (!history)
+        queryClient.setQueryData<InfiniteData<Message[], number | null>>(
+          queryKeys.messageHistory(room.id),
+          {
+            pages: [merged.slice(-40).reverse()],
+            pageParams: [null],
+          },
+        )
       void invalidateRoomSearch(room.id)
       room.applyRecovered(merged)
       gapRoomId.value = null
