@@ -14,6 +14,8 @@ The latest reviewed operation matrix and unresolved runtime checks are in [docs/
 
 **Backend follow-up (2026-10-15):** [Backend handoff](./docs/BACKEND_HANDOFF.md) tracks CORS, private-room re-invitation, attachment readiness, legacy fixture cleanup, and pending deployment verification with acceptance criteria.
 
+**Sandbox release acceptance (2026-10-16):** The user released the Mentions build; [hosted acceptance](./docs/SANDBOX_RELEASE_ACCEPTANCE_2026-10-16.md) verifies byte-identical assets, 16 native functional journeys, and a separate active-socket logout probe. WebSocket multi-tab/reconnect and Mentions/Inbox host gates are closed for `chat-sb.xuanphong.io.vn`. Fresh full check passes 191 tests. Attachments still return 503; operational/distributed and legacy admin-cleanup gates remain open.
+
 ## 0. Frontend source and component foundation — P0, implement first
 
 The app already runs, but route views contain repeated pixel controls and much of the feature UI. Refactor the existing implementation before adding new API-driven behavior. Preserve routes, visible copy, mobile layout, and request semantics while moving code.
@@ -109,10 +111,10 @@ Keep endpoint functions in `src/lib/api.ts`, Axios transport in `src/lib/http.ts
 - [x] Use `@vueuse/core` for one connection per authenticated tab. Subscribe only after REST authorization, close on logout/account change, and process membership revocation before data events. Keep REST for durable state and all writes.
 - [x] Reconcile history/read state after reconnect and foreground recovery; preserve drafts/scroll, dedupe by ID/revision, bridge up to ten additional pages, and expose explicit reload beyond the bound. Keep HTTP polling because lifecycle/read-state event coverage is incomplete.
 - [x] Add bounded reconnect/backoff and offline/retry UI. Tests cover token rotation, account/room races, stale frames, malformed batches, revocation, missed pages, failed connections, and drain 1001. Local-branch browser smoke with the deployed backend covers invitations, message events, reconnect, revocation, and logout at desktop/mobile sizes.
-- [ ] Verify the changed frontend after deployment to the final host, including multiple real browser tabs. The origin handshake check does not prove that this feature branch is deployed there.
+- [x] Verify the changed frontend on the designated sandbox host, including multiple real browser tabs. [2026-10-16 hosted acceptance](./docs/SANDBOX_RELEASE_ACCEPTANCE_2026-10-16.md) verifies the deployed bundle, native sockets, missed-message recovery, draft retention, revocation and active-socket logout. Any different production origin needs its own acceptance.
 - [ ] Verify published presence/typing/lifecycle schemas and distributed recovery before their UI or delivery guarantees enter scope. SSE has no verified contract.
 
-**Exit gate for this slice:** Authorized REST state converges after connection loss and membership changes, stale private callbacks cannot repopulate another account, and transport failure exposes guarded REST recovery. Final deployed-browser acceptance remains open; the independent private-room re-invitation blocker remains a release limitation.
+**Exit gate for this slice:** Authorized REST state converges after connection loss and membership changes, stale private callbacks cannot repopulate another account, and transport failure exposes guarded REST recovery. Hosted multi-tab/reconnect acceptance and private re-invitation now pass on the designated sandbox; operational and distributed guarantees remain separate gates.
 
 ## 6. Search, attachments, and inbox — P2
 
@@ -122,7 +124,7 @@ Keep endpoint functions in `src/lib/api.ts`, Axios transport in `src/lib/http.ts
 - [x] **Mentions/inbox contract:** Typed recipients, same-key send identity/conflicts, asynchronous private feed pagination, repeated read, false preference payloads, deleted references, and public leave/rejoin generation isolation verified on 2026-10-14. Final HTTP runs passed 40 private-room checks and 10 public-generation checks; [evidence and cleanup limitations](./docs/RICH_MESSAGING_CONTRACT.md). Private-room re-invitation remains blocked independently.
 - [x] **Mentions/inbox UI:** Typed recipient picker, private metadata-only inbox, explicit read/retry, and account/room preferences implemented and reviewed on `feat/mentions-inbox`. [Acceptance](./docs/MENTIONS_INBOX_ACCEPTANCE_2026-10-15.md) records 191 passing tests and native desktop/mobile checks through a temporary proxy.
 - [x] **Mentions/inbox direct CORS:** Header allowance and direct local-branch two-account Chrome send/response-loss retry verified on 2026-10-15; see [backend recheck](./docs/BACKEND_RECHECK_2026-10-15.md).
-- [ ] **Mentions/inbox release:** Final-host feature deployment and browser verification remain open. Legacy fixture cleanup remains a separate admin gate.
+- [x] **Mentions/inbox sandbox release:** The user deployed the matching build; [native hosted acceptance](./docs/SANDBOX_RELEASE_ACCEPTANCE_2026-10-16.md) covers sends/retry, inbox pagination/read, preferences, offline recovery, mobile layout and membership generations. Legacy fixture cleanup remains a separate admin gate; another production origin needs verification.
 
 **Exit gate:** Each slice has its own deployed API/privacy gate and can ship independently. External email/push and attachment-only sends stay outside this plan.
 
@@ -131,7 +133,7 @@ Keep endpoint functions in `src/lib/api.ts`, Axios transport in `src/lib/http.ts
 - [ ] Verify browser behavior during backend warm-up, failed readiness, rolling deployment, and transient `503`; show retry without exposing migration details. Production route fallback and CORS must work on the selected host.
 - [ ] Once distributed delivery is deployed, exercise replay/gap recovery, two-node room delivery, cross-node presence/typing, revocation, and graceful drain with the frontend. An event ACK is transport progress, not proof the browser rendered it.
 - [ ] Measure client traffic, error rates, interaction latency, and long-history memory. Keep tokens, signed URLs, message bodies, and personal identifiers out of telemetry; use request IDs only for safe diagnostics.
-- [ ] Run `npm run check`, desktop/mobile accessibility smoke tests, and two-account deployed journeys before release. Record API version, test results, remaining gates, and rollback path.
+- [x] Run `npm run check`, desktop/mobile interaction/accessibility smoke tests, and two-account deployed journeys for the sandbox release. [2026-10-16 acceptance](./docs/SANDBOX_RELEASE_ACCEPTANCE_2026-10-16.md) records 191 tests, keyboard focus/Enter, mobile layout, API version, remaining gates and rollback path. This is a bounded smoke, not a full accessibility audit.
 
 **Exit gate:** The frontend works through expected backend failures. Any real-time scale claim has measured two-instance evidence from the backend rollout.
 

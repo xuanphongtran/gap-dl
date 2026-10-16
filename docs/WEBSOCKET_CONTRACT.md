@@ -1,5 +1,8 @@
 # WebSocket contract and verification
 
+**Hosted continuation (2026-10-16):** [Sandbox release acceptance](./SANDBOX_RELEASE_ACCEPTANCE_2026-10-16.md) closes the named sandbox's WebSocket multi-tab/reconnect and Mentions/Inbox deployment gates with native browser evidence. Earlier deployment limitations below are historical. Attachments and operational/distributed gates remain open.
+
+
 Reviewed on 2026-10-14 against [AsyncAPI UI](https://gogo-dl.onrender.com/asyncapi/) and [YAML](https://gogo-dl.onrender.com/asyncapi/asyncapi.yaml), AsyncAPI 3.0.0 / API 1.0.0. This release uses events to reconcile durable REST state; it does not replace the REST write path.
 
 ## Transport and authentication

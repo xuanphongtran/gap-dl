@@ -1,6 +1,6 @@
 # Backend follow-up — 2026-10-15
 
-This handoff records observed backend blockers and pending verification separately. It does not assert that older findings were reproduced on 2026-10-15. Frontend mentions/inbox is implemented. The [07:49–07:54 UTC recheck](./BACKEND_RECHECK_2026-10-15.md) confirms CORS and private-room re-invitation fixes; final-host release acceptance remains open.
+This handoff records observed backend blockers and pending verification separately. It does not assert that older findings were reproduced on 2026-10-15. Frontend mentions/inbox is implemented. The [07:49–07:54 UTC recheck](./BACKEND_RECHECK_2026-10-15.md) confirms CORS and private-room re-invitation fixes; [sandbox release acceptance](./SANDBOX_RELEASE_ACCEPTANCE_2026-10-16.md) now passes on the named host.
 
 ## 1. Resolved: allow Idempotency-Key through CORS
 
@@ -29,7 +29,7 @@ Public-room leave/rejoin checks pass and do not close this private-room gate. Ev
 
 ## 3. Attachments: scanner/provider readiness before frontend work
 
-Reproduced on 2026-10-15: a valid authenticated `POST /api/v1/rooms/{id}/attachments/uploads` returns 503, `attachment uploads unavailable`, with no reservation or signed URL. The underlying provider/scanner configuration has not been audited.
+Reproduced again on 2026-10-16: a valid authenticated `POST /api/v1/rooms/{id}/attachments/uploads` returns 503, `attachment uploads unavailable`, with no reservation or signed URL. The underlying provider/scanner configuration has not been audited.
 
 - [ ] Make reservation/storage/scanner dependencies ready and confirm the supported metadata state values and transitions.
 - [ ] Provide response-backed evidence for upload, completion/scan, verified message binding, authorized download and deletion.
@@ -53,7 +53,8 @@ Messages 203/204 were confirmed tombstones. New acceptance-run accounts 39–46 
 - [ ] Investigate transient 502 responses seen during message cleanup on 2026-10-15 if server logs remain available. Deletes for messages 253, 254 and 257 later succeeded with 200; no root cause is established.
 - [x] Verify ordinary authenticated responses expose `Retry-After` and `X-Request-Id` through CORS (confirmed 2026-10-15).
 - [ ] Confirm real rate-limit responses expose the documented request-ID/Retry-After headers to the frontend, then coordinate browser cooldown acceptance. Current client regressions do not prove deployed header behavior.
-- [ ] Coordinate final-host WebSocket multi-tab/reconnect acceptance. Cross-node delivery and worker configuration remain unverified; local functional success does not establish distributed guarantees.
-- [ ] Resolve or document the cursor validation mismatch: `before=0` returned 200 although Swagger declares a positive minimum (observed 2026-10-14). The frontend only sends positive advancing cursors; this is not the current release blocker.
+- [x] Coordinate sandbox-host WebSocket multi-tab/reconnect acceptance: native hosted journeys and a separate active-socket logout probe pass on 2026-10-16; see [release evidence](./SANDBOX_RELEASE_ACCEPTANCE_2026-10-16.md).
+- [ ] Verify cross-node delivery and worker configuration; sandbox functional success does not establish distributed guarantees.
+- [ ] Resolve or document the cursor validation mismatch: `before=0` returned 200 although Swagger declares a positive minimum (reproduced 2026-10-16). The frontend only sends positive advancing cursors; this is not the current release blocker.
 
 Owners and completion dates are not assigned in this repository. Close each item with deployed evidence and update [PLAN.md](../PLAN.md); direct-CORS and final-host acceptance require a frontend browser rerun as well as backend checks.
