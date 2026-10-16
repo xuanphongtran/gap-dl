@@ -1,6 +1,6 @@
 # Release Hardening Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task, preserving native inline execution. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task, preserving native inline execution. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Make existing workspace reads explicitly recoverable and produce repeatable recovery, hosted Search and long-history evidence while Attachments waits for R2.
 
@@ -8,7 +8,7 @@
 
 **Tech Stack:** Vue 3, TypeScript, Axios, Vue Query, VueUse, Vitest, Node >=22.18.0, npm and native Chrome DevTools Protocol. No new runtime dependencies.
 
-**Spec:** [Release hardening design](../specs/2026-10-16-release-hardening-design.md), proposed for review with this plan. Status: draft; no implementation tasks are complete.
+**Spec:** [Release hardening design](../specs/2026-10-16-release-hardening-design.md), approved by the user on 2026-10-16. Tasks 1–3 complete; Task 4 functional evidence exists and final review is pending.
 
 ## Global Constraints
 
@@ -38,11 +38,11 @@
 
 **Interfaces:** Export `useWorkspaceRecovery()` returning readonly `pending: Ref<boolean>`, `cooldownSeconds: Ref<number>`, `error: Ref<string>` and `retry(): Promise<void>`. It consumes exact workspace keys `profile`, `rooms`, `invitations` and current session events. Component read feedback derives from these query errors plus recovery errors; existing mutation failures have separate action feedback.
 
-- [ ] Write mounted regressions: `retry_refetches_active_workspace_reads_only` asserts profile/rooms/invitations GETs and zero POST/PUT/PATCH/DELETE; `double_retry_is_single_flight` asserts one explicit attempt; `read_recovery_preserves_action_error` keeps a failed join visible after successful reads.
-- [ ] Add deferred tests `logout_cancels_recovery` and `new_account_ignores_old_recovery_feedback`; a late response cannot restore removed query instances. Add `explicit_retry_respects_retry_after_5` with fake time, asserting no extra explicit read before 5,000 ms and one user-triggered attempt afterward.
-- [ ] Run `npm test -- src/features/rooms/useWorkspaceRecovery.test.ts src/features/rooms/RoomWorkspace.recovery.test.ts`; new tests must fail before implementation.
-- [ ] Implement retry of only active exact workspace queries using their existing query functions/signals. Capture query instances and explicit-account/session generation; cancel owned reads on that boundary, ignoring stale feedback. Use the existing cooldown parser/helper; a successful read must not clear mutation feedback. Render labelled `RETRY WORKSPACE` next to read errors, disabled while pending/cooling down, with generic existing error copy and safe request references.
-- [ ] Rerun focused tests plus `src/lib/query.test.ts` and `src/stores/auth.test.ts`. Commit `fix: add explicit workspace read recovery` after they pass.
+- [x] Write mounted regressions: `retry_refetches_active_workspace_reads_only` asserts profile/rooms/invitations GETs and zero POST/PUT/PATCH/DELETE; `double_retry_is_single_flight` asserts one explicit attempt; `read_recovery_preserves_action_error` keeps a failed join visible after successful reads.
+- [x] Add deferred tests `logout_cancels_recovery` and `new_account_ignores_old_recovery_feedback`; a late response cannot restore removed query instances. Add `explicit_retry_respects_retry_after_5` with fake time, asserting no extra explicit read before 5,000 ms and one user-triggered attempt afterward.
+- [x] Run `npm test -- src/features/rooms/useWorkspaceRecovery.test.ts src/features/rooms/RoomWorkspace.recovery.test.ts`; new tests must fail before implementation.
+- [x] Implement retry of only active exact workspace queries using their existing query functions/signals. Capture query instances and explicit-account/session generation; cancel owned reads on that boundary, ignoring stale feedback. Use the existing cooldown parser/helper; a successful read must not clear mutation feedback. Render labelled `RETRY WORKSPACE` next to read errors, disabled while pending/cooling down, with generic existing error copy and safe request references.
+- [x] Rerun focused tests plus `src/lib/query.test.ts` and `src/stores/auth.test.ts`. Commit `fix: add explicit workspace read recovery` after they pass.
 
 ## Task 2: Deterministic native browser failure matrix
 
@@ -50,11 +50,11 @@
 
 **Interfaces:** `startRecoveryApi()` returns `{ origin, setScenario(name), snapshot(), close() }`; scenario names are `login-503`, `workspace-503`, `mention-response-loss`, `inbox-429`, `inbox-429-no-header`, `inbox-429-malformed-header`, `session-change`. `snapshot()` returns only method/route-template counts and canonical message count. Browser helper exports `withAcceptanceBrowser({ artifactDir, chromePath }, run)` and supplies `command`, `newPage`, `evaluate`, `waitFor`, then always closes Chrome. CLI `npm run acceptance:recovery` serves a temporary Vite app against the local fixture, runs all scenarios and exits nonzero for any failure. No live-API mode.
 
-- [ ] Write runner regressions for cleanup on failure, report redaction, rejecting non-loopback fixture origins, and nonzero exit for a failed scenario. Run `npm test -- scripts/check-recovery.test.mjs`; expect missing-interface failures.
-- [ ] Implement the fixture and browser lifecycle using existing Node/Vite/Chrome tooling. Fixture OPTIONS explicitly allows Content-Type, Authorization and Idempotency-Key and exposes Retry-After/X-Request-Id. Use synthetic accounts/messages only. Reports record simulated-response status and observation counts; never serialize raw CDP traffic.
-- [ ] Pin each scenario: login 503 preserves fields with one POST until explicit retry; workspace GET failure shows Task 1 retry and recovers; dropped accepted mention response has zero automatic replay and explicit retry preserves key/payload with one canonical message; Inbox 429/Retry-After 5 blocks poll/focus/invalidation/manual retry until deadline. Missing/malformed header shows no invented countdown and allows explicit retry. Delayed recovery across logout/account change exposes no prior-account data.
-- [ ] Run runner tests, existing `src/lib/api.test.ts`, `src/lib/rate-limit.test.ts`, and `src/features/notifications/useNotificationInbox.test.ts`; run `npm run acceptance:recovery`. Assert no unexpected browser exceptions or unhandled requests and all temporary processes close.
-- [ ] If a failure exposes a shared-query scheduling issue outside Task 1, preserve RED evidence and amend the design/plan before changing global query ownership. Do not weaken the check to obtain a pass. Commit `test: add native recovery acceptance matrix` when complete.
+- [x] Write runner regressions for cleanup on failure, report redaction, rejecting non-loopback fixture origins, and nonzero exit for a failed scenario. Run `npm test -- scripts/check-recovery.test.mjs`; expect missing-interface failures.
+- [x] Implement the fixture and browser lifecycle using existing Node/Vite/Chrome tooling. Fixture OPTIONS explicitly allows Content-Type, Authorization and Idempotency-Key and exposes Retry-After/X-Request-Id. Use synthetic accounts/messages only. Reports record simulated-response status and observation counts; never serialize raw CDP traffic.
+- [x] Pin each scenario: login 503 preserves fields with one POST until explicit retry; workspace GET failure shows Task 1 retry and recovers; dropped accepted mention response has zero automatic replay and explicit retry preserves key/payload with one canonical message; Inbox 429/Retry-After 5 blocks poll/focus/invalidation/manual retry until deadline. Missing/malformed header shows no invented countdown and allows explicit retry. Delayed recovery across logout/account change exposes no prior-account data.
+- [x] Run runner tests, existing `src/lib/api.test.ts`, `src/lib/rate-limit.test.ts`, and `src/features/notifications/useNotificationInbox.test.ts`; run `npm run acceptance:recovery`. Assert no unexpected browser exceptions or unhandled requests and all temporary processes close.
+- [x] If a failure exposes a shared-query scheduling issue outside Task 1, preserve RED evidence and amend the design/plan before changing global query ownership. Do not weaken the check to obtain a pass. Commit `test: add native recovery acceptance matrix` when complete.
 
 ## Task 3: Long-history resource baseline
 
@@ -62,11 +62,11 @@
 
 **Interfaces:** `startHistoryApi({ messageCount: 40 | 1000 })` returns `{ origin, snapshot(), close() }` with the same route-template count shape as Task 2's fixture. CLI `npm run acceptance:history` reports three runs per size: `messageCount`, `renderedRows`, `requestCounts`, `loadMs`, `idleRequestCounts`, `heapBytes: number | null`, and `heapUnavailableReason: string | null`. Heap samples are optional; no memory SLA is invented.
 
-- [ ] Write runner tests: the 1,000-message fixture pages in exclusive 40-message ranges with no duplicate IDs; report never includes message text/IDs/tokens; missing heap support yields null plus a reason, not zero. Run `npm test -- scripts/check-history-cost.test.mjs`; expect failures before implementation.
-- [ ] Implement both local scenarios using real LOAD OLDER interactions. Record an idle 15-second interval, then ten room switches, return to the initial room and sample after pending reads settle. Exclude startup traffic from idle counts; normalize query strings/room IDs to route templates before reporting.
-- [ ] Fix the observed fallback handoff defect only after `hands fallback recovery to a new room when the previous recovery is still pending` fails. Allow the new room to start REST recovery while the workspace status remains recovering from aborted old work; preserve generation guards. Rerun the real WebSocket suite and the native 1,000-row switch scenario.
-- [ ] Run `npm run acceptance:history` three times per size. Fail on missing rows, duplicates, unexpected browser exceptions, unhandled requests or failed fixture cleanup. Publish elapsed-time/request/heap ranges and known platform limitations. Do not mark optional heap failure as a product failure or silently skip row checks.
-- [ ] Compare visible/hidden polling and retained DOM/cache cost. Record any budget or virtualization proposal as a subsequent decision based on these measurements; do not change polling/retention in this task. Commit `test: record long-history resource baseline`.
+- [x] Write runner tests: the 1,000-message fixture pages in exclusive 40-message ranges with no duplicate IDs; report never includes message text/IDs/tokens; missing heap support yields null plus a reason, not zero. Run `npm test -- scripts/check-history-cost.test.mjs`; expect failures before implementation.
+- [x] Implement both local scenarios using real LOAD OLDER interactions. Record an idle 15-second interval, then ten room switches, return to the initial room and sample after pending reads settle. Exclude startup traffic from idle counts; normalize query strings/room IDs to route templates before reporting.
+- [x] Fix the observed fallback handoff defect only after `hands fallback recovery to a new room when the previous recovery is still pending` fails. Allow the new room to start REST recovery while the workspace status remains recovering from aborted old work; preserve generation guards. Rerun the real WebSocket suite and the native 1,000-row switch scenario.
+- [x] Run `npm run acceptance:history` three times per size. Fail on missing rows, duplicates, unexpected browser exceptions, unhandled requests or failed fixture cleanup. Publish elapsed-time/request/heap ranges and known platform limitations. Do not mark optional heap failure as a product failure or silently skip row checks.
+- [x] Compare visible/hidden polling and retained DOM/cache cost. Record any budget or virtualization proposal as a subsequent decision based on these measurements; do not change polling/retention in this task. Commit `test: record long-history resource baseline`.
 
 ## Task 4: Hosted Search, final review and handoff
 
@@ -82,4 +82,4 @@
 
 ## Execution handoff
 
-Proposed plan; user review is pending. No code, new branch, dependencies or deployment are created by this planning change. Preserve native inline execution and one final independent reviewer when implementation begins. Attachments are explicitly pending R2 setup; work here does not depend on completing that setup. If the user prefers presence/typing next, begin with contract clarification and a separate design rather than expanding this phase.
+Approved and executing inline on `feat/release-hardening`; see [acceptance evidence](../../RELEASE_HARDENING_ACCEPTANCE_2026-10-16.md). Local product changes are implemented; independent review is pending and deployment is not performed by this run. Preserve native inline execution and one final independent reviewer when implementation begins. Attachments are explicitly pending R2 setup; work here does not depend on completing that setup. If the user prefers presence/typing next, begin with contract clarification and a separate design rather than expanding this phase.

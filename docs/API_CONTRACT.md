@@ -1,5 +1,8 @@
 # REST API contract baseline
 
+**Release hardening continuation (2026-10-16):** [Acceptance](./RELEASE_HARDENING_ACCEPTANCE_2026-10-16.md) closes the named sandbox Search query/pagination/freshness/privacy gate. Local 503/429/retry checks and history measurements are separate synthetic evidence; actual rate-limit/operations gates remain open. The new recovery source is not yet deployed.
+
+
 **Hosted continuation (2026-10-16):** [Sandbox release acceptance](./SANDBOX_RELEASE_ACCEPTANCE_2026-10-16.md) closes the named sandbox's WebSocket multi-tab/reconnect and Mentions/Inbox deployment gates with native browser evidence. Earlier deployment limitations below are historical. Attachments and operational/distributed gates remain open.
 
 

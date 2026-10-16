@@ -52,6 +52,8 @@ Messages 203/204 were confirmed tombstones. New acceptance-run accounts 39–46 
 
 ## 5. Verification follow-ups, not confirmed defects
 
+[Release hardening evidence](./RELEASE_HARDENING_ACCEPTANCE_2026-10-16.md) adds a passing local simulated 503/429/retry matrix and hosted Search acceptance. It does not close the live backend/operations items below. Attachments remains pending R2; no reservation probes were repeated in this phase.
+
 - [ ] Investigate transient 502 responses seen during message cleanup on 2026-10-15 if server logs remain available. Deletes for messages 253, 254 and 257 later succeeded with 200; no root cause is established.
 - [x] Verify ordinary authenticated responses expose `Retry-After` and `X-Request-Id` through CORS (confirmed 2026-10-15).
 - [ ] Confirm real rate-limit responses expose the documented request-ID/Retry-After headers to the frontend, then coordinate browser cooldown acceptance. Current client regressions do not prove deployed header behavior.

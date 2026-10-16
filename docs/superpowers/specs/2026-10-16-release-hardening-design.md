@@ -1,6 +1,6 @@
 # Release hardening design
 
-Status: proposed for review. Planning only; implementation has not started. The user explicitly deferred Attachments because Cloudflare R2 is not configured. This phase follows the completed [sandbox Mentions/WebSocket acceptance](../../SANDBOX_RELEASE_ACCEPTANCE_2026-10-16.md) and implements the remaining frontend-controlled work in [PLAN.md](../../../PLAN.md), section 7.
+Status: approved by the user on 2026-10-16; implementation and functional evidence complete, independent review pending. The user explicitly deferred Attachments because Cloudflare R2 is not configured. This phase follows the completed [sandbox Mentions/WebSocket acceptance](../../SANDBOX_RELEASE_ACCEPTANCE_2026-10-16.md) and implements the remaining frontend-controlled work in [PLAN.md](../../../PLAN.md), section 7.
 
 ## Outcome and choice
 
