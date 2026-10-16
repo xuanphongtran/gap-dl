@@ -27,9 +27,11 @@ Recheck: fresh pending invitation 29, denial before acceptance, restored access 
 
 Public-room leave/rejoin checks pass and do not close this private-room gate. Evidence: [plan](../PLAN.md), [sandbox acceptance](./ACCEPTANCE_2026-10-13.md), [rich messaging contract](./RICH_MESSAGING_CONTRACT.md).
 
-## 3. Attachments: scanner/provider readiness before frontend work
+## 3. Attachments: pending R2 setup
 
-Reproduced again on 2026-10-16: a valid authenticated `POST /api/v1/rooms/{id}/attachments/uploads` returns 503, `attachment uploads unavailable`, with no reservation or signed URL. The underlying provider/scanner configuration has not been audited.
+User update 2026-10-16: R2 is not configured; Attachments is explicitly pending. Pause frontend upload work and repeated live reservation probes until BE reports storage/scanner readiness. Release hardening can proceed independently.
+
+Last probe on 2026-10-16: a valid authenticated `POST /api/v1/rooms/{id}/attachments/uploads` returns 503, `attachment uploads unavailable`, with no reservation or signed URL. The underlying provider/scanner configuration has not been audited.
 
 - [ ] Make reservation/storage/scanner dependencies ready and confirm the supported metadata state values and transitions.
 - [ ] Provide response-backed evidence for upload, completion/scan, verified message binding, authorized download and deletion.
