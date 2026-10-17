@@ -17,6 +17,7 @@ export function useWorkspaceRecovery() {
   const cooldownEpoch = ref(-1)
   const observed = new WeakSet<object>()
   let owned: Query[] = []
+  let cooldownEndsAt = 0
   const cooldownSeconds = computed(() =>
     cooldownEpoch.value === epoch.value ? cooldown.remaining.value : 0,
   )
@@ -40,8 +41,9 @@ export function useWorkspaceRecovery() {
         error instanceof ApiError &&
         error.status === 429 &&
         error.retryAfterSeconds &&
-        error.retryAfterSeconds > cooldownSeconds.value
+        Date.now() + error.retryAfterSeconds * 1000 > cooldownEndsAt
       ) {
+        cooldownEndsAt = Date.now() + error.retryAfterSeconds * 1000
         cooldown.start(error)
         cooldownEpoch.value = epoch.value
       }
@@ -50,6 +52,7 @@ export function useWorkspaceRecovery() {
   const unsubscribe = queryClient.getQueryCache().subscribe(update)
   function reset() {
     epoch.value++
+    cooldownEndsAt = 0
     pending.value = false
     failure.value = ''
     readError.value = ''

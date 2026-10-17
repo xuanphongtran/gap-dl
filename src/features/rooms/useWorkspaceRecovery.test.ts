@@ -134,3 +134,28 @@ it('successful recovery clears only the failed read feedback', async () => {
   await f.retry()
   expect(f.error.value).toBe('')
 })
+it('concurrent rate limits retain the latest absolute retry deadline', async () => {
+  mock.onGet('/api/v1/rooms').reply(429, { error: 'slow' }, { 'Retry-After': '5' })
+  let release!: (v: [number, object, Record<string, string>]) => void
+  mock.onGet('/api/v1/users/me/invitations').reply(
+    () =>
+      new Promise((resolve) => {
+        release = resolve
+      }),
+  )
+  const f = mount()
+  await settle()
+  await vi.advanceTimersByTimeAsync(500)
+  release([429, { error: 'slow' }, { 'Retry-After': '5' }])
+  await settle()
+  mock.resetHistory()
+  mock.onGet('/api/v1/rooms').reply(200, { rooms: [] })
+  mock.onGet('/api/v1/users/me/invitations').reply(200, { invitations: [] })
+  await vi.advanceTimersByTimeAsync(4500)
+  await f.retry()
+  expect(mock.history.get).toHaveLength(0)
+  await vi.advanceTimersByTimeAsync(500)
+  await f.retry()
+  expect(mock.history.get).toHaveLength(3)
+  expect(f.error.value).toBe('')
+})

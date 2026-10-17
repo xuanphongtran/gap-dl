@@ -28,7 +28,7 @@ export async function startRecoveryApi({ messageCount = 40 } = {}) {
     workspaceHealthy = false,
     inboxHealthy = false,
     unexpected = 0
-  const delays = new Set()
+  const pendingRecovery = new Set()
   const room = (id) => ({
     id,
     name: `Synthetic room ${id}`,
@@ -104,14 +104,10 @@ export async function startRecoveryApi({ messageCount = 40 } = {}) {
       })
     if (path === '/api/v1/users/me/invitations') return reply(200, { invitations: [] })
     if (path === '/api/v1/rooms' && req.method === 'GET') {
-      if (scenario === 'workspace-503' && !workspaceHealthy)
+      if (['workspace-503', 'session-change'].includes(scenario) && user === 1 && !workspaceHealthy)
         return reply(503, { error: 'Warming up' })
       if (scenario === 'session-change' && user === 1 && workspaceHealthy) {
-        const timer = setTimeout(() => {
-          delays.delete(timer)
-          reply(200, { rooms: [room(7)] })
-        }, 1500)
-        delays.add(timer)
+        pendingRecovery.add(() => reply(200, { rooms: [room(7)] }))
         return
       }
       return reply(200, { rooms: user === 2 ? [] : [room(7), room(8)] })
@@ -210,13 +206,18 @@ export async function startRecoveryApi({ messageCount = 40 } = {}) {
       workspaceHealthy = true
       inboxHealthy = true
     },
+    releaseRecovery: () => {
+      for (const reply of pendingRecovery) reply()
+      pendingRecovery.clear()
+    },
+    pendingRecoveryCount: () => pendingRecovery.size,
     snapshot: () => ({
       requestCounts: { ...counts },
       canonicalMessageCount: writes.size,
       unexpectedRequests: unexpected,
     }),
     close: async () => {
-      for (const t of delays) clearTimeout(t)
+      pendingRecovery.clear()
       server.closeAllConnections()
       await new Promise((resolve) => server.close(resolve))
     },

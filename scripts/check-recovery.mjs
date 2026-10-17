@@ -217,11 +217,18 @@ export async function recoveryMain() {
             assert.equal(api.snapshot().canonicalMessageCount, 1)
             assert.equal(api.snapshot().requestCounts['POST /api/v1/rooms/:id/messages'], 2)
           } else if (name === 'session-change') {
-            await wait(s, "document.querySelectorAll('.room-link').length===2")
+            await wait(s, "document.body.textContent.includes('temporarily unavailable')")
             api.recover()
-            await ev(
-              s,
-              "void import('/src/lib/query.ts').then(({queryClient,queryKeys})=>queryClient.refetchQueries({queryKey:queryKeys.rooms,exact:true}))",
+            await click('RETRY WORKSPACE')
+            for (let attempt = 0; attempt < 100 && !api.pendingRecoveryCount(); attempt++)
+              await sleep(50)
+            assert.equal(api.pendingRecoveryCount(), 1)
+            assert.equal(
+              await ev(
+                s,
+                "(async()=>{const {queryClient,queryKeys}=await import('/src/lib/query.ts');return queryClient.getQueryState(queryKeys.rooms)?.fetchStatus==='fetching'})()",
+              ),
+              true,
             )
             await ev(
               s,
@@ -235,8 +242,20 @@ export async function recoveryMain() {
               s,
               "location.pathname==='/app' && document.querySelector('.profile-link strong')?.textContent==='Fixture member 2'",
             )
-            await sleep(1800)
+            api.releaseRecovery()
+            await sleep(500)
             assert.equal(await ev(s, "document.querySelectorAll('.room-link').length"), 0)
+            assert.equal(
+              await ev(s, "document.body.textContent.includes('temporarily unavailable')"),
+              false,
+            )
+            assert.equal(
+              await ev(
+                s,
+                "(async()=>{const {queryClient,queryKeys}=await import('/src/lib/query.ts');const rooms=queryClient.getQueryData(queryKeys.rooms);return rooms?.rooms?.length===0 && queryClient.getQueryData(queryKeys.profile)?.id===2 && !queryClient.getQueryCache().getAll().some(q=>q.state.error)})()",
+              ),
+              true,
+            )
           }
           const result = api.snapshot()
           assert.equal(result.unexpectedRequests, 0)
