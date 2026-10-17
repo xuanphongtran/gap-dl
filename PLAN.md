@@ -136,7 +136,7 @@ Keep endpoint functions in `src/lib/api.ts`, Axios transport in `src/lib/http.ts
 - [ ] Once distributed delivery is deployed, exercise replay/gap recovery, two-node room delivery, cross-node presence/typing, revocation, and graceful drain with the frontend. An event ACK is transport progress, not proof the browser rendered it.
 - [x] Establish a deterministic local traffic/load/heap baseline at 40/1,000 rows; [six native runs](./docs/HISTORY_COST_2026-10-16.md) pass. Reports omit private data; heap is not a post-GC retained-memory guarantee.
 - [ ] Measure real production traffic/error rates/latency and long-session memory after rollout; agree budgets from measurements without private telemetry.
-- [x] Add explicit workspace read recovery and a repeatable seven-scenario local fault matrix; [acceptance](./docs/RELEASE_HARDENING_ACCEPTANCE_2026-10-16.md) records safe retry and the fallback room-handoff regression.
+- [x] Add explicit workspace read recovery and a repeatable seven-scenario local fault matrix; [acceptance](./docs/RELEASE_HARDENING_ACCEPTANCE_2026-10-16.md) records safe retry, the fallback room-handoff regression and final review fixes (211 tests; native recovery 7/7 on 2026-10-17).
 - [ ] Deploy the new recovery branch through the authorized hosting workflow and smoke its affected workspace/fallback flows on the selected host. No deployment is performed by this implementation run.
 - [x] Run `npm run check`, desktop/mobile interaction/accessibility smoke tests, and two-account deployed journeys for the sandbox release. [2026-10-16 acceptance](./docs/SANDBOX_RELEASE_ACCEPTANCE_2026-10-16.md) records 191 tests, keyboard focus/Enter, mobile layout, API version, remaining gates and rollback path. This is a bounded smoke, not a full accessibility audit.
 
@@ -148,9 +148,9 @@ Keep endpoint functions in `src/lib/api.ts`, Axios transport in `src/lib/http.ts
 Source structure + base components → Contract inventory → Hardening/membership
                                              └───────→ Message lifecycle → REST read state
                                              └───────→ Search + Mentions/Inbox (sandbox accepted)
-Next: Release hardening → operational evidence
+Next: Deploy reviewed recovery branch → affected-flow smoke → operational evidence
 Pending: Attachments (R2 + scanner/provider gates)
 Deferred: SSE, presence/typing, distributed recovery (separate contracts)
 ```
 
-The foundation, lifecycle, read state and first WebSocket/Mentions slices are implemented and have recorded acceptance. Next, complete frontend-controlled recovery and measurement work. Attachments waits for R2 and scanner/provider evidence; SSE, presence/typing and distributed guarantees remain separate contract-gated work.
+The foundation, lifecycle, read state and first WebSocket/Mentions slices are implemented and have recorded acceptance. Frontend-controlled recovery and measurement work is complete on `feat/release-hardening`; next deploy the reviewed source and smoke the affected flows. Future live acceptance harnesses must adopt the durable cleanup journal before creating fixtures. Attachments waits for R2 and scanner/provider evidence; SSE, presence/typing and distributed guarantees remain separate contract-gated work.

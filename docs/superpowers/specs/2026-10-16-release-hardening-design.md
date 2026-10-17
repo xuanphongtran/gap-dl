@@ -1,6 +1,6 @@
 # Release hardening design
 
-Status: approved by the user on 2026-10-16; implementation and functional evidence complete, independent review pending. The user explicitly deferred Attachments because Cloudflare R2 is not configured. This phase follows the completed [sandbox Mentions/WebSocket acceptance](../../SANDBOX_RELEASE_ACCEPTANCE_2026-10-16.md) and implements the remaining frontend-controlled work in [PLAN.md](../../../PLAN.md), section 7.
+Status: approved by the user on 2026-10-16; planned frontend deliverables, independent review corrections and final local verification complete on 2026-10-17; deployment remains open. The user explicitly deferred Attachments because Cloudflare R2 is not configured. This phase follows the completed [sandbox Mentions/WebSocket acceptance](../../SANDBOX_RELEASE_ACCEPTANCE_2026-10-16.md) and implements the remaining frontend-controlled work in [PLAN.md](../../../PLAN.md), section 7.
 
 ## Outcome and choice
 
@@ -39,3 +39,5 @@ Attachments are pending by user instruction while R2 is not configured. Resume o
 ## Acceptance
 
 Run focused regressions for changed behavior, `npm run check`, local recovery and history checks, and hosted Search acceptance when the target is accessible. Obtain one whole-branch review and resolve Important/Critical findings. Record exact checks, unresolved live gates, fixture cleanup and rollback guidance. This phase is complete when its local deliverables and hosted Search evidence exist; external backend/admin/operations gates remain separately tracked, not silently marked complete.
+
+Review continuation: explicit retry retains the maximum absolute 429 deadline. Native account-switch acceptance goes through RETRY WORKSPACE and a manually held response. Future live harnesses use the private durable cleanup journal and [adapter protocol](../../LIVE_FIXTURE_CLEANUP.md); historical hosted cleanup is confirmed-response evidence, not interruption coverage. See the plan execution record for decisions and deferred evidence limitations.
