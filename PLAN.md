@@ -16,6 +16,8 @@ The latest reviewed operation matrix and unresolved runtime checks are in [docs/
 
 **Sandbox release acceptance (2026-10-16):** The user released the Mentions build; [hosted acceptance](./docs/SANDBOX_RELEASE_ACCEPTANCE_2026-10-16.md) verifies byte-identical assets, 16 native functional journeys, and a separate active-socket logout probe. WebSocket multi-tab/reconnect and Mentions/Inbox host gates are closed for `chat-sb.xuanphong.io.vn`. Fresh full check passes 191 tests. Attachments still return 503; operational/distributed and legacy admin-cleanup gates remain open.
 
+**Next phase proposed (2026-10-16):** Attachments are pending by user instruction because R2 is not configured. Continue independently with [Release hardening](./docs/superpowers/plans/2026-10-16-release-hardening.md): workspace read recovery, deterministic 503/429/retry acceptance, long-history cost baseline and hosted Search verification. [Design](./docs/superpowers/specs/2026-10-16-release-hardening-design.md) and plan are proposed for review; implementation has not started. Presence/typing and distributed work retain separate contract gates.
+
 ## 0. Frontend source and component foundation — P0, implement first
 
 The app already runs, but route views contain repeated pixel controls and much of the feature UI. Refactor the existing implementation before adding new API-driven behavior. Preserve routes, visible copy, mobile layout, and request semantics while moving code.
@@ -120,7 +122,7 @@ Keep endpoint functions in `src/lib/api.ts`, Axios transport in `src/lib/http.ts
 
 - [x] **Search contract:** Verify authenticated authorization, query bounds, cursor pagination, edit freshness and deletion-aware responses with test accounts. Twelve live checks passed on 2026-10-14; see [the contract evidence](./docs/SEARCH_CONTRACT.md).
 - [x] **Search UI:** Add a room-scoped query form, cursor pagination, loading/empty states, and revoked-membership cleanup. Test edits/tombstones and result privacy. [Approved design](./docs/superpowers/specs/2026-10-14-room-message-search-design.md) and [implementation plan](./docs/superpowers/plans/2026-10-14-room-message-search.md) are implemented on `feat/message-search`; [eleven local-branch live checks](./docs/SEARCH_ACCEPTANCE_2026-10-14.md) passed. Final-host deployment remains open.
-- [ ] **Attachments:** Reservation verified on 2026-10-14: valid authenticated requests return scanner-pending 503. Provider, scanner, quota, binding, and signed-download gates remain open; see [rich messaging evidence](./docs/RICH_MESSAGING_CONTRACT.md). Add upload progress/cancel/retry and scan states only after those gates pass; keep signed URLs ephemeral/private. Test scan failure, expiry, leave during upload, duplicate retry, and cleanup-visible states.
+- [ ] **Attachments — pending R2 (user instruction, 2026-10-16):** R2 is not configured; pause attachment UI and repeated live readiness probes. Reopen after BE evidence for R2/private storage, scanner, quota, verified binding, authorized signed download, expiry and cleanup. The last valid reservation probe returned 503 on 2026-10-16; see [rich messaging evidence](./docs/RICH_MESSAGING_CONTRACT.md) and [reopening criteria](./docs/superpowers/specs/2026-10-16-release-hardening-design.md#attachment-reopening-criteria). This does not block Release hardening.
 - [x] **Mentions/inbox contract:** Typed recipients, same-key send identity/conflicts, asynchronous private feed pagination, repeated read, false preference payloads, deleted references, and public leave/rejoin generation isolation verified on 2026-10-14. Final HTTP runs passed 40 private-room checks and 10 public-generation checks; [evidence and cleanup limitations](./docs/RICH_MESSAGING_CONTRACT.md). Private-room re-invitation remains blocked independently.
 - [x] **Mentions/inbox UI:** Typed recipient picker, private metadata-only inbox, explicit read/retry, and account/room preferences implemented and reviewed on `feat/mentions-inbox`. [Acceptance](./docs/MENTIONS_INBOX_ACCEPTANCE_2026-10-15.md) records 191 passing tests and native desktop/mobile checks through a temporary proxy.
 - [x] **Mentions/inbox direct CORS:** Header allowance and direct local-branch two-account Chrome send/response-loss retry verified on 2026-10-15; see [backend recheck](./docs/BACKEND_RECHECK_2026-10-15.md).
@@ -142,9 +144,10 @@ Keep endpoint functions in `src/lib/api.ts`, Axios transport in `src/lib/http.ts
 ```text
 Source structure + base components → Contract inventory → Hardening/membership
                                              └───────→ Message lifecycle → REST read state
-                                             └───────→ Search → Attachments → Inbox
-Current transport slice: WebSocket-assisted REST updates
-Deferred: SSE → Presence/typing → Distributed recovery
+                                             └───────→ Search + Mentions/Inbox (sandbox accepted)
+Next: Release hardening → operational evidence
+Pending: Attachments (R2 + scanner/provider gates)
+Deferred: SSE, presence/typing, distributed recovery (separate contracts)
 ```
 
-Complete the source and base-component foundation first. Swagger already documents lifecycle and read-state routes; those slices still need authenticated verification. Rich messaging waits for API release and provider gates. The first WebSocket slice is implemented with REST recovery; SSE, presence/typing, and distributed guarantees remain deferred.
+The foundation, lifecycle, read state and first WebSocket/Mentions slices are implemented and have recorded acceptance. Next, complete frontend-controlled recovery and measurement work. Attachments waits for R2 and scanner/provider evidence; SSE, presence/typing and distributed guarantees remain separate contract-gated work.
