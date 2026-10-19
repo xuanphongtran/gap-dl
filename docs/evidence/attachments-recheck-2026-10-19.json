@@ -1,0 +1,74 @@
+{
+  "date": "2026-10-19T08:05:16.670Z",
+  "checks": [
+    {
+      "name": "register",
+      "status": 201
+    },
+    {
+      "name": "join-public-room",
+      "status": 200
+    },
+    {
+      "name": "reservation-cors",
+      "status": 204,
+      "allowsIdempotency": true
+    },
+    {
+      "name": "reserve-upload",
+      "status": 201
+    },
+    {
+      "name": "put-harmless-bytes",
+      "status": 200
+    },
+    {
+      "name": "complete-upload",
+      "status": 202
+    },
+    {
+      "name": "scan-result",
+      "status": 200,
+      "state": "ready",
+      "verified": true
+    },
+    {
+      "name": "bind-verified-attachment",
+      "status": 503
+    }
+  ],
+  "cleanup": [
+    {
+      "name": "messages",
+      "confirmed": 1,
+      "unconfirmed": 0,
+      "interrupted": false
+    },
+    {
+      "name": "uploads",
+      "confirmed": 1,
+      "unconfirmed": 0,
+      "interrupted": false
+    },
+    {
+      "name": "memberships",
+      "confirmed": 1,
+      "unconfirmed": 0,
+      "interrupted": false
+    },
+    {
+      "name": "accounts",
+      "confirmed": 1,
+      "unconfirmed": 0,
+      "interrupted": false
+    }
+  ],
+  "scope": "Authenticated HTTP lifecycle probe; not native browser acceptance or storage cleanup verification",
+  "messageWrites": {
+    "attempted": 1,
+    "created": 0,
+    "rejected": 1,
+    "status": 503
+  },
+  "cleanupNote": "Cleanup counters count journal intents, not deleted resources. The messages intent was definitively rejected (503); its confirmation is a no-op, not a deleted message. Upload cancellation schedules cleanup; physical object deletion was not observed."
+}

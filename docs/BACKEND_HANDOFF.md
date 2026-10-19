@@ -27,17 +27,17 @@ Recheck: fresh pending invitation 29, denial before acceptance, restored access 
 
 Public-room leave/rejoin checks pass and do not close this private-room gate. Evidence: [plan](../PLAN.md), [sandbox acceptance](./ACCEPTANCE_2026-10-13.md), [rich messaging contract](./RICH_MESSAGING_CONTRACT.md).
 
-## 3. Attachments: pending R2 setup
+## 3. Attachments: upload/scanner ready, binding/download pending
 
-User update 2026-10-16: R2 is not configured; Attachments is explicitly pending. Pause frontend upload work and repeated live reservation probes until BE reports storage/scanner readiness. Release hardening can proceed independently.
+User update 2026-10-19 reopens Attachments after storage/scanner setup. The [fresh authenticated recheck](./ATTACHMENTS_RECHECK_2026-10-19.md) passes reservation 201, object upload 200, complete 202 and metadata ready/verified. This supersedes the 2026-10-16 reservation 503. The same verified ID still returns 503 in message creation; the frontend cannot finish attachment sending yet.
 
-Last probe on 2026-10-16: a valid authenticated `POST /api/v1/rooms/{id}/attachments/uploads` returns 503, `attachment uploads unavailable`, with no reservation or signed URL. The underlying provider/scanner configuration has not been audited.
+- [x] Enable reservation/storage/scanner for the harmless text-file path and verify completion reaches ready/verified. API reservation preflight allows Idempotency-Key from the sandbox origin.
+- [ ] Implement/deploy atomic verified attachment binding to text messages; confirm same-key retry, mixed mentions, ownership/room, quota, expiry and conflict rules. Current public develop source explicitly rejects nonempty attachment_ids.
+- [ ] Publish typed message/history/Search attachment fields and an authorized download endpoint with expiry, safe headers and membership/deletion behavior. Swagger currently exposes neither a download route nor typed message attachment objects.
+- [ ] Publish supported state transitions, file types, size/count/quota limits and retry/cancellation semantics.
+- [ ] Verify R2 browser CORS, immutable/late-write behavior, failed/expired scans, leave during upload, duplicate retry, physical delayed cleanup and quota release. Cancellation was acknowledged, but object deletion was not observed.
 
-- [ ] Make reservation/storage/scanner dependencies ready and confirm the supported metadata state values and transitions.
-- [ ] Provide response-backed evidence for upload, completion/scan, verified message binding, authorized download and deletion.
-- [ ] Verify quota, failed scans, expiration, cancellation/retry, leave during upload, duplicate retry and delayed cleanup. Keep unverified files unavailable.
-
-Frontend upload UI remains deferred until these contract/provider gates pass. Evidence: [rich messaging contract](./RICH_MESSAGING_CONTRACT.md).
+The disposable upload was cancelled, membership removed and account deleted; journal intent summaries have zero unconfirmed entries. No message was created by the rejected binding attempt. Frontend upload UI remains deferred until sending/download and provider/privacy gates pass. If a newer deployed API or branch supplies binding/download, provide its contract so the frontend can continue against that implementation.
 
 ## 4. Admin cleanup: legacy disposable accounts 35 and 36
 
