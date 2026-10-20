@@ -27,7 +27,7 @@ Recheck: fresh pending invitation 29, denial before acceptance, restored access 
 
 Public-room leave/rejoin checks pass and do not close this private-room gate. Evidence: [plan](../PLAN.md), [sandbox acceptance](./ACCEPTANCE_2026-10-13.md), [rich messaging contract](./RICH_MESSAGING_CONTRACT.md).
 
-## 3. Attachments: contract ready, runtime readiness and frontend pending
+## 3. Attachments: contract ready, frontend implemented, runtime acceptance pending
 
 User update 2026-10-20 reports completion. [Fresh contract evidence](./ATTACHMENTS_RECHECK_2026-10-20.md) confirms binding, typed summaries and the new download endpoint. The 2026-10-19 reservation/upload/ready success remains valid dated evidence. Backend processing is lightweight policy/sanitization; ClamAV is explicitly deferred and is not a frontend release gate.
 
@@ -38,7 +38,7 @@ User update 2026-10-20 reports completion. [Fresh contract evidence](./ATTACHMEN
 - [ ] Verify actual binding/download, same-key canonical identity, recipient metadata, departed-member/deleted-binding denial and download headers against the deployed binary. Published/source tests alone do not close these runtime gates.
 - [ ] Verify R2 browser CORS, failed/expired processing, leave during upload, physical delayed cleanup and quota release. Logical cancellation and physical object deletion remain different observations.
 
-Frontend design is [ready for review](./superpowers/specs/2026-10-20-attachments-design.md) on `feat/attachments`. Preserve private recovery evidence in `/tmp/gogo-attachments-contract-qfPI80/` and `/tmp/gogo-attachments-contract-tcF6Sy/` until both registration outcomes are resolved. No extra signup/upload flood, service restart, migration or deployment was performed.
+Frontend upload/send/download is implemented on `feat/attachments`; [local acceptance](./ATTACHMENTS_ACCEPTANCE_2026-10-20.md) records synthetic native and mounted checks. A single fresh GET /readyz at 2026-10-20T03:44:37Z still returned 503/ready:false, request ID `1fbf9fc2ff58a2c00ce5f5fd5df56342`. After the interrupted session resumed, one fresh read-only readiness probe at 08:17:54Z again returned 503/ready:false, request ID `68aedf9bb8ab5fafa8dcff108908c6b6`. No new live writes were attempted; both historical private journal directories are still present. This does not close runtime/provider or selected-host deployment gates. Preserve private recovery evidence in `/tmp/gogo-attachments-contract-qfPI80/` and `/tmp/gogo-attachments-contract-tcF6Sy/` until both registration outcomes are resolved. No extra signup/upload flood, service restart, migration or deployment was performed.
 
 ## 4. Admin cleanup: legacy disposable accounts 35 and 36
 
