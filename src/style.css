@@ -1101,3 +1101,54 @@ a:hover {
     scroll-behavior: auto !important;
   }
 }
+
+.attachment-picker {
+  padding: 8px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  border-top: 2px solid var(--border);
+  min-width: 0;
+}
+.attachment-picker > small {
+  flex: 1 1 220px;
+}
+.attachment-list {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0;
+  width: 100%;
+  min-width: 0;
+}
+.attachment-item {
+  padding: 8px;
+  border: 2px solid var(--border);
+  margin-top: 4px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.attachment-name {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  min-width: 0;
+  flex: 1 1 160px;
+}
+.attachment-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.attachment-error {
+  flex-basis: 100%;
+  overflow-wrap: anywhere;
+}
+.attachment-item progress {
+  max-width: 100%;
+}
+.pending-attachments {
+  padding: 0 16px;
+}

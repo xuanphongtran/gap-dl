@@ -11,6 +11,7 @@ import RoomUnreadBadge from './RoomUnreadBadge.vue'
 import RealtimeStatus from './RealtimeStatus.vue'
 import { realtimeKey } from './realtime-context'
 import { useWorkspaceRealtime } from './useWorkspaceRealtime'
+import { useWorkspaceRecovery } from './useWorkspaceRecovery'
 import { api, errorMessage } from '../../lib/api'
 import { queryClient, queryKeys } from '../../lib/query'
 import { useActionCooldown, useKeyedActionCooldown } from '../../lib/rate-limit'
@@ -80,13 +81,7 @@ watch(
   },
 )
 
-watch(
-  [profileQuery.error, roomsQuery.error, invitationsQuery.error],
-  ([profileError, roomsError, invitationsError]) => {
-    const cause = profileError || roomsError || invitationsError
-    if (cause) error.value = errorMessage(cause)
-  },
-)
+const recovery = useWorkspaceRecovery()
 
 async function createRoom() {
   if (!roomName.value.trim() || busy.value || createCooldown.remaining.value) return
@@ -256,6 +251,15 @@ function toggleJoin() {
             </button>
           </div>
         </div>
+        <PixelAlert v-if="recovery.error.value" tone="error" class="sidebar-error">
+          {{ recovery.error.value }}
+          <PixelButton
+            :disabled="recovery.pending.value || !!recovery.cooldownSeconds.value"
+            @click="recovery.retry"
+          >
+            RETRY WORKSPACE
+          </PixelButton>
+        </PixelAlert>
         <PixelAlert v-if="error" tone="error" class="sidebar-error">{{ error }}</PixelAlert>
       </div>
 

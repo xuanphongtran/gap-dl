@@ -1,5 +1,12 @@
 # REST API contract baseline
 
+**Attachment continuation (2026-10-20):** [Published contract](./ATTACHMENTS_RECHECK_2026-10-20.md) now includes typed summaries, five-file binding and authorized 60-second download. Swagger has 32 paths/42 operations, SHA-256 `176cf2df1f586bc16c2336241f9b4bd15731ce5a92527effcd6c9351420ad9de`; the extended 34-operation checker passes, including attachment routes, typed summaries, bounded bindings and ticket fields. [Frontend local acceptance](./ATTACHMENTS_ACCEPTANCE_2026-10-20.md) does not close real provider/runtime gates. Runtime registration 500 and readiness 503 prevent a fresh full-flow acceptance; two uncertain registrations remain journaled for cleanup. Earlier binding/download absence below is historical.
+
+**Attachment recheck (2026-10-19):** [Authenticated evidence](./ATTACHMENTS_RECHECK_2026-10-19.md) confirms upload admission, object PUT, completion and ready/verified scanning. A message containing that verified attachment still returns 503. Swagger has no download endpoint or typed message attachment schema; those remain BE gates. Current Swagger SHA-256 is `01821bc26514fae1ccc25ad616f9c401422fa5a98ddca25cecebe12cbf1efafb` (31 paths, 41 operations). Earlier scanner-blocked findings below are historical.
+
+**Release hardening continuation (2026-10-16):** [Acceptance](./RELEASE_HARDENING_ACCEPTANCE_2026-10-16.md) closes the named sandbox Search query/pagination/freshness/privacy gate. Local 503/429/retry checks and history measurements are separate synthetic evidence; actual rate-limit/operations gates remain open. The new recovery source is not yet deployed.
+
+
 **Hosted continuation (2026-10-16):** [Sandbox release acceptance](./SANDBOX_RELEASE_ACCEPTANCE_2026-10-16.md) closes the named sandbox's WebSocket multi-tab/reconnect and Mentions/Inbox deployment gates with native browser evidence. Earlier deployment limitations below are historical. Attachments and operational/distributed gates remain open.
 
 

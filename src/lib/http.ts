@@ -4,7 +4,7 @@ import axios, {
   type InternalAxiosRequestConfig,
 } from 'axios'
 import { clearSession, readSession, saveSession } from './session'
-import type { TokenPair } from '../types'
+import type { TokenPair, AttachmentUploadTicket } from '../types'
 
 export const apiBaseURL = (
   import.meta.env.VITE_API_BASE_URL || 'https://gogo-dl.onrender.com'
@@ -163,4 +163,44 @@ export function errorMessage(error: unknown): string {
     return `The request could not be completed. Please try again.${reference}`
   }
   return 'Could not connect to the server. Please try again.'
+}
+
+// Storage credentials are scoped by the ticket; API interceptors must never run here.
+export const uploadHttp = axios.create({ timeout: 120_000, withCredentials: false })
+export async function uploadAttachmentBytes(
+  ticket: AttachmentUploadTicket,
+  file: Blob,
+  signal: AbortSignal,
+  onProgress: (percent: number) => void,
+): Promise<void> {
+  let url: URL
+  try {
+    url = new URL(ticket.upload_url)
+    if (url.protocol !== 'https:' || url.username || url.password || ticket.method !== 'PUT')
+      throw new Error()
+  } catch {
+    throw new ApiError(0, 'Invalid upload ticket.')
+  }
+  const headers = Object.fromEntries(
+    Object.entries(ticket.headers).filter(
+      ([name]) => !/^(authorization|cookie|host|content-length|proxy-authorization)$/i.test(name),
+    ),
+  )
+  try {
+    if (signal.aborted) throw new Error()
+    onProgress(0)
+    await uploadHttp.put(url.toString(), file, {
+      headers,
+      signal,
+      withCredentials: false,
+      onUploadProgress: ({ loaded, total }) =>
+        onProgress(total ? Math.min(100, Math.max(0, Math.floor((loaded / total) * 100))) : 0),
+    })
+    onProgress(100)
+  } catch (error) {
+    throw new ApiError(
+      axios.isAxiosError(error) ? error.response?.status || 0 : 0,
+      'Upload could not be completed. Retry explicitly.',
+    )
+  }
 }

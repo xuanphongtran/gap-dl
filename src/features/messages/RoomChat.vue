@@ -13,6 +13,8 @@ import MessageComposer from './MessageComposer.vue'
 import NotificationPreferencesControl from '../notifications/NotificationPreferencesControl.vue'
 import MentionRecipientPicker from './MentionRecipientPicker.vue'
 import { useMentionSend } from './useMentionSend'
+import AttachmentUploadPicker from '../attachments/AttachmentUploadPicker.vue'
+import { useAttachmentUploads } from '../attachments/useAttachmentUploads'
 import MessageRow from './MessageRow.vue'
 import { invalidateRoomSearch } from './message-search'
 import { useViewedReadState } from './useViewedReadState'
@@ -420,7 +422,21 @@ async function joinPublicRoom() {
     if (id === roomId.value) joinError.value = errorMessage(cause)
   }
 }
+const attachmentUploads = useAttachmentUploads({
+  roomId,
+  userId: computed(() => profile.value?.id),
+  enabled: canReadPrivateData,
+  onAccessLost: loseRoomAccess,
+})
 const mentionSend = useMentionSend({
+  attachments: attachmentUploads.readyAttachments,
+  attachmentsBlocked: attachmentUploads.blocked,
+  onIntentCreated: (id, ids) => {
+    if (id === roomId.value && ids.length) attachmentUploads.claimForSend(ids)
+  },
+  onIntentSettled: (id, ids, outcome) => {
+    if (id === roomId.value) attachmentUploads.settleSend(ids, outcome)
+  },
   roomId,
   userId: computed(() => profile.value?.id),
   enabled: canReadPrivateData,
@@ -702,6 +718,9 @@ function formatDate(value: string) {
             <MessageRow
               :message="message"
               :mine="message.user_id === profile?.id"
+              :user-id="profile?.id"
+              :attachments-enabled="canReadPrivateData"
+              @access-lost="loseRoomAccess"
               :time="formatTime(message.created_at)"
               :can-edit="
                 isMember &&
@@ -742,6 +761,16 @@ function formatDate(value: string) {
             }}
           </PixelButton>
         </PixelAlert>
+        <AttachmentUploadPicker
+          v-if="profile?.id && isMember"
+          :rows="attachmentUploads.rows.value"
+          :selection-error="attachmentUploads.selectionError.value"
+          :disabled="!canReadPrivateData || sending || mentionSend.locked.value"
+          @select="attachmentUploads.select"
+          @remove="attachmentUploads.remove"
+          @retry="attachmentUploads.retry"
+          @check="attachmentUploads.check"
+        />
         <MentionRecipientPicker
           v-if="profile?.id && isMember"
           v-model="mentionSend.selectedIds.value"
@@ -753,7 +782,7 @@ function formatDate(value: string) {
           {{
             mentionSend.expired.value
               ? 'Retry expired. Check the conversation before sending again.'
-              : 'This send may already have been accepted. Retry uses the original recipients and message.'
+              : 'This send may already have been accepted. Retry uses the original message, recipients and files.'
           }}
           <PixelButton
             :disabled="
@@ -766,10 +795,28 @@ function formatDate(value: string) {
           >
           <PixelButton @click="discardPendingSend">DISCARD PENDING SEND</PixelButton>
         </PixelAlert>
+        <ul
+          v-if="mentionSend.pendingAttachments.value.length"
+          class="attachment-list pending-attachments"
+          aria-label="Files in pending send"
+        >
+          <li
+            v-for="file in mentionSend.pendingAttachments.value"
+            :key="file.id"
+            class="attachment-name"
+          >
+            {{ file.filename }}
+          </li>
+        </ul>
         <MessageComposer
           v-model="draft"
           :disabled="!isMember || realtimePaused"
           :sending="sending"
+          :blocked-reason="
+            attachmentUploads.blocked.value && !mentionSend.locked.value
+              ? 'Wait for every file to be ready, or remove unavailable files.'
+              : ''
+          "
           :locked="mentionSend.locked.value"
           :cooldown-seconds="mentionSend.cooldownSeconds.value"
           :error="mentionSend.error.value || visibleError || ''"

@@ -79,3 +79,27 @@ it('does not restore an erased author from a stale search page at the same revis
   expect(result[0]?.user_id).toBeNull()
   expect(result[0]?.content).toBe('matching text')
 })
+it('hides stale file projections after a newer uploader-deletion revision', () => {
+  const files = [
+    {
+      id: 10,
+      filename: 'a.txt',
+      content_type: 'text/plain',
+      size_bytes: 1,
+      sha256: 'a'.repeat(64),
+      verified: true,
+    },
+  ]
+  expect(
+    mergeSearchResults(
+      [{ messages: [{ ...message(3), attachments: files }], next_before: null }],
+      [{ ...message(3, 2), user_id: null, attachments: [] }],
+    ),
+  ).toEqual([])
+  expect(
+    mergeSearchResults(
+      [{ messages: [{ ...message(3, 2), user_id: null, attachments: [] }], next_before: null }],
+      [{ ...message(3, 2), user_id: null, attachments: [] }],
+    )[0]?.attachments,
+  ).toEqual([])
+})

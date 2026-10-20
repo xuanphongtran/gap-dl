@@ -27,17 +27,22 @@ Recheck: fresh pending invitation 29, denial before acceptance, restored access 
 
 Public-room leave/rejoin checks pass and do not close this private-room gate. Evidence: [plan](../PLAN.md), [sandbox acceptance](./ACCEPTANCE_2026-10-13.md), [rich messaging contract](./RICH_MESSAGING_CONTRACT.md).
 
-## 3. Attachments: pending R2 setup
+## 3. Attachments: contract ready, frontend implemented, runtime acceptance pending
 
-User update 2026-10-16: R2 is not configured; Attachments is explicitly pending. Pause frontend upload work and repeated live reservation probes until BE reports storage/scanner readiness. Release hardening can proceed independently.
+User update 2026-10-20 reports completion. [Fresh contract evidence](./ATTACHMENTS_RECHECK_2026-10-20.md) confirms binding, typed summaries and the new download endpoint. The 2026-10-19 reservation/upload/ready success remains valid dated evidence. Backend processing is lightweight policy/sanitization; ClamAV is explicitly deferred and is not a frontend release gate.
 
-Last probe on 2026-10-16: a valid authenticated `POST /api/v1/rooms/{id}/attachments/uploads` returns 503, `attachment uploads unavailable`, with no reservation or signed URL. The underlying provider/scanner configuration has not been audited.
+- [x] Publish atomic binding and typed message/history/Search attachment summaries, with at most five own ready files, same-key retries/conflicts and mixed mentions.
+- [x] Publish authorized 60-second download, expiry/safe headers and membership/deletion semantics in Swagger and the backend frontend handoff.
+- [ ] Restore staging readiness and authenticated account setup: first registration returned 500 at 2026-10-20T02:21:08Z; health 200, readiness 503/ready:false persisted through 02:22:44Z. Readiness request IDs: `8948cbe1ba70a6f6e8da37f0950e334e`, `76be16463c1f2c3d90c269fc1bd0ecbc`, `5fe74080ea50a64a84b4860ebb5e593f`, `074bf782abb51827f451aad49b977ce7`. The underlying cause has not been identified; do not label it a scanner failure.
+- [ ] Reconcile the two uncertain registrations using retained private credentials/journals after service recovery. The controlled unique-username attempt also returned 500, request ID `2928222970f16d4f5031ffde8408e46d`. No upload, membership or message was created by this attempt. Credentials are not copied into the report; legacy fixture cleanup remains separate.
+- [ ] Verify actual binding/download, same-key canonical identity, recipient metadata, departed-member/deleted-binding denial and download headers against the deployed binary. Published/source tests alone do not close these runtime gates.
+- [ ] Verify R2 browser CORS, failed/expired processing, leave during upload, physical delayed cleanup and quota release. Logical cancellation and physical object deletion remain different observations.
 
-- [ ] Make reservation/storage/scanner dependencies ready and confirm the supported metadata state values and transitions.
-- [ ] Provide response-backed evidence for upload, completion/scan, verified message binding, authorized download and deletion.
-- [ ] Verify quota, failed scans, expiration, cancellation/retry, leave during upload, duplicate retry and delayed cleanup. Keep unverified files unavailable.
+Frontend upload/send/download is implemented on `feat/attachments`; [local acceptance](./ATTACHMENTS_ACCEPTANCE_2026-10-20.md) records synthetic native and mounted checks. A single fresh GET /readyz at 2026-10-20T03:44:37Z still returned 503/ready:false, request ID `1fbf9fc2ff58a2c00ce5f5fd5df56342`. After the interrupted session resumed, one fresh read-only readiness probe at 08:17:54Z again returned 503/ready:false, request ID `68aedf9bb8ab5fafa8dcff108908c6b6`. No new live writes were attempted; both historical private journal directories are still present. This does not close runtime/provider or selected-host deployment gates. Preserve private recovery evidence in `/tmp/gogo-attachments-contract-qfPI80/` and `/tmp/gogo-attachments-contract-tcF6Sy/` until both registration outcomes are resolved. No extra signup/upload flood, service restart, migration or deployment was performed.
 
-Frontend upload UI remains deferred until these contract/provider gates pass. Evidence: [rich messaging contract](./RICH_MESSAGING_CONTRACT.md).
+Latest [fresh test rerun](./ATTACHMENTS_RETEST_2026-10-20.md), 08:43 UTC: health 200, readiness 503 (`a1e6313dee27438282cf16d30d6872c1`), Swagger 200, and both retained registration credentials return login 401. No new registration or attachment resource writes were attempted. Login401 does not establish absence/cleanup; no fresh attachment-endpoint 503 has been observed. Local 270 tests and all seven synthetic native attachment scenarios pass.
+
+The user has switched testing to local port 8080 because Render quota is exhausted. [Local verification](./ATTACHMENTS_LOCAL_ACCEPTANCE_2026-10-20.md) confirms readiness 200, registration/profile/native auth and cleanup of two disposable accounts. There is no available local public room, so attachment testing awaits a room fixture or explicit cleanup/retention strategy. This closes local availability/auth checks only; it does not resolve the old Render registrations or prove provider/binding/download behavior.
 
 ## 4. Admin cleanup: legacy disposable accounts 35 and 36
 
@@ -51,6 +56,8 @@ The earlier interrupted contract run did not retain usable login/refresh credent
 Messages 203/204 were confirmed tombstones. New acceptance-run accounts 39–46 and their messages were cleaned; do not delete the intentionally retained owner/private-room fixtures. Evidence: [contract cleanup record](./RICH_MESSAGING_CONTRACT.md), [latest cleanup](./MENTIONS_INBOX_ACCEPTANCE_2026-10-15.md).
 
 ## 5. Verification follow-ups, not confirmed defects
+
+[Release hardening evidence](./RELEASE_HARDENING_ACCEPTANCE_2026-10-16.md) adds a passing local simulated 503/429/retry matrix and hosted Search acceptance. It does not close the live backend/operations items below. Attachments remains pending R2; no reservation probes were repeated in this phase.
 
 - [ ] Investigate transient 502 responses seen during message cleanup on 2026-10-15 if server logs remain available. Deletes for messages 253, 254 and 257 later succeeded with 200; no root cause is established.
 - [x] Verify ordinary authenticated responses expose `Retry-After` and `X-Request-Id` through CORS (confirmed 2026-10-15).

@@ -331,7 +331,8 @@ export function useWorkspaceRealtime(): RealtimeContext {
     active = room
     room.setPaused(true)
     if (socket.status.value === 'OPEN') void recover(true)
-    else if (status.value === 'fallback' && navigator.onLine) void recover(true)
+    else if (['fallback', 'recovering'].includes(status.value) && navigator.onLine)
+      void recover(true)
     return () => {
       if (active !== room) return
       if (joined === room.id)

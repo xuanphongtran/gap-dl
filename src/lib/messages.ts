@@ -9,7 +9,12 @@ export function messageContentBytes(content: string): number {
 export function mergeMessages(current: Message[], incoming: Message[]): Message[] {
   const byId = new Map<number, Message>()
   for (const message of current)
-    byId.set(message.id, message.deleted_at ? { ...message, content: '' } : message)
+    byId.set(
+      message.id,
+      message.deleted_at
+        ? { ...message, content: '', ...(message.attachments ? { attachments: [] } : {}) }
+        : message,
+    )
   for (const message of incoming) {
     const previous = byId.get(message.id)
     if (previous?.deleted_at && !message.deleted_at) continue
@@ -24,6 +29,7 @@ export function mergeMessages(current: Message[], incoming: Message[]): Message[
         ...message,
         user_id: previous?.user_id === null ? null : message.user_id,
         content: message.deleted_at ? '' : message.content,
+        ...(message.deleted_at && message.attachments ? { attachments: [] } : {}),
       })
   }
   return [...byId.values()].sort((a, b) => a.id - b.id)

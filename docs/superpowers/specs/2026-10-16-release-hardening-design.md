@@ -1,6 +1,6 @@
 # Release hardening design
 
-Status: proposed for review. Planning only; implementation has not started. The user explicitly deferred Attachments because Cloudflare R2 is not configured. This phase follows the completed [sandbox Mentions/WebSocket acceptance](../../SANDBOX_RELEASE_ACCEPTANCE_2026-10-16.md) and implements the remaining frontend-controlled work in [PLAN.md](../../../PLAN.md), section 7.
+Status: approved by the user on 2026-10-16; planned frontend deliverables, independent review corrections and final local verification complete on 2026-10-17; deployment remains open. The user explicitly deferred Attachments because Cloudflare R2 is not configured. This phase follows the completed [sandbox Mentions/WebSocket acceptance](../../SANDBOX_RELEASE_ACCEPTANCE_2026-10-16.md) and implements the remaining frontend-controlled work in [PLAN.md](../../../PLAN.md), section 7.
 
 ## Outcome and choice
 
@@ -15,6 +15,8 @@ Preserve endpoint functions in `src/lib/api.ts`, transport in `src/lib/http.ts`,
 Add an explicit workspace read-recovery action beside profile/room-list/invitation read failures. Current workspace queries have bounded automatic retry but no dedicated read retry control. Separate their read feedback from mutation feedback, so a recovered read cannot erase an unrelated failed action. A retry refetches only active workspace reads, never create/join/invite or another write. Disable duplicate retry while it is pending; an observed 429 deadline also disables this explicit action. Successful reads clear read feedback. Logout/account change cancels the operation and prevents stale feedback in the new session. Existing private-query/session cleanup remains authoritative.
 
 This action does not promise a new global rate-limit coordinator. Automatic 429 suppression already owned by Inbox, Search and preferences must remain intact; the verification matrix pins those boundaries. If the browser matrix exposes a new shared-query scheduling defect, record the reproducible case and amend the implementation plan before widening query ownership.
+
+Recovery ownership amendment (2026-10-16): native 1,000-row baseline and a failing mounted regression confirm that switching rooms while REST fallback recovery is pending can leave the new room paused forever. Transfer recovery to the newly authorized room even while the workspace status still describes the old recovery. Preserve account/room generation guards, abort the old work, and leave polling/history policies unchanged.
 
 ## Verification deliverables
 
@@ -37,3 +39,5 @@ Attachments are pending by user instruction while R2 is not configured. Resume o
 ## Acceptance
 
 Run focused regressions for changed behavior, `npm run check`, local recovery and history checks, and hosted Search acceptance when the target is accessible. Obtain one whole-branch review and resolve Important/Critical findings. Record exact checks, unresolved live gates, fixture cleanup and rollback guidance. This phase is complete when its local deliverables and hosted Search evidence exist; external backend/admin/operations gates remain separately tracked, not silently marked complete.
+
+Review continuation: explicit retry retains the maximum absolute 429 deadline. Native account-switch acceptance goes through RETRY WORKSPACE and a manually held response. Future live harnesses use the private durable cleanup journal and [adapter protocol](../../LIVE_FIXTURE_CLEANUP.md); historical hosted cleanup is confirmed-response evidence, not interruption coverage. See the plan execution record for decisions and deferred evidence limitations.

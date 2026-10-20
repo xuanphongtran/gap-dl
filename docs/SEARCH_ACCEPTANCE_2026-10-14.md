@@ -1,5 +1,8 @@
 # Room Search acceptance — 2026-10-14
 
+**Hosted continuation (2026-10-16):** [Eight native sandbox checks](./RELEASE_HARDENING_ACCEPTANCE_2026-10-16.md#hosted-search-acceptance) now verify query/pagination, edit/deletion freshness, read-state isolation, keyboard/mobile and revocation. Earlier named-host limitations below are historical; other production origins remain separate.
+
+
 Branch: `feat/message-search`, served locally at the backend-allowed origin `http://localhost:3000` in native headless Chrome. Backend: `https://gogo-dl.onrender.com`, Swagger 2.0/API 1.0, rechecked SHA-256 `a1791d35c2d14d96664e806639a7c89415e716487c1b3142c74cff8df3c8a8de`. The changed frontend is not deployed to sandbox or production.
 
 ## Browser evidence

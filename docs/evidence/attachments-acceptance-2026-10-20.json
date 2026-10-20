@@ -1,0 +1,352 @@
+{
+  "date": "2026-10-20",
+  "scope": "Local synthetic acceptance; no deployed attachment acceptance claimed",
+  "reviewedHead": "b100c92",
+  "check": {
+    "command": "npm run check",
+    "passed": true,
+    "tests": 270,
+    "files": 49
+  },
+  "attachments": {
+    "checks": [
+      {
+        "name": "send-retry",
+        "simulated": true,
+        "pass": true,
+        "canonicalMessageCount": 1,
+        "privacyViolationCount": 0,
+        "cancellationCount": 0,
+        "blockedExternalRequestCount": 30,
+        "escapedNavigationCount": 0,
+        "requestCounts": {
+          "POST /api/v1/auth/login": 1,
+          "GET /api/v1/users/me": 4,
+          "GET /api/v1/rooms": 2,
+          "GET /api/v1/users/me/invitations": 2,
+          "GET /api/v1/rooms/:id/read-state": 6,
+          "GET /api/v1/rooms/:id": 4,
+          "GET /api/v1/rooms/:id/messages": 4,
+          "GET /api/v1/rooms/:id/members": 2,
+          "POST /api/v1/rooms/:id/attachments/uploads": 1,
+          "PUT /provider/uploads/:id": 1,
+          "POST /api/v1/rooms/:id/attachments/:id/complete": 1,
+          "GET /api/v1/rooms/:id/attachments/:id": 1,
+          "POST /api/v1/rooms/:id/messages": 2,
+          "GET /api/v1/rooms/:id/messages/search": 1
+        }
+      },
+      {
+        "name": "processing",
+        "simulated": true,
+        "pass": true,
+        "canonicalMessageCount": 1,
+        "privacyViolationCount": 0,
+        "cancellationCount": 0,
+        "blockedExternalRequestCount": 34,
+        "escapedNavigationCount": 0,
+        "requestCounts": {
+          "POST /api/v1/auth/login": 1,
+          "GET /api/v1/users/me": 5,
+          "GET /api/v1/rooms": 2,
+          "GET /api/v1/users/me/invitations": 2,
+          "GET /api/v1/rooms/:id/read-state": 6,
+          "GET /api/v1/rooms/:id": 3,
+          "GET /api/v1/rooms/:id/messages": 4,
+          "GET /api/v1/rooms/:id/members": 2,
+          "POST /api/v1/rooms/:id/attachments/uploads": 1,
+          "PUT /provider/uploads/:id": 1,
+          "POST /api/v1/rooms/:id/attachments/:id/complete": 1,
+          "GET /api/v1/rooms/:id/attachments/:id": 2,
+          "POST /api/v1/rooms/:id/messages": 1,
+          "GET /api/v1/rooms/:id/messages/search": 1
+        }
+      },
+      {
+        "name": "put-412",
+        "simulated": true,
+        "pass": true,
+        "canonicalMessageCount": 1,
+        "privacyViolationCount": 0,
+        "cancellationCount": 0,
+        "blockedExternalRequestCount": 25,
+        "escapedNavigationCount": 0,
+        "requestCounts": {
+          "POST /api/v1/auth/login": 1,
+          "GET /api/v1/users/me": 4,
+          "GET /api/v1/rooms": 2,
+          "GET /api/v1/users/me/invitations": 2,
+          "GET /api/v1/rooms/:id/read-state": 5,
+          "GET /api/v1/rooms/:id": 2,
+          "GET /api/v1/rooms/:id/messages": 2,
+          "GET /api/v1/rooms/:id/members": 1,
+          "POST /api/v1/rooms/:id/attachments/uploads": 1,
+          "PUT /provider/uploads/:id": 1,
+          "GET /api/v1/rooms/:id/attachments/:id": 2,
+          "POST /api/v1/rooms/:id/attachments/:id/complete": 1,
+          "POST /api/v1/rooms/:id/messages": 1,
+          "GET /api/v1/rooms/:id/messages/search": 1
+        }
+      },
+      {
+        "name": "upload-room-change",
+        "simulated": true,
+        "pass": true,
+        "canonicalMessageCount": 0,
+        "privacyViolationCount": 0,
+        "cancellationCount": 0,
+        "blockedExternalRequestCount": 28,
+        "escapedNavigationCount": 0,
+        "requestCounts": {
+          "POST /api/v1/auth/login": 1,
+          "GET /api/v1/users/me": 4,
+          "GET /api/v1/rooms": 2,
+          "GET /api/v1/users/me/invitations": 2,
+          "GET /api/v1/rooms/:id/read-state": 6,
+          "GET /api/v1/rooms/:id": 4,
+          "GET /api/v1/rooms/:id/messages": 2,
+          "GET /api/v1/rooms/:id/members": 2,
+          "POST /api/v1/rooms/:id/attachments/uploads": 1
+        }
+      },
+      {
+        "name": "account-change",
+        "simulated": true,
+        "pass": true,
+        "canonicalMessageCount": 0,
+        "privacyViolationCount": 0,
+        "cancellationCount": 0,
+        "blockedExternalRequestCount": 29,
+        "escapedNavigationCount": 0,
+        "requestCounts": {
+          "POST /api/v1/auth/login": 2,
+          "GET /api/v1/users/me": 6,
+          "GET /api/v1/rooms": 3,
+          "GET /api/v1/users/me/invitations": 3,
+          "GET /api/v1/rooms/:id/read-state": 5,
+          "GET /api/v1/rooms/:id": 2,
+          "GET /api/v1/rooms/:id/messages": 1,
+          "GET /api/v1/rooms/:id/members": 1,
+          "POST /api/v1/rooms/:id/attachments/uploads": 1
+        }
+      },
+      {
+        "name": "download-access",
+        "simulated": true,
+        "pass": true,
+        "canonicalMessageCount": 1,
+        "privacyViolationCount": 0,
+        "cancellationCount": 0,
+        "blockedExternalRequestCount": 33,
+        "escapedNavigationCount": 0,
+        "requestCounts": {
+          "POST /api/v1/auth/login": 1,
+          "GET /api/v1/users/me": 5,
+          "GET /api/v1/rooms": 3,
+          "GET /api/v1/users/me/invitations": 2,
+          "GET /api/v1/rooms/:id/read-state": 6,
+          "GET /api/v1/rooms/:id": 4,
+          "GET /api/v1/rooms/:id/messages": 8,
+          "GET /api/v1/rooms/:id/members": 2,
+          "POST /api/v1/rooms/:id/attachments/uploads": 1,
+          "PUT /provider/uploads/:id": 1,
+          "POST /api/v1/rooms/:id/attachments/:id/complete": 1,
+          "GET /api/v1/rooms/:id/attachments/:id": 1,
+          "POST /api/v1/rooms/:id/messages": 1,
+          "GET /api/v1/rooms/:id/messages/search": 1,
+          "GET /api/v1/rooms/:id/messages/:id/attachments/:id/download": 2,
+          "GET /provider/downloads/:id": 1,
+          "PUT /api/v1/rooms/:id/read-state": 1
+        }
+      },
+      {
+        "name": "mobile-keyboard",
+        "simulated": true,
+        "pass": true,
+        "canonicalMessageCount": 1,
+        "privacyViolationCount": 0,
+        "cancellationCount": 0,
+        "blockedExternalRequestCount": 30,
+        "escapedNavigationCount": 0,
+        "requestCounts": {
+          "POST /api/v1/auth/login": 1,
+          "GET /api/v1/users/me": 4,
+          "GET /api/v1/rooms": 2,
+          "GET /api/v1/users/me/invitations": 2,
+          "GET /api/v1/rooms/:id/read-state": 6,
+          "GET /api/v1/rooms/:id": 3,
+          "GET /api/v1/rooms/:id/messages": 5,
+          "GET /api/v1/rooms/:id/members": 2,
+          "POST /api/v1/rooms/:id/attachments/uploads": 1,
+          "PUT /provider/uploads/:id": 1,
+          "POST /api/v1/rooms/:id/attachments/:id/complete": 1,
+          "GET /api/v1/rooms/:id/attachments/:id": 1,
+          "POST /api/v1/rooms/:id/messages": 1,
+          "GET /api/v1/rooms/:id/messages/search": 1,
+          "GET /api/v1/rooms/:id/messages/:id/attachments/:id/download": 1,
+          "GET /provider/downloads/:id": 1
+        }
+      }
+    ],
+    "cleanupComplete": true
+  },
+  "recovery": {
+    "checks": [
+      {
+        "name": "login-503",
+        "simulated": true,
+        "pass": true,
+        "requestCounts": {
+          "POST /api/v1/auth/login": 2,
+          "GET /api/v1/users/me": 2,
+          "GET /api/v1/rooms": 1,
+          "GET /api/v1/users/me/invitations": 1
+        },
+        "canonicalMessageCount": 0
+      },
+      {
+        "name": "workspace-503",
+        "simulated": true,
+        "pass": true,
+        "requestCounts": {
+          "POST /api/v1/auth/login": 1,
+          "GET /api/v1/users/me": 3,
+          "GET /api/v1/rooms": 3,
+          "GET /api/v1/users/me/invitations": 2,
+          "GET /api/v1/rooms/:id/read-state": 2
+        },
+        "canonicalMessageCount": 0
+      },
+      {
+        "name": "mention-response-loss",
+        "simulated": true,
+        "pass": true,
+        "requestCounts": {
+          "POST /api/v1/auth/login": 1,
+          "GET /api/v1/users/me": 5,
+          "GET /api/v1/rooms": 2,
+          "GET /api/v1/users/me/invitations": 2,
+          "GET /api/v1/rooms/:id/read-state": 6,
+          "GET /api/v1/rooms/:id": 3,
+          "GET /api/v1/rooms/:id/messages": 4,
+          "GET /api/v1/rooms/:id/members": 2,
+          "POST /api/v1/rooms/:id/messages": 2
+        },
+        "canonicalMessageCount": 1
+      },
+      {
+        "name": "inbox-429",
+        "simulated": true,
+        "pass": true,
+        "requestCounts": {
+          "POST /api/v1/auth/login": 1,
+          "GET /api/v1/users/me": 6,
+          "GET /api/v1/rooms": 3,
+          "GET /api/v1/users/me/invitations": 2,
+          "GET /api/v1/rooms/:id/read-state": 6,
+          "GET /api/v1/users/me/notifications": 2
+        },
+        "canonicalMessageCount": 0
+      },
+      {
+        "name": "inbox-429-no-header",
+        "simulated": true,
+        "pass": true,
+        "requestCounts": {
+          "POST /api/v1/auth/login": 1,
+          "GET /api/v1/users/me": 4,
+          "GET /api/v1/rooms": 3,
+          "GET /api/v1/users/me/invitations": 2,
+          "GET /api/v1/rooms/:id/read-state": 4,
+          "GET /api/v1/users/me/notifications": 2
+        },
+        "canonicalMessageCount": 0
+      },
+      {
+        "name": "inbox-429-malformed-header",
+        "simulated": true,
+        "pass": true,
+        "requestCounts": {
+          "POST /api/v1/auth/login": 1,
+          "GET /api/v1/users/me": 4,
+          "GET /api/v1/rooms": 3,
+          "GET /api/v1/users/me/invitations": 2,
+          "GET /api/v1/rooms/:id/read-state": 4,
+          "GET /api/v1/users/me/notifications": 2
+        },
+        "canonicalMessageCount": 0
+      },
+      {
+        "name": "session-change",
+        "simulated": true,
+        "pass": true,
+        "requestCounts": {
+          "POST /api/v1/auth/login": 2,
+          "GET /api/v1/users/me": 5,
+          "GET /api/v1/rooms": 4,
+          "GET /api/v1/users/me/invitations": 3
+        },
+        "canonicalMessageCount": 0
+      }
+    ]
+  },
+  "searchScroll": {
+    "before": 1000,
+    "during": 0,
+    "duringRows": 0,
+    "after": 1000,
+    "afterRows": 20,
+    "callsBeforeNewQuery": 2,
+    "newQueryTop": 0,
+    "calls": 3
+  },
+  "readiness": {
+    "checkedAt": "2026-10-20T03:44:37.654990+00:00",
+    "probe": "GET /readyz",
+    "method": "GET",
+    "status": 503,
+    "requestId": "1fbf9fc2ff58a2c00ce5f5fd5df56342",
+    "ready": false,
+    "historicalPrivateDirectoriesPresent": [
+      true,
+      true
+    ]
+  },
+  "swagger": {
+    "paths": 32,
+    "operations": 42,
+    "requiredOperations": 34,
+    "sha256": "176cf2df1f586bc16c2336241f9b4bd15731ce5a92527effcd6c9351420ad9de"
+  },
+  "bundle": {
+    "javascript": "index-Br0kQPzZ.js",
+    "javascriptSha256": "20f400ea2d6c6b0645d950721db6c3e00ada71ca816a07558d9532a570f22839",
+    "css": "index-B_R2kc9-.css",
+    "cssSha256": "e4f5dac93e129748ea21dda9cac961cb26193ca7c7f33bf5a1465df4a6ebedfc"
+  },
+  "verifiedSourceHead": "bc4f59b",
+  "review": {
+    "base": "256959e",
+    "head": "b100c92",
+    "independent": true,
+    "critical": 0,
+    "important": 3,
+    "minor": 0,
+    "importantFixedInOnePass": 3,
+    "fixCommit": "bc4f59b",
+    "reReview": false
+  },
+  "resumedReadiness": {
+    "checkedAt": "2026-10-20T08:17:54.000049+00:00",
+    "probe": "GET /readyz",
+    "method": "GET",
+    "reason": "One fresh read-only probe after resuming the interrupted session",
+    "status": 503,
+    "requestId": "68aedf9bb8ab5fafa8dcff108908c6b6",
+    "ready": false,
+    "historicalPrivateDirectoriesPresent": [
+      true,
+      true
+    ]
+  }
+}

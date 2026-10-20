@@ -18,7 +18,10 @@
     "contract:check": "node scripts/check-api-contract.mjs",
     "check": "npm run format:check && npm run lint && npm run typecheck && npm run test && npm run build",
     "ws:contract:check": "node scripts/check-ws-contract.mjs",
-    "search:scroll:check": "node scripts/check-search-scroll.mjs"
+    "search:scroll:check": "node scripts/check-search-scroll.mjs",
+    "acceptance:recovery": "node scripts/check-recovery.mjs",
+    "acceptance:history": "node scripts/check-history-cost.mjs",
+    "acceptance:attachments": "node scripts/check-attachments.mjs"
   },
   "dependencies": {
     "@fontsource/press-start-2p": "^5.3.0",
