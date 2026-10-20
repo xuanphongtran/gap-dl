@@ -1,0 +1,24 @@
+{
+  "date": "2026-10-20",
+  "target": "http://127.0.0.1:8080",
+  "asyncapi": {
+    "status": 200,
+    "sha256": "f9d402402bdacad3ff032110c587fb6b678d2dd36f49f034cc171adbb5494626",
+    "messageUpdatedPublished": true,
+    "messageDeletedPublished": true,
+    "presencePublished": false,
+    "typingPublished": false,
+    "readStatePublished": false,
+    "replayProvided": false
+  },
+  "backendSource": {
+    "commit": "e8f704179367cb80c72f9571fb477df725c4f42e",
+    "presenceTypingSpec": "spec/07-presence-read-state.md",
+    "typingTTLSeconds": 5,
+    "typingMinimumStartIntervalSeconds": 1,
+    "suggestedRefreshSeconds": 2,
+    "processLocalOnly": true
+  },
+  "runtimeRoomProbePerformed": false,
+  "productSourceChanged": false
+}

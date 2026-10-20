@@ -1,5 +1,7 @@
 # WebSocket contract and verification
 
+**Local contract recheck (2026-10-20):** Local port 8080 AsyncAPI SHA-256 is `f9d402402bdacad3ff032110c587fb6b678d2dd36f49f034cc171adbb5494626`. It now publishes `message_updated`/`message_deleted` with full Message revision/tombstone and typed attachment metadata, superseding the earlier lifecycle absence below. Presence/typing/read-state remain absent from AsyncAPI; presence/typing have a written BE contract in `spec/07-presence-read-state.md` at source `e8f7041`. No new authenticated activity wire probe has run. [Evidence](./evidence/realtime-phase5-recheck-2026-10-20.json) and [proposed design](./superpowers/specs/2026-10-20-realtime-completion-design.md) distinguish documented support from runtime acceptance. Further Phase 4 work is pending by user instruction.
+
 **Hosted continuation (2026-10-16):** [Sandbox release acceptance](./SANDBOX_RELEASE_ACCEPTANCE_2026-10-16.md) closes the named sandbox's WebSocket multi-tab/reconnect and Mentions/Inbox deployment gates with native browser evidence. Earlier deployment limitations below are historical. Attachments and operational/distributed gates remain open.
 
 

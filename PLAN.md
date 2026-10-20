@@ -24,6 +24,8 @@ The latest reviewed operation matrix and unresolved runtime checks are in [docs/
 
 **Local backend target (2026-10-20):** User reports Render quota exhaustion; use local port 8080. [Local verification](./docs/ATTACHMENTS_LOCAL_ACCEPTANCE_2026-10-20.md) confirms health/readiness 200, the 34-operation contract, two native login/logout journeys and acknowledged deletion of both test accounts. `.env.local` now points to 8080. No room fixture is available, so real attachment acceptance awaits an existing room or cleanup/retention strategy; Render journal cleanup remains separate.
 
+**Active scope (2026-10-20):** User places further Phase 4 work on hold and requests Phase 5 completion against local port 8080. Existing read-state functionality is retained. The [proposed realtime completion design](./docs/superpowers/specs/2026-10-20-realtime-completion-design.md) covers typed lifecycle events and room presence/typing, with explicit local fixture retention for review. The local AsyncAPI now publishes lifecycle events but still omits presence/typing implemented in the BE spec; runtime activity verification and product implementation have not yet occurred.
+
 ## 0. Frontend source and component foundation — P0, implement first
 
 The app already runs, but route views contain repeated pixel controls and much of the feature UI. Refactor the existing implementation before adding new API-driven behavior. Preserve routes, visible copy, mobile layout, and request semantics while moving code.
