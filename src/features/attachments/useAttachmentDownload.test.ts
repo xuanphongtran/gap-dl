@@ -156,3 +156,13 @@ it('queued_download_never_uses_a_replacement_account_token', async () => {
   expect(mock.history.get).toHaveLength(0)
   expect(opened).toHaveLength(0)
 })
+it('unchanged_history_refresh_preserves_binding_denial_and_rate_limit', async () => {
+  mock.onGet(url).reply(404, { error: 'missing' })
+  mock.onGet('/api/v1/rooms/7').reply(200, { id: 7, role: 'member' })
+  const { f, message } = mount()
+  await f.download(10)
+  message.value = { ...message.value, attachments: [...message.value.attachments] }
+  expect(f.unavailable(10)).toBe(true)
+  await f.download(10)
+  expect(mock.history.get.filter((c) => c.url === url)).toHaveLength(1)
+})

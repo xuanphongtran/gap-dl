@@ -37,14 +37,12 @@ beforeEach(() => {
   onlineManager.setOnline(true)
   vi.stubGlobal('crypto', webcrypto)
   storage.onPut().reply(200)
-  mock
-    .onPost('/api/v1/rooms/7/attachments/uploads')
-    .reply(201, {
-      attachment: attachment(10, 'pending_upload'),
-      method: 'PUT',
-      headers: {},
-      upload_url: 'https://storage.test/file',
-    })
+  mock.onPost('/api/v1/rooms/7/attachments/uploads').reply(201, {
+    attachment: attachment(10, 'pending_upload'),
+    method: 'PUT',
+    headers: {},
+    upload_url: 'https://storage.test/file',
+  })
   mock.onPost('/api/v1/rooms/7/attachments/10/complete').reply(202, attachment(10, 'processing'))
   mock.onGet('/api/v1/rooms/7/attachments/10').reply(200, attachment())
   mock.onDelete('/api/v1/rooms/7/attachments/10').reply(204)

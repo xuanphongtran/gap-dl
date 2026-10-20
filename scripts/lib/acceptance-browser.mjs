@@ -27,7 +27,11 @@ export async function startAcceptanceApp(origin) {
   }
 }
 export async function withAcceptanceBrowser(
-  { artifactDir, chromePath = process.env.CHROME_PATH || '/usr/bin/google-chrome' },
+  {
+    artifactDir,
+    chromePath = process.env.CHROME_PATH || '/usr/bin/google-chrome',
+    chromeArgs = [],
+  },
   run,
 ) {
   await mkdir(artifactDir, { recursive: true, mode: 0o700 })
@@ -35,6 +39,7 @@ export async function withAcceptanceBrowser(
     chromePath,
     [
       '--headless=new',
+      ...chromeArgs,
       '--no-sandbox',
       '--disable-dev-shm-usage',
       '--remote-debugging-port=0',

@@ -46,14 +46,14 @@ export function useAttachmentDownload(options: {
     feedback.clear()
   }
   watch(
-    () => [
-      options.userId.value,
-      options.enabled.value,
-      options.message.value.room_id,
-      options.message.value.id,
-      options.message.value.revision,
-      options.message.value.deleted_at,
-      JSON.stringify(safeMessageAttachments(options.message.value).map((a) => a.id)),
+    [
+      () => options.userId.value,
+      () => options.enabled.value,
+      () => options.message.value.room_id,
+      () => options.message.value.id,
+      () => options.message.value.revision,
+      () => options.message.value.deleted_at,
+      () => JSON.stringify(safeMessageAttachments(options.message.value).map((a) => a.id)),
     ],
     reset,
     { flush: 'sync' },
