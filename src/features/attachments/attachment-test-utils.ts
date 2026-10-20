@@ -1,4 +1,4 @@
-import type { AttachmentMetadata } from '../../types'
+import type { AttachmentMetadata, Message } from '../../types'
 export function attachment(
   id = 10,
   state = 'ready',
@@ -24,4 +24,18 @@ export function file(content = 'a', name = 'a.txt', type = 'text/plain'): File {
     value: async () => new TextEncoder().encode(content).buffer,
   })
   return value
+}
+export function attachmentMessage(): Message & { attachments: AttachmentMetadata[] } {
+  return {
+    id: 9,
+    room_id: 7,
+    user_id: 1,
+    username: 'owner',
+    content: 'caption',
+    created_at: new Date().toISOString(),
+    revision: 1,
+    edited_at: null,
+    deleted_at: null,
+    attachments: [attachment()],
+  }
 }

@@ -74,3 +74,22 @@ describe('messageContentBytes', () => {
     expect(messageContentBytes('   ')).toBe(0)
   })
 })
+it('clears stale file metadata from cached tombstones and newer uploader-deletion revisions', () => {
+  const files = [
+    {
+      id: 10,
+      filename: 'a.txt',
+      content_type: 'text/plain',
+      size_bytes: 1,
+      sha256: 'a'.repeat(64),
+      verified: true,
+    },
+  ]
+  const original = { ...message(4), attachments: files }
+  const deleted = { ...original, revision: 2, deleted_at: '2026-10-20T00:00:00Z' }
+  expect(mergeMessages([deleted], [original])[0]?.attachments).toEqual([])
+  expect(
+    mergeMessages([original], [{ ...original, user_id: null, revision: 2, attachments: [] }])[0]
+      ?.attachments,
+  ).toEqual([])
+})

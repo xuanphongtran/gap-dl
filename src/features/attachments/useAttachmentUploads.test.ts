@@ -253,14 +253,12 @@ it('a_later_file429_keeps_its_full_five_second_deadline', async () => {
   await f.select([file()])
   await settle()
   await vi.advanceTimersByTimeAsync(500)
-  mock
-    .onPost('/api/v1/rooms/7/attachments/uploads')
-    .reply(201, {
-      attachment: attachment(11, 'pending_upload'),
-      method: 'PUT',
-      headers: {},
-      upload_url: 'https://storage.test/second',
-    })
+  mock.onPost('/api/v1/rooms/7/attachments/uploads').reply(201, {
+    attachment: attachment(11, 'pending_upload'),
+    method: 'PUT',
+    headers: {},
+    upload_url: 'https://storage.test/second',
+  })
   mock.onPost('/api/v1/rooms/7/attachments/11/complete').reply(202, attachment(11, 'processing'))
   mock.onGet('/api/v1/rooms/7/attachments/11').reply(429, { error: 'slow' }, { 'Retry-After': '5' })
   await f.select([file('b', 'b.txt')])

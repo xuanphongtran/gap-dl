@@ -109,6 +109,9 @@ function time(value: string) {
           :key="message.id"
           :message="message"
           :mine="message.user_id === userId"
+          :user-id="userId"
+          :attachments-enabled="enabled"
+          @access-lost="emit('accessLost', $event)"
           :time="time(message.created_at)"
         />
       </div>

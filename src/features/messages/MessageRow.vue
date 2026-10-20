@@ -1,10 +1,15 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import MessageAttachmentList from '../attachments/MessageAttachmentList.vue'
+import { safeMessageAttachments } from '../attachments/attachment-metadata'
 import PixelAvatar from '../../components/base/PixelAvatar.vue'
 import PixelButton from '../../components/base/PixelButton.vue'
 import { MAX_MESSAGE_BYTES, messageContentBytes } from '../../lib/messages'
 import type { Message } from '../../types'
 
-defineProps<{
+const props = defineProps<{
+  userId?: number
+  attachmentsEnabled?: boolean
   message: Message
   mine: boolean
   time: string
@@ -20,6 +25,7 @@ defineProps<{
   deleteCooldown?: number
 }>()
 const emit = defineEmits<{
+  accessLost: [roomId: number]
   edit: []
   save: []
   cancel: []
@@ -27,6 +33,7 @@ const emit = defineEmits<{
   delete: []
   'update:editDraft': [value: string]
 }>()
+const files = computed(() => safeMessageAttachments(props.message))
 </script>
 
 <template>
@@ -43,7 +50,15 @@ const emit = defineEmits<{
         ><time :datetime="message.created_at">{{ time }}</time>
       </div>
       <p v-if="message.deleted_at" class="muted">Message deleted.</p>
-      <p v-else>{{ message.content }}</p>
+      <p v-else-if="message.content">{{ message.content }}</p>
+      <p v-else-if="!files.length" class="muted">Message content unavailable.</p>
+      <MessageAttachmentList
+        v-if="files.length"
+        :message="message"
+        :user-id="userId"
+        :enabled="!!attachmentsEnabled"
+        @access-lost="emit('accessLost', $event)"
+      />
       <small v-if="message.edited_at && !message.deleted_at" class="message-edited">Edited</small>
       <form v-if="editing" class="message-editor" @submit.prevent="emit('save')">
         <label :for="`edit-message-${message.id}`">Edit message</label>

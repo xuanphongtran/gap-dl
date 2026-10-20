@@ -718,6 +718,9 @@ function formatDate(value: string) {
             <MessageRow
               :message="message"
               :mine="message.user_id === profile?.id"
+              :user-id="profile?.id"
+              :attachments-enabled="canReadPrivateData"
+              @access-lost="loseRoomAccess"
               :time="formatTime(message.created_at)"
               :can-edit="
                 isMember &&
