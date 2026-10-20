@@ -4,6 +4,8 @@ The upload, caption/mention send, history/Search display and authorized-download
 
 **Fresh rerun at 08:43 UTC:** [Retest](./ATTACHMENTS_RETEST_2026-10-20.md) confirms 270 tests, seven native attachment scenarios and the 34-operation checker pass. Health 200/readiness 503 were observed again; both retained registration credentials returned login 401. No authenticated attachment requests were possible; readiness503 is not evidence of an attachment endpoint 503.
 
+**Target switched to local port 8080:** [Local verification](./ATTACHMENTS_LOCAL_ACCEPTANCE_2026-10-20.md) observes readiness 200 and real browser auth success. Render quota is exhausted per user. Attachment testing now requires a local room fixture; no attachment 503 is inferred from Render.
+
 ## Observed local results
 
 | Check | Result |

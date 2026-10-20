@@ -22,6 +22,8 @@ The latest reviewed operation matrix and unresolved runtime checks are in [docs/
 
 **Attachment test rerun (2026-10-20, 08:43 UTC):** [Fresh retest](./docs/ATTACHMENTS_RETEST_2026-10-20.md) passes 270 local tests, seven synthetic native scenarios and 34 required contract operations. Live health 200/readiness 503 and two recovery login 401 responses were observed. No authenticated attachment endpoint or browser/storage flow was exercised; actual runtime and deployment gates remain open.
 
+**Local backend target (2026-10-20):** User reports Render quota exhaustion; use local port 8080. [Local verification](./docs/ATTACHMENTS_LOCAL_ACCEPTANCE_2026-10-20.md) confirms health/readiness 200, the 34-operation contract, two native login/logout journeys and acknowledged deletion of both test accounts. `.env.local` now points to 8080. No room fixture is available, so real attachment acceptance awaits an existing room or cleanup/retention strategy; Render journal cleanup remains separate.
+
 ## 0. Frontend source and component foundation — P0, implement first
 
 The app already runs, but route views contain repeated pixel controls and much of the feature UI. Refactor the existing implementation before adding new API-driven behavior. Preserve routes, visible copy, mobile layout, and request semantics while moving code.

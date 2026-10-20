@@ -1,0 +1,268 @@
+{
+  "date": "2026-10-20",
+  "apiOrigin": "http://127.0.0.1:8080",
+  "configuration": {
+    "file": ".env.local",
+    "ignored": true,
+    "VITE_API_BASE_URL": "http://127.0.0.1:8080"
+  },
+  "health": {
+    "status": 200,
+    "body": {
+      "status": "ok"
+    },
+    "checkedAt": "2026-10-20T08:55:26Z"
+  },
+  "readiness": {
+    "status": 200,
+    "body": {
+      "ready": true
+    },
+    "checkedAt": "2026-10-20T08:55:26Z"
+  },
+  "swagger": {
+    "status": 200,
+    "sha256": "176cf2df1f586bc16c2336241f9b4bd15731ce5a92527effcd6c9351420ad9de",
+    "requiredOperations": 34,
+    "contractCheckPassed": true
+  },
+  "setupChecks": [
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/register",
+      "status": 201,
+      "requestId": "e585812ee38cde933ce33520d4b65caa"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/users/me",
+      "status": 200,
+      "requestId": "c8793d2d76f88d0a4d8d236d0ae98208"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/register",
+      "status": 201,
+      "requestId": "c69c5d28dfe3ea5306a881f259f3a117"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/users/me",
+      "status": 200,
+      "requestId": "b215d0ec162bb0370b69ebf20d1f8593"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/rooms",
+      "status": 200,
+      "requestId": "b4a4983456245fda961e87db1115227a"
+    }
+  ],
+  "publicRoomCount": 0,
+  "nativeAuth": {
+    "apiOrigin": "http://127.0.0.1:8080",
+    "frontendOrigin": "http://localhost:5173",
+    "checks": [
+      {
+        "name": "direct local origin login preflight",
+        "status": 204,
+        "allowedOrigin": "http://localhost:5173"
+      },
+      {
+        "name": "native login and correct account profile",
+        "userId": 1,
+        "pass": true
+      },
+      {
+        "name": "native logout and 390px workspace overflow",
+        "userId": 1,
+        "pass": true
+      },
+      {
+        "name": "native login and correct account profile",
+        "userId": 2,
+        "pass": true
+      },
+      {
+        "name": "native logout and 390px workspace overflow",
+        "userId": 2,
+        "pass": true
+      }
+    ],
+    "apiResponses": [
+      {
+        "method": "response",
+        "path": "/api/v1/auth/login",
+        "status": 204
+      },
+      {
+        "method": "response",
+        "path": "/api/v1/auth/login",
+        "status": 200
+      },
+      {
+        "method": "response",
+        "path": "/api/v1/users/me",
+        "status": 204
+      },
+      {
+        "method": "response",
+        "path": "/api/v1/rooms",
+        "status": 204
+      },
+      {
+        "method": "response",
+        "path": "/api/v1/users/me/invitations",
+        "status": 204
+      },
+      {
+        "method": "response",
+        "path": "/api/v1/users/me",
+        "status": 200
+      },
+      {
+        "method": "response",
+        "path": "/api/v1/users/me",
+        "status": 200
+      },
+      {
+        "method": "response",
+        "path": "/api/v1/rooms",
+        "status": 200
+      },
+      {
+        "method": "response",
+        "path": "/api/v1/rooms",
+        "status": 200
+      },
+      {
+        "method": "response",
+        "path": "/api/v1/users/me/invitations",
+        "status": 200
+      },
+      {
+        "method": "response",
+        "path": "/api/v1/auth/login",
+        "status": 200
+      },
+      {
+        "method": "response",
+        "path": "/api/v1/users/me",
+        "status": 200
+      },
+      {
+        "method": "response",
+        "path": "/api/v1/rooms",
+        "status": 200
+      },
+      {
+        "method": "response",
+        "path": "/api/v1/users/me",
+        "status": 200
+      },
+      {
+        "method": "response",
+        "path": "/api/v1/users/me/invitations",
+        "status": 200
+      },
+      {
+        "method": "response",
+        "path": "/api/v1/rooms",
+        "status": 200
+      }
+    ],
+    "frontendAssetRemap": true,
+    "directApiWithoutProxy": true,
+    "localNetworkPermission": "granted only to this temporary browser context and frontend origin",
+    "apiAttempts": [
+      {
+        "origin": "http://127.0.0.1:8080",
+        "path": "/api/v1/auth/login"
+      },
+      {
+        "origin": "http://127.0.0.1:8080",
+        "path": "/api/v1/auth/login"
+      },
+      {
+        "origin": "http://127.0.0.1:8080",
+        "path": "/api/v1/users/me"
+      },
+      {
+        "origin": "http://127.0.0.1:8080",
+        "path": "/api/v1/users/me"
+      },
+      {
+        "origin": "http://127.0.0.1:8080",
+        "path": "/api/v1/users/me"
+      },
+      {
+        "origin": "http://127.0.0.1:8080",
+        "path": "/api/v1/rooms"
+      },
+      {
+        "origin": "http://127.0.0.1:8080",
+        "path": "/api/v1/users/me/invitations"
+      },
+      {
+        "origin": "http://127.0.0.1:8080",
+        "path": "/api/v1/rooms"
+      },
+      {
+        "origin": "http://127.0.0.1:8080",
+        "path": "/api/v1/users/me/invitations"
+      },
+      {
+        "origin": "http://127.0.0.1:8080",
+        "path": "/api/v1/rooms"
+      },
+      {
+        "origin": "http://127.0.0.1:8080",
+        "path": "/api/v1/auth/login"
+      },
+      {
+        "origin": "http://127.0.0.1:8080",
+        "path": "/api/v1/users/me"
+      },
+      {
+        "origin": "http://127.0.0.1:8080",
+        "path": "/api/v1/users/me"
+      },
+      {
+        "origin": "http://127.0.0.1:8080",
+        "path": "/api/v1/rooms"
+      },
+      {
+        "origin": "http://127.0.0.1:8080",
+        "path": "/api/v1/users/me/invitations"
+      },
+      {
+        "origin": "http://127.0.0.1:8080",
+        "path": "/api/v1/rooms"
+      }
+    ],
+    "pass": true
+  },
+  "cleanup": {
+    "confirmed": 2,
+    "unconfirmed": 0,
+    "checks": [
+      {
+        "method": "DELETE",
+        "path": "/api/v1/users/me",
+        "userId": 1,
+        "status": 204,
+        "requestId": "90068ea07c41eac21d5305bdb0281a1b"
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/v1/users/me",
+        "userId": 2,
+        "status": 204,
+        "requestId": "f9cfcd9b1e306f56c6a96b33bd750c0b"
+      }
+    ]
+  },
+  "attachmentFlowTested": false,
+  "blocker": "No existing room fixture; no room deletion API or approved room cleanup/retention strategy",
+  "renderJournalsModified": false
+}

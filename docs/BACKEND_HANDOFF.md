@@ -42,6 +42,8 @@ Frontend upload/send/download is implemented on `feat/attachments`; [local accep
 
 Latest [fresh test rerun](./ATTACHMENTS_RETEST_2026-10-20.md), 08:43 UTC: health 200, readiness 503 (`a1e6313dee27438282cf16d30d6872c1`), Swagger 200, and both retained registration credentials return login 401. No new registration or attachment resource writes were attempted. Login401 does not establish absence/cleanup; no fresh attachment-endpoint 503 has been observed. Local 270 tests and all seven synthetic native attachment scenarios pass.
 
+The user has switched testing to local port 8080 because Render quota is exhausted. [Local verification](./ATTACHMENTS_LOCAL_ACCEPTANCE_2026-10-20.md) confirms readiness 200, registration/profile/native auth and cleanup of two disposable accounts. There is no available local public room, so attachment testing awaits a room fixture or explicit cleanup/retention strategy. This closes local availability/auth checks only; it does not resolve the old Render registrations or prove provider/binding/download behavior.
+
 ## 4. Admin cleanup: legacy disposable accounts 35 and 36
 
 The 2026-10-15 read-only audit still finds account 36 in public room 2; account 35 is absent from that membership list. Account deletion remains unconfirmed for both.
