@@ -40,6 +40,8 @@ User update 2026-10-20 reports completion. [Fresh contract evidence](./ATTACHMEN
 
 Frontend upload/send/download is implemented on `feat/attachments`; [local acceptance](./ATTACHMENTS_ACCEPTANCE_2026-10-20.md) records synthetic native and mounted checks. A single fresh GET /readyz at 2026-10-20T03:44:37Z still returned 503/ready:false, request ID `1fbf9fc2ff58a2c00ce5f5fd5df56342`. After the interrupted session resumed, one fresh read-only readiness probe at 08:17:54Z again returned 503/ready:false, request ID `68aedf9bb8ab5fafa8dcff108908c6b6`. No new live writes were attempted; both historical private journal directories are still present. This does not close runtime/provider or selected-host deployment gates. Preserve private recovery evidence in `/tmp/gogo-attachments-contract-qfPI80/` and `/tmp/gogo-attachments-contract-tcF6Sy/` until both registration outcomes are resolved. No extra signup/upload flood, service restart, migration or deployment was performed.
 
+Latest [fresh test rerun](./ATTACHMENTS_RETEST_2026-10-20.md), 08:43 UTC: health 200, readiness 503 (`a1e6313dee27438282cf16d30d6872c1`), Swagger 200, and both retained registration credentials return login 401. No new registration or attachment resource writes were attempted. Login401 does not establish absence/cleanup; no fresh attachment-endpoint 503 has been observed. Local 270 tests and all seven synthetic native attachment scenarios pass.
+
 ## 4. Admin cleanup: legacy disposable accounts 35 and 36
 
 The 2026-10-15 read-only audit still finds account 36 in public room 2; account 35 is absent from that membership list. Account deletion remains unconfirmed for both.

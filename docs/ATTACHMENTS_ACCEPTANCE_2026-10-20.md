@@ -2,6 +2,8 @@
 
 The upload, caption/mention send, history/Search display and authorized-download frontend is implemented on `feat/attachments`. Local checks pass; deployed attachment acceptance remains open because staging is not ready. The [approved design](./superpowers/specs/2026-10-20-attachments-design.md), [execution plan](./superpowers/plans/2026-10-20-attachments.md) and [sanitized evidence](./evidence/attachments-acceptance-2026-10-20.json) describe the boundaries.
 
+**Fresh rerun at 08:43 UTC:** [Retest](./ATTACHMENTS_RETEST_2026-10-20.md) confirms 270 tests, seven native attachment scenarios and the 34-operation checker pass. Health 200/readiness 503 were observed again; both retained registration credentials returned login 401. No authenticated attachment requests were possible; readiness503 is not evidence of an attachment endpoint 503.
+
 ## Observed local results
 
 | Check | Result |

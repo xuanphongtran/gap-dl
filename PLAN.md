@@ -20,6 +20,8 @@ The latest reviewed operation matrix and unresolved runtime checks are in [docs/
 
 **Attachment implementation (2026-10-20):** The approved upload/send/download slice is implemented on `feat/attachments`; [local acceptance](./docs/ATTACHMENTS_ACCEPTANCE_2026-10-20.md) records 270 passing tests, seven native attachment scenarios, recovery and Search checks. The independent review found three Important issues, fixed in one tested pass; no Minor findings remain. Staging readiness remains 503; real provider/runtime and selected-host release gates remain open.
 
+**Attachment test rerun (2026-10-20, 08:43 UTC):** [Fresh retest](./docs/ATTACHMENTS_RETEST_2026-10-20.md) passes 270 local tests, seven synthetic native scenarios and 34 required contract operations. Live health 200/readiness 503 and two recovery login 401 responses were observed. No authenticated attachment endpoint or browser/storage flow was exercised; actual runtime and deployment gates remain open.
+
 ## 0. Frontend source and component foundation — P0, implement first
 
 The app already runs, but route views contain repeated pixel controls and much of the feature UI. Refactor the existing implementation before adding new API-driven behavior. Preserve routes, visible copy, mobile layout, and request semantics while moving code.
