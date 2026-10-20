@@ -1,7 +1,11 @@
 import { request } from './http'
 import type {
   Invitation,
-  MentionSendOptions,
+  AttachmentUploadRequest,
+  AttachmentUploadTicket,
+  AttachmentMetadata,
+  AttachmentDownloadTicket,
+  MessageSendOptions,
   Notification,
   NotificationFeed,
   NotificationPreferences,
@@ -47,12 +51,42 @@ export const api = {
       params: { q: query, limit, ...(before !== undefined ? { before } : {}) },
       signal,
     }),
-  sendMessage: (id: number, content: string, mentions?: MentionSendOptions) =>
+  sendMessage: (id: number, content: string, mentions?: MessageSendOptions) =>
     request<Message>(`/api/v1/rooms/${id}/messages`, {
       method: 'POST',
-      data: { content, ...(mentions ? { mention_user_ids: mentions.mentionUserIds } : {}) },
+      data: {
+        content,
+        ...(mentions ? { mention_user_ids: mentions.mentionUserIds } : {}),
+        ...(mentions?.attachmentIds?.length ? { attachment_ids: mentions.attachmentIds } : {}),
+      },
       ...(mentions ? { headers: { 'Idempotency-Key': mentions.idempotencyKey } } : {}),
     }),
+  reserveAttachment: (
+    roomId: number,
+    body: AttachmentUploadRequest,
+    key: string,
+    signal?: AbortSignal,
+  ) =>
+    request<AttachmentUploadTicket>(`/api/v1/rooms/${roomId}/attachments/uploads`, {
+      method: 'POST',
+      data: body,
+      headers: { 'Idempotency-Key': key },
+      signal,
+    }),
+  attachment: (roomId: number, id: number, signal?: AbortSignal) =>
+    request<AttachmentMetadata>(`/api/v1/rooms/${roomId}/attachments/${id}`, { signal }),
+  completeAttachment: (roomId: number, id: number, signal?: AbortSignal) =>
+    request<AttachmentMetadata>(`/api/v1/rooms/${roomId}/attachments/${id}/complete`, {
+      method: 'POST',
+      signal,
+    }),
+  cancelAttachment: (roomId: number, id: number, signal?: AbortSignal) =>
+    request<void>(`/api/v1/rooms/${roomId}/attachments/${id}`, { method: 'DELETE', signal }),
+  attachmentDownload: (roomId: number, messageId: number, id: number, signal?: AbortSignal) =>
+    request<AttachmentDownloadTicket>(
+      `/api/v1/rooms/${roomId}/messages/${messageId}/attachments/${id}/download`,
+      { signal },
+    ),
   notifications: (limit = 20, before?: number, unreadOnly = false, signal?: AbortSignal) =>
     request<NotificationFeed>('/api/v1/users/me/notifications', {
       params: { limit, ...(before !== undefined ? { before } : {}), unread_only: unreadOnly },

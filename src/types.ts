@@ -26,6 +26,7 @@ export interface Room {
 }
 
 export interface Message {
+  attachments?: AttachmentSummary[]
   id: number
   room_id: number
   user_id: number | null
@@ -68,7 +69,8 @@ export interface SearchMessagesResponse {
   next_before: number | null
 }
 
-export interface MentionSendOptions {
+export interface MessageSendOptions {
+  attachmentIds?: number[]
   mentionUserIds: number[]
   idempotencyKey: string
 }
@@ -90,4 +92,35 @@ export interface NotificationPreferences {
 }
 export interface RoomNotificationPreferences {
   muted: boolean
+}
+
+export interface AttachmentSummary {
+  id: number
+  filename: string
+  content_type: string
+  size_bytes: number
+  sha256: string
+  verified: boolean
+}
+export interface AttachmentMetadata extends AttachmentSummary {
+  state: string
+  created_at: string
+  upload_expires_at: string
+  expires_at: string | null
+}
+export interface AttachmentUploadRequest {
+  filename: string
+  content_type: string
+  size_bytes: number
+  sha256: string
+}
+export interface AttachmentUploadTicket {
+  attachment: AttachmentMetadata
+  method: string
+  headers: Record<string, string>
+  upload_url: string
+}
+export interface AttachmentDownloadTicket {
+  download_url: string
+  expires_at: string
 }

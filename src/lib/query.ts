@@ -4,6 +4,8 @@ import { readSession } from './session'
 import type { Room } from '../types'
 
 export const queryKeys = {
+  attachment: (roomId: number, userId: number, id: number) =>
+    ['room', roomId, 'attachments', userId, id] as const,
   notifications: (userId: number) => ['notifications', userId] as const,
   notificationFeed: (userId: number, unreadOnly: boolean) =>
     ['notifications', userId, unreadOnly] as const,
