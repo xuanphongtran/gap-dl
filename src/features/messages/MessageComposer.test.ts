@@ -88,3 +88,32 @@ it('freezes an uncertain send draft without treating it as an active request', (
     app.unmount()
   }
 })
+
+it('processing_blocks_enter_without_locking_caption', async () => {
+  const send = vi.fn(),
+    host = document.createElement('div')
+  const app = createApp({
+    render: () =>
+      h(MessageComposer, {
+        modelValue: 'caption',
+        disabled: false,
+        sending: false,
+        error: '',
+        blockedReason: 'Files are processing.',
+        onSend: send,
+      }),
+  })
+  app.mount(host)
+  try {
+    const field = host.querySelector('textarea')!
+    expect(field.disabled).toBe(false)
+    expect(host.querySelector('button')!.disabled).toBe(true)
+    field.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }),
+    )
+    await nextTick()
+    expect(send).not.toHaveBeenCalled()
+  } finally {
+    app.unmount()
+  }
+})

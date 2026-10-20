@@ -7,6 +7,8 @@ import { http } from '../../lib/http'
 import { queryClient } from '../../lib/query'
 import { saveSession } from '../../lib/session'
 import { useMentionSend } from './useMentionSend'
+import type { AttachmentSummary } from '../../types'
+import { attachment } from '../attachments/attachment-test-utils'
 const mock = new MockAdapter(http)
 const apps: ReturnType<typeof createApp>[] = []
 async function settle() {
@@ -46,6 +48,10 @@ function mount() {
     ),
     success = vi.fn(),
     lost = vi.fn()
+  const attachments = ref<AttachmentSummary[]>([]),
+    attachmentsBlocked = ref(false),
+    created = vi.fn(),
+    settled = vi.fn()
   let send!: ReturnType<typeof useMentionSend>
   const app = createApp({
     setup() {
@@ -55,6 +61,10 @@ function mount() {
         enabled,
         draft,
         members,
+        attachments,
+        attachmentsBlocked,
+        onIntentCreated: created,
+        onIntentSettled: settled,
         onSuccess: success,
         onAccessLost: lost,
       })
@@ -63,7 +73,20 @@ function mount() {
   })
   apps.push(app)
   app.use(VueQueryPlugin, { queryClient }).mount(document.createElement('div'))
-  return { send, roomId, userId, enabled, draft, members, success, lost }
+  return {
+    send,
+    roomId,
+    userId,
+    enabled,
+    draft,
+    members,
+    success,
+    lost,
+    attachments,
+    attachmentsBlocked,
+    created,
+    settled,
+  }
 }
 it('retries an uncertain mention with the immutable original payload and key only on request', async () => {
   mock.resetHandlers()
@@ -220,4 +243,83 @@ it('purges a pending send when its inactive room is revoked', async () => {
   h.roomId.value = 7
   await settle()
   expect(h.send.locked.value).toBe(false)
+})
+
+it('caption_file_mentions_retry_keeps_original_payload_and_key', async () => {
+  mock.resetHandlers()
+  mock.onPost().networkErrorOnce()
+  mock.onPost().reply(201, { id: 9, room_id: 7 })
+  const f = mount()
+  f.draft.value = ' caption '
+  f.attachments.value = [attachment(11), attachment(10)]
+  f.send.selectedIds.value = [3, 2]
+  await f.send.send()
+  await settle()
+  expect(mock.history.post).toHaveLength(1)
+  expect(f.created).toHaveBeenCalledWith(7, [10, 11])
+  expect(f.send.pendingAttachments.value.map((x) => x.id)).toEqual([10, 11])
+  f.draft.value = 'different'
+  f.attachments.value = []
+  f.send.selectedIds.value = []
+  await f.send.retry()
+  expect(JSON.parse(mock.history.post[1]!.data)).toEqual({
+    content: 'caption',
+    mention_user_ids: [2, 3],
+    attachment_ids: [10, 11],
+  })
+  expect(mock.history.post[1]!.headers?.['Idempotency-Key']).toBe(
+    mock.history.post[0]!.headers?.['Idempotency-Key'],
+  )
+  expect(f.success).toHaveBeenCalledOnce()
+  expect(f.settled).toHaveBeenCalledWith(7, [10, 11], 'sent')
+})
+it('definite_429_returns_ready_files_to_editable_batch', async () => {
+  mock.onPost().reply(429, { error: 'slow' }, { 'Retry-After': '5' })
+  const f = mount()
+  f.attachments.value = [attachment()]
+  await f.send.send()
+  expect(f.send.locked.value).toBe(false)
+  expect(f.settled).toHaveBeenCalledWith(7, [10], 'editable')
+  expect(f.draft.value).toBe('  hello  ')
+})
+it('room_return_restores_uncertain_file_snapshot and discard_uncertain_send_never_deletes_files', async () => {
+  mock.onPost().networkError()
+  const f = mount()
+  f.attachments.value = [attachment()]
+  await f.send.send()
+  f.roomId.value = 8
+  await settle()
+  f.draft.value = 'other'
+  f.attachments.value = []
+  f.roomId.value = 7
+  await settle()
+  expect(f.send.pendingAttachments.value.map((a) => a.id)).toEqual([10])
+  expect(f.draft.value).toBe('hello')
+  f.send.discard()
+  expect(f.settled).toHaveBeenCalledWith(7, [10], 'discarded')
+  expect(mock.history.delete).toHaveLength(0)
+})
+it('invalid_caption_or_recipient_and_processing_never_claims_files', async () => {
+  const f = mount()
+  f.attachments.value = [attachment()]
+  f.draft.value = ' '
+  await f.send.send()
+  f.draft.value = 'valid'
+  f.send.selectedIds.value = [999]
+  await f.send.send()
+  f.send.selectedIds.value = []
+  f.attachmentsBlocked.value = true
+  await f.send.send()
+  expect(f.created).not.toHaveBeenCalled()
+  expect(mock.history.post).toHaveLength(0)
+})
+it('attachment404_preserves_caption_when_room_is_still_authorized', async () => {
+  mock.onPost().reply(404, { error: 'File missing' })
+  mock.onGet('/api/v1/rooms/7').reply(200, { id: 7, role: 'member' })
+  const f = mount()
+  f.attachments.value = [attachment()]
+  await f.send.send()
+  expect(f.lost).not.toHaveBeenCalled()
+  expect(f.draft.value).toBe('  hello  ')
+  expect(f.settled).toHaveBeenCalledWith(7, [10], 'editable')
 })

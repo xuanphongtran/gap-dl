@@ -12,12 +12,26 @@ const props = withDefaults(
     locked?: boolean
     error: string
     cooldownSeconds?: number
+    blockedReason?: string
   }>(),
   { cooldownSeconds: 0 },
 )
 const emit = defineEmits<{ 'update:modelValue': [value: string]; send: [] }>()
 const contentBytes = computed(() => messageContentBytes(props.modelValue))
 const overLimit = computed(() => contentBytes.value > MAX_MESSAGE_BYTES)
+const blocked = computed(
+  () =>
+    !props.modelValue.trim() ||
+    overLimit.value ||
+    props.disabled ||
+    props.sending ||
+    props.locked ||
+    props.cooldownSeconds > 0 ||
+    !!props.blockedReason,
+)
+function send() {
+  if (!blocked.value) emit('send')
+}
 
 function update(event: Event) {
   emit('update:modelValue', (event.target as HTMLTextAreaElement).value)
@@ -30,7 +44,8 @@ function update(event: Event) {
     <PixelAlert v-if="overLimit" id="message-size-error" tone="error">
       Message exceeds the 4000-byte UTF-8 limit.
     </PixelAlert>
-    <form class="composer" @submit.prevent="emit('send')">
+    <PixelAlert v-if="blockedReason">{{ blockedReason }}</PixelAlert>
+    <form class="composer" @submit.prevent="send">
       <label class="sr-only" for="message-input">Message content</label>
       <textarea
         id="message-input"
@@ -42,15 +57,13 @@ function update(event: Event) {
         :aria-invalid="overLimit || undefined"
         :aria-describedby="overLimit ? 'message-size-error' : undefined"
         @input="update"
-        @keydown.enter.exact.prevent="emit('send')"
+        @keydown.enter.exact.prevent="send"
       ></textarea>
       <PixelButton
         variant="primary"
         class="send-button"
         type="submit"
-        :disabled="
-          !modelValue.trim() || overLimit || disabled || sending || locked || cooldownSeconds > 0
-        "
+        :disabled="blocked"
         :aria-label="
           sending
             ? 'Sending'
