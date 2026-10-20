@@ -5,7 +5,19 @@ import { ApiError, uploadAttachmentBytes, uploadHttp } from './http'
 import { saveSession } from './session'
 import type { AttachmentUploadTicket } from '../types'
 let mock: MockAdapter
-const ticket = {
+const ticket: AttachmentUploadTicket = {
+  attachment: {
+    id: 10,
+    filename: 'a.txt',
+    content_type: 'text/plain',
+    size_bytes: 1,
+    sha256: 'a'.repeat(64),
+    verified: false,
+    state: 'pending_upload',
+    created_at: '',
+    upload_expires_at: '',
+    expires_at: null,
+  },
   upload_url: 'https://storage.test/private?signature=private-secret',
   method: 'PUT',
   headers: {
@@ -14,7 +26,7 @@ const ticket = {
     'Content-Length': '1',
     Host: 'storage.test',
   },
-} as AttachmentUploadTicket
+}
 afterEach(() => {
   mock?.restore()
   sessionStorage.clear()
