@@ -323,3 +323,22 @@ it('attachment404_preserves_caption_when_room_is_still_authorized', async () => 
   expect(f.draft.value).toBe('  hello  ')
   expect(f.settled).toHaveBeenCalledWith(7, [10], 'editable')
 })
+
+it('queued attachment send must not borrow replacement account token', async () => {
+  const f = mount()
+  f.attachments.value = [attachment()]
+  const work = f.send.send()
+  saveSession(
+    { access_token: 'replacement', refresh_token: 'replacement-refresh', expires_at: 0 },
+    true,
+  )
+  f.userId.value = 2
+  await work
+  expect(
+    mock.history.post.map((c) => ({
+      url: c.url,
+      authorization: c.headers?.Authorization,
+      data: c.data,
+    })),
+  ).toEqual([])
+})

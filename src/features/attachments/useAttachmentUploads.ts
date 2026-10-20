@@ -147,8 +147,29 @@ export function useAttachmentUploads(options: {
     if ((event as CustomEvent<{ roomId: number }>).detail.roomId === options.roomId.value)
       reset(false)
   })
+  async function waitForAuthorization(e: Entry): Promise<boolean> {
+    if (!current(e)) return false
+    if (options.enabled.value) return true
+    return new Promise((resolve) => {
+      const signal = e.controller.signal
+      const finish = () => {
+        stop()
+        signal.removeEventListener('abort', finish)
+        resolve(allowed(e))
+      }
+      const stop = watch(
+        options.enabled,
+        (value) => {
+          if (value) finish()
+        },
+        { flush: 'sync' },
+      )
+      signal.addEventListener('abort', finish, { once: true })
+      if (signal.aborted || !current(e)) finish()
+    })
+  }
   function apply(e: Entry, data: AttachmentMetadata) {
-    if (!allowed(e)) return
+    if (!current(e)) return
     if (
       data.id !== e.row.attachmentId ||
       typeof data.state !== 'string' ||
@@ -277,7 +298,7 @@ export function useAttachmentUploads(options: {
     networkMode: 'always',
     mutationFn: async (localId: string) => {
       const e = entries.get(localId)
-      if (!e || !allowed(e)) return
+      if (!e || !(await waitForAuthorization(e))) return
       e.controller = new AbortController()
       e.row.error = ''
       try {
@@ -285,7 +306,7 @@ export function useAttachmentUploads(options: {
           if (!e.file) return
           e.row.phase = 'hashing'
           const sha256 = await hashAttachmentFile(e.file)
-          if (!allowed(e)) return
+          if (!(await waitForAuthorization(e))) return
           const body = {
             filename: e.file.name,
             content_type: validateAttachmentFile(e.file).contentType,
@@ -317,18 +338,18 @@ export function useAttachmentUploads(options: {
             throw new ApiError(0, 'Invalid upload reservation.')
           e.row.attachmentId = ticket.attachment.id
           e.metadata = ticket.attachment
-          if (!allowed(e)) return
+          if (!(await waitForAuthorization(e))) return
           e.row.phase = 'uploading'
           e.uncertain = true
           await uploadAttachmentBytes(ticket, e.file!, e.controller.signal, (percent) => {
             if (allowed(e)) e.row.progress = percent
           })
-          if (!allowed(e)) return
+          if (!(await waitForAuthorization(e))) return
           e.uncertain = false
         }
         e.row.phase = 'completing'
         const data = await api.completeAttachment(e.room, e.row.attachmentId!, e.controller.signal)
-        if (allowed(e)) {
+        if (current(e)) {
           e.observedMs = 0
           e.stopped = false
           apply(e, data)

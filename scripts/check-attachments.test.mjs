@@ -207,3 +207,38 @@ it('local pinned HTTPS provider receives actual original bytes without an extern
     await fixture.close()
   }
 })
+it('origin proxy denies HTTP and CONNECT before any forbidden loopback request', async () => {
+  const { createServer, request } = await import('node:http')
+  const { startAttachmentsProxy } = await import('./lib/attachments-proxy.mjs')
+  let hits = 0
+  const server = createServer((_req, res) => {
+    hits++
+    res.end('local')
+  })
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve))
+  const origin = 'http://127.0.0.1:' + server.address().port
+  const proxy = await startAttachmentsProxy([origin], 'https://attachments.fixture.invalid:1234')
+  const send = (path, method = 'GET') =>
+    new Promise((resolve, reject) => {
+      const req = request(proxy.origin, { method, path }, (res) => {
+        res.resume()
+        res.on('end', () => resolve(res.statusCode))
+      })
+      req.on('connect', (res, socket) => {
+        socket.destroy()
+        resolve(res.statusCode)
+      })
+      req.on('error', reject)
+      req.end()
+    })
+  try {
+    expect(await send(origin + '/allowed')).toBe(200)
+    expect(await send('http://localhost:' + server.address().port + '/denied')).toBe(403)
+    expect(await send('attachments.fixture.invalid.evil.test:1234', 'CONNECT')).toBe(403)
+    expect(hits).toBe(1)
+    expect(proxy.denied).toBe(2)
+  } finally {
+    await proxy.close()
+    await new Promise((resolve) => server.close(resolve))
+  }
+})

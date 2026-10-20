@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict'
+import { createServer } from 'node:http'
+import { startAttachmentsProxy } from './lib/attachments-proxy.mjs'
 import { mkdtemp, mkdir, writeFile, readdir, readFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -57,7 +59,13 @@ export async function runAttachmentSuite({ origin, names, runScenario, close, re
       try {
         const result = await runScenario(name),
           check = { name, simulated: true, pass: true }
-        for (const key of ['canonicalMessageCount', 'privacyViolationCount', 'cancellationCount'])
+        for (const key of [
+          'canonicalMessageCount',
+          'privacyViolationCount',
+          'cancellationCount',
+          'blockedExternalRequestCount',
+          'escapedNavigationCount',
+        ])
           if (Number.isSafeInteger(result?.[key])) check[key] = result[key]
         check.requestCounts = Object.fromEntries(
           Object.entries(result?.requestCounts || {}).filter(
@@ -95,15 +103,31 @@ async function until(test) {
 export async function attachmentsMain({ names = scenarios } = {}) {
   const directory = await mkdtemp(join(tmpdir(), 'gogo-attachments-native-')),
     api = await startAttachmentsApi()
-  let app, cleanupPromise
+  let escapedNavigationCount = 0
+  const forbiddenServer = createServer((_req, res) => {
+    escapedNavigationCount++
+    res.end('Forbidden fixture origin')
+  })
+  let app, proxy, cleanupPromise
   const close = () =>
-    (cleanupPromise ||= Promise.allSettled([app?.close(), api.close()]).then((results) => {
+    (cleanupPromise ||= Promise.allSettled([
+      app?.close(),
+      proxy?.close(),
+      api.close(),
+      new Promise((resolve, reject) => {
+        forbiddenServer.closeAllConnections()
+        forbiddenServer.close((e) => (e ? reject(e) : resolve()))
+      }),
+    ]).then((results) => {
       if (results.some((result) => result.status === 'rejected'))
         throw Error('Acceptance cleanup incomplete')
     }))
   try {
+    await new Promise((resolve) => forbiddenServer.listen(0, '127.0.0.1', resolve))
+    const forbiddenOrigin = 'http://127.0.0.1:' + forbiddenServer.address().port
     const provider = await api.startProvider(directory)
     app = await startAcceptanceApp(api.origin)
+    proxy = await startAttachmentsProxy([app.origin, api.origin], api.providerOrigin)
     const exit = await runAttachmentSuite({
       origin: api.origin,
       names,
@@ -119,10 +143,25 @@ export async function attachmentsMain({ names = scenarios } = {}) {
         await mkdir(downloadPath, { mode: 0o700 })
         await writeFile(filePath, 'Harmless local attachment fixture.\n', { mode: 0o600 })
         return withAcceptanceBrowser(
-          { artifactDir, chromeArgs: provider.chromeArgs },
+          {
+            artifactDir,
+            chromeArgs: [
+              ...provider.chromeArgs.filter((arg) => arg !== '--no-proxy-server'),
+              '--proxy-server=' + proxy.origin,
+              '--proxy-bypass-list=<-loopback>',
+              '--disable-background-networking',
+              '--disable-component-update',
+              '--disable-default-apps',
+              '--disable-sync',
+              '--no-first-run',
+            ],
+          },
           async (browser) => {
-            const { command, evaluate: ev, waitFor: wait } = browser,
-              s = await browser.newPage()
+            const { command, evaluate: ev, waitFor: wait } = browser
+            const s = await browser.newPage()
+            const initialDenials = proxy.denied
+            let baselineBlocked
+            const discovered = new Set()
             let blocked = 0,
               dropped = false,
               downloaded = 0
@@ -131,6 +170,7 @@ export async function attachmentsMain({ names = scenarios } = {}) {
               if (configured.has(session)) return
               configured.add(session)
               await command('Page.enable', {}, session)
+              await command('Runtime.enable', {}, session)
               await command('Network.enable', { maxPostDataSize: 10485760 }, session)
               await command(
                 'Fetch.enable',
@@ -157,6 +197,8 @@ export async function attachmentsMain({ names = scenarios } = {}) {
               )
             }
             const remove = browser.onEvent(async (m) => {
+              if (m.method === 'Target.targetCreated' && m.params.targetInfo.type === 'page')
+                discovered.add(m.params.targetInfo.targetId)
               if (m.method === 'Target.attachedToTarget') {
                 await configure(m.params.sessionId)
                 await command('Runtime.runIfWaitingForDebugger', {}, m.params.sessionId)
@@ -213,6 +255,7 @@ export async function attachmentsMain({ names = scenarios } = {}) {
               }
             })
             await configure(s)
+            await command('Target.setDiscoverTargets', { discover: true })
             const info = await command('Target.getTargetInfo', {}, s)
             await command('Browser.setDownloadBehavior', {
               behavior: 'allow',
@@ -247,10 +290,27 @@ export async function attachmentsMain({ names = scenarios } = {}) {
               204,
             )
             assert.equal(
-              await ev(s, "fetch('https://gogo-dl.onrender.com/health').then(()=>false,()=>true)"),
+              await ev(s, `fetch('${forbiddenOrigin}/fetch').then(()=>false,()=>true)`),
               true,
             )
-            assert.equal(blocked, 1)
+            const previousTargets = new Set(discovered)
+            await command(
+              'Runtime.evaluate',
+              {
+                expression: `(()=>{const a=document.createElement('a');a.href='${forbiddenOrigin}/download';a.target='_blank';a.rel='noreferrer noopener';a.referrerPolicy='no-referrer';document.body.append(a);a.click();a.remove()})()`,
+                userGesture: true,
+              },
+              s,
+            )
+            await until(() => [...discovered].some((id) => !previousTargets.has(id)))
+            assert.equal(escapedNavigationCount, 0, 'New download target escaped interception')
+            await sleep(250)
+            assert.equal(escapedNavigationCount, 0)
+            assert.ok(proxy.denied > initialDenials || blocked >= 2)
+            for (const targetId of discovered)
+              if (!previousTargets.has(targetId)) await command('Target.closeTarget', { targetId })
+            baselineBlocked = blocked
+            await command('Page.bringToFront', {}, s)
             await fill('input[type=email]', 'member@example.test')
             await fill('input[type=password]', 'fixture-password')
             await ev(s, "document.querySelector('form').requestSubmit()")
@@ -475,9 +535,14 @@ export async function attachmentsMain({ names = scenarios } = {}) {
             }
             assert.equal(api.snapshot().privacyViolationCount, 0)
             assert.equal(api.snapshot().unexpectedRequests, 0)
-            assert.equal(blocked, 1)
+            assert.equal(blocked, baselineBlocked)
+            assert.equal(escapedNavigationCount, 0)
             remove()
-            return api.snapshot()
+            return {
+              ...api.snapshot(),
+              blockedExternalRequestCount: proxy.denied - initialDenials + blocked,
+              escapedNavigationCount,
+            }
           },
         ).catch((error) => {
           console.error('Attachment scenario failed: ' + name + ': ' + error.message)

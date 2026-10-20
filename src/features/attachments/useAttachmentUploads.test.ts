@@ -275,3 +275,112 @@ it('a_later_file429_keeps_its_full_five_second_deadline', async () => {
   await settle()
   expect(f.readyAttachments.value.some((a) => a.id === 11)).toBe(true)
 })
+
+it('completing during temporary authorization pause must remain recoverable', async () => {
+  let release!: (v: [number, object]) => void
+  mock.onPost('/api/v1/rooms/7/attachments/10/complete').reply(
+    () =>
+      new Promise((r) => {
+        release = r
+      }),
+  )
+  const { f, enabled } = mount()
+  const work = f.select([file()])
+  await settle()
+  await vi.waitFor(() => expect(release).toBeTypeOf('function'))
+  enabled.value = false
+  release([202, attachment(10, 'processing')])
+  await work
+  enabled.value = true
+  await settle()
+  await vi.advanceTimersByTimeAsync(5000)
+  await f.retry(f.rows.value[0]!.localId)
+  await settle()
+  expect(f.rows.value[0]!.phase).toBe('ready')
+  expect(mock.history.post.filter((c) => c.url?.endsWith('/complete'))).toHaveLength(1)
+})
+it.each(['hashing', 'reserving', 'uploading'] as const)(
+  'temporary authorization pause during %s resumes without replaying writes',
+  async (phase) => {
+    let release!: () => void
+    let selected = file()
+    if (phase === 'hashing') {
+      selected = new File(['a'], 'a.txt', { type: 'text/plain' })
+      Object.defineProperty(selected, 'arrayBuffer', {
+        value: () =>
+          new Promise<ArrayBuffer>((resolve) => {
+            release = () => resolve(new TextEncoder().encode('a').buffer)
+          }),
+      })
+    }
+    if (phase === 'reserving')
+      mock.onPost('/api/v1/rooms/7/attachments/uploads').reply(
+        () =>
+          new Promise((resolve) => {
+            release = () =>
+              resolve([
+                201,
+                {
+                  attachment: attachment(10, 'pending_upload'),
+                  method: 'PUT',
+                  headers: {},
+                  upload_url: 'https://storage.test/file',
+                },
+              ])
+          }),
+      )
+    if (phase === 'uploading')
+      storage.onPut().reply(
+        () =>
+          new Promise((resolve) => {
+            release = () => resolve([200])
+          }),
+      )
+    const { f, enabled } = mount()
+    const work = f.select([selected])
+    await settle()
+    await vi.waitFor(() => expect(release).toBeTypeOf('function'))
+    enabled.value = false
+    release()
+    await settle()
+    expect(mock.history.post.filter((c) => c.url?.endsWith('/complete'))).toHaveLength(0)
+    enabled.value = true
+    await work
+    await settle()
+    expect(f.rows.value[0]!.phase).toBe('ready')
+    expect(storage.history.put).toHaveLength(1)
+    expect(mock.history.post.filter((c) => c.url?.endsWith('/uploads'))).toHaveLength(1)
+    expect(mock.history.post.filter((c) => c.url?.endsWith('/complete'))).toHaveLength(1)
+  },
+)
+
+it('paused pipeline exits on room change without sending more file bytes', async () => {
+  let release!: () => void
+  mock.onPost('/api/v1/rooms/7/attachments/uploads').reply(
+    () =>
+      new Promise((resolve) => {
+        release = () =>
+          resolve([
+            201,
+            {
+              attachment: attachment(10, 'pending_upload'),
+              method: 'PUT',
+              headers: {},
+              upload_url: 'https://storage.test/file',
+            },
+          ])
+      }),
+  )
+  const { f, enabled, roomId } = mount()
+  const work = f.select([file()])
+  await settle()
+  enabled.value = false
+  release()
+  await settle()
+  roomId.value = 8
+  await work
+  enabled.value = true
+  await settle()
+  expect(f.rows.value).toHaveLength(0)
+  expect(storage.history.put).toHaveLength(0)
+})

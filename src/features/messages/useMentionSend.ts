@@ -72,8 +72,15 @@ export function useMentionSend(options: Options) {
   const mutation = useMutation({
     retry: false,
     networkMode: 'always',
-    mutationFn: (intent: Intent) =>
-      api.sendMessage(
+    mutationFn: (intent: Intent) => {
+      if (
+        intent.epoch !== intentEpoch ||
+        intent.userId !== options.userId.value ||
+        intents.get(intent.roomId) !== intent ||
+        !readSession()
+      )
+        throw new ApiError(0, 'Send cancelled after the session or room access changed.')
+      return api.sendMessage(
         intent.roomId,
         intent.content,
         intent.key
@@ -83,7 +90,8 @@ export function useMentionSend(options: Options) {
               idempotencyKey: intent.key,
             }
           : undefined,
-      ),
+      )
+    },
   })
   function reset() {
     clearIntents()
