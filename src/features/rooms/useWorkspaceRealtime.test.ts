@@ -97,6 +97,156 @@ async function connected() {
   return socket
 }
 const tick = () => new Promise((resolve) => setTimeout(resolve, 0))
+const snapshot = JSON.stringify({
+  type: 'presence_snapshot',
+  room_id: '7',
+  payload: { room_id: '7', online_user_ids: [1, 2], typing_user_ids: [] },
+})
+const starts = (socket: TestSocket) =>
+  socket.sent.map((s) => JSON.parse(s)).filter((c) => c.type === 'typing_started')
+it('requires own snapshot and reacknowledges after foreground without replay', async () => {
+  const h = setup(),
+    socket = await connected()
+  await expect.poll(() => h.context.status.value).toBe('connected')
+  h.context.typingInput(true)
+  socket.message(
+    JSON.stringify({ type: 'join', room_id: '7', payload: { user_id: 2, client_id: 'other' } }),
+  )
+  h.context.typingInput(true)
+  expect(starts(socket)).toHaveLength(0)
+  socket.message(snapshot)
+  h.context.typingInput(true)
+  expect(starts(socket)).toHaveLength(1)
+  const joins = socket.sent.filter((s) => JSON.parse(s).type === 'join').length
+  document.dispatchEvent(new Event('visibilitychange'))
+  expect(h.context.activity.value.phase).toBe('unknown')
+  await expect
+    .poll(() => socket.sent.filter((s) => JSON.parse(s).type === 'join').length)
+    .toBe(joins + 1)
+  h.context.typingInput(true)
+  expect(starts(socket)).toHaveLength(1)
+  socket.message(snapshot)
+  expect(h.context.activity.value.phase).toBe('ready')
+  expect(starts(socket)).toHaveLength(1)
+})
+it('presence_and_typing_burst_does_not_refetch_history_or_pause_composer', async () => {
+  const h = setup(),
+    socket = await connected()
+  await expect.poll(() => h.context.status.value).toBe('connected')
+  socket.message(snapshot)
+  mock.resetHistory()
+  for (let i = 0; i < 20; i++)
+    socket.message(
+      JSON.stringify({
+        type: 'typing_started',
+        room_id: '7',
+        payload: { user_id: 1, expires_at: new Date(Date.now() + 5000).toISOString() },
+      }),
+    )
+  await new Promise((r) => setTimeout(r, 160))
+  expect(mock.history.get).toHaveLength(0)
+  expect(h.paused.value).toBe(false)
+  expect(h.context.activity.value.typingUserIds).toEqual([1])
+})
+it('invalid activity repairs only bounded presence reads while light recovery leaves read alive', async () => {
+  const h = setup(),
+    socket = await connected()
+  await expect.poll(() => h.context.status.value).toBe('connected')
+  socket.message(snapshot)
+  mock.resetHistory()
+  let resolve!: (v: [number, unknown]) => void
+  let signal: AbortSignal | undefined
+  mock.onGet('/api/v1/rooms/7/presence').reply((c) => {
+    signal = c.signal as AbortSignal
+    return new Promise((r) => {
+      resolve = r
+    })
+  })
+  socket.message(
+    Array.from({ length: 5 }, () =>
+      JSON.stringify({
+        type: 'typing_started',
+        room_id: '7',
+        payload: { user_id: 1, expires_at: 'bad' },
+      }),
+    ).join('\n'),
+  )
+  await expect.poll(() => mock.history.get.length).toBe(1)
+  socket.message(
+    JSON.stringify({
+      type: 'message',
+      room_id: '7',
+      payload: { ...message(2), mention_user_ids: [], attachments: [] },
+    }),
+  )
+  await new Promise((r) => setTimeout(r, 160))
+  expect(signal?.aborted).toBe(false)
+  resolve([200, { room_id: '7', online_user_ids: [1, 2], typing_user_ids: [] }])
+  await expect.poll(() => h.context.activity.value.phase).toBe('ready')
+  expect(mock.history.get.filter((c) => c.url?.endsWith('/presence'))).toHaveLength(1)
+})
+it('clears revoked activity before any snapshot in the same batch', async () => {
+  const h = setup(),
+    socket = await connected()
+  await expect.poll(() => h.context.status.value).toBe('connected')
+  socket.message(snapshot)
+  socket.message(
+    snapshot +
+      '\n' +
+      JSON.stringify({
+        type: 'membership_changed',
+        room_id: '7',
+        payload: { action: 'removed', user_id: 2, actor_user_id: 1, role: 'member' },
+      }),
+  )
+  expect(h.context.activity.value.onlineUserIds).toEqual([])
+  h.context.typingInput(true)
+  expect(starts(socket)).toHaveLength(0)
+})
+it('same-token reconnect rejects old frames and requires the new connection snapshot', async () => {
+  const h = setup(),
+    old = await connected()
+  await expect.poll(() => h.context.status.value).toBe('connected')
+  old.message(snapshot)
+  old.close(1006)
+  h.context.retry()
+  await expect.poll(() => TestSocket.instances.length).toBe(2)
+  const next = TestSocket.instances[1]!
+  next.open()
+  await expect.poll(() => h.context.status.value).toBe('connected')
+  old.message(snapshot)
+  h.context.typingInput(true)
+  expect(starts(next)).toHaveLength(0)
+  next.message(snapshot)
+  h.context.typingInput(true)
+  expect(starts(next)).toHaveLength(1)
+})
+it('replacement account immediately before an action cannot borrow the open socket', async () => {
+  const h = setup(),
+    socket = await connected()
+  await expect.poll(() => h.context.status.value).toBe('connected')
+  socket.message(snapshot)
+  saveSession({ access_token: 'replacement', refresh_token: 'other', expires_at: 0 })
+  h.context.typingInput(true)
+  h.context.stopTyping()
+  expect(starts(socket)).toHaveLength(0)
+})
+it('not_joined reauthorizes activity once and rate feedback never refetches history', async () => {
+  const h = setup(),
+    socket = await connected()
+  await expect.poll(() => h.context.status.value).toBe('connected')
+  socket.message(snapshot)
+  mock.resetHistory()
+  const error = (code: string) =>
+    JSON.stringify({ type: 'error', room_id: '7', payload: { code, message: 'untrusted' } })
+  for (let i = 0; i < 5; i++) socket.message(error('not_joined'))
+  await expect.poll(() => socket.sent.filter((s) => JSON.parse(s).type === 'join').length).toBe(2)
+  expect(h.context.activity.value.phase).toBe('unknown')
+  socket.message(snapshot)
+  for (const code of ['authorization_pending', 'rate_limited']) socket.message(error(code))
+  await new Promise((r) => setTimeout(r, 160))
+  expect(mock.history.get).toHaveLength(0)
+})
 it('uses events to refresh authoritative messages and coalesces bursts', async () => {
   const h = setup(),
     socket = await connected()

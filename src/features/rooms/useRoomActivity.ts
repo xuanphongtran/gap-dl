@@ -67,7 +67,7 @@ export function useRoomActivity(options: {
     return (
       !!scope &&
       current() &&
-      visible() &&
+      (type === 'typing_stopped' || visible()) &&
       options.send(scope, { type, room_id: String(scope.roomId) })
     )
   }

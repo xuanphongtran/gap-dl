@@ -11,7 +11,13 @@ import { invalidateRoomSearch } from '../messages/message-search'
 import { retainReadCursor } from '../messages/read-state'
 import { recoverMessageGap, refreshRetainedMessages } from '../messages/recoverMessageGap'
 import type { Message, ReadState } from '../../types'
-import type { RealtimeContext, RealtimeRoom, RealtimeStatus } from './realtime-context'
+import { useRoomActivity } from './useRoomActivity'
+import type {
+  RoomActivityScope,
+  RealtimeContext,
+  RealtimeRoom,
+  RealtimeStatus,
+} from './realtime-context'
 
 export function useWorkspaceRealtime(): RealtimeContext {
   const status = ref<RealtimeStatus>('connecting')
@@ -21,6 +27,10 @@ export function useWorkspaceRealtime(): RealtimeContext {
   let active: RealtimeRoom | undefined
   let generation = 0
   let roomGeneration = 0
+  let connectionEpoch = 0
+  let activityScope: RoomActivityScope | undefined
+  let authorized = false
+  let lastActivityRepair = -Infinity
   let disposed = false
   let intentionalClose = false
   let attempts = 0
@@ -34,12 +44,60 @@ export function useWorkspaceRealtime(): RealtimeContext {
   let queuedRecovery = false
   let queuedSuspend = false
 
+  const activity = useRoomActivity({
+    isCurrent: currentActivity,
+    send: (scope, command) => currentActivity(scope) && socket.send(JSON.stringify(command), false),
+  })
+  function currentActivity(scope: RoomActivityScope) {
+    return (
+      !disposed &&
+      scope === activityScope &&
+      scope.connectionEpoch === connectionEpoch &&
+      scope.roomEpoch === roomGeneration &&
+      active?.id === scope.roomId &&
+      active.userId === scope.userId &&
+      userId === scope.userId &&
+      authorized &&
+      joined === scope.roomId &&
+      socket.status.value === 'OPEN' &&
+      !!socket.ws.value &&
+      currentSocket(socket.ws.value)
+    )
+  }
+  function pauseActivity() {
+    activity.pause()
+    activityScope = undefined
+  }
+  function joinActivity() {
+    if (
+      !active ||
+      !authorized ||
+      !socket.ws.value ||
+      !currentSocket(socket.ws.value) ||
+      socket.status.value !== 'OPEN' ||
+      document.visibilityState === 'hidden'
+    )
+      return
+    activityScope = {
+      roomId: active.id,
+      userId: active.userId,
+      connectionEpoch,
+      roomEpoch: roomGeneration,
+    }
+    activity.activate(activityScope)
+    if (socket.send(JSON.stringify({ type: 'join', room_id: String(active.id) }), false))
+      joined = active.id
+    else pauseActivity()
+  }
   const socket = useWebSocket(url, {
     immediate: false,
     autoConnect: false,
     autoReconnect: false,
     onConnected(ws) {
       if (!currentSocket(ws)) return
+      connectionEpoch++
+      lastActivityRepair = -Infinity
+      pauseActivity()
       attempts = 0
       joined = undefined
       void queryClient.invalidateQueries({ queryKey: queryKeys.rooms })
@@ -49,6 +107,8 @@ export function useWorkspaceRealtime(): RealtimeContext {
     },
     onDisconnected(ws) {
       if (!currentSocket(ws) || intentionalClose) return
+      pauseActivity()
+      authorized = false
       joined = undefined
       active?.setPaused(true)
       recoveryController?.abort()
@@ -66,6 +126,8 @@ export function useWorkspaceRealtime(): RealtimeContext {
     return !disposed && ws === socket.ws.value && socketToken === readSession()?.access_token
   }
   function closeSocket() {
+    pauseActivity()
+    authorized = false
     intentionalClose = true
     socket.close()
     socket.data.value = null
@@ -138,6 +200,10 @@ export function useWorkspaceRealtime(): RealtimeContext {
     }
   }
   function revoke(id: number) {
+    if (active?.id === id) {
+      pauseActivity()
+      authorized = false
+    }
     synchronizedAnchors.delete(id)
     if (joined === id) {
       socket.send(JSON.stringify({ type: 'leave', room_id: String(id) }), false)
@@ -169,7 +235,11 @@ export function useWorkspaceRealtime(): RealtimeContext {
   }
   function enqueueRecovery(suspend: boolean) {
     queuedSuspend ||= suspend
-    if (suspend) active?.setPaused(true)
+    if (suspend) {
+      pauseActivity()
+      authorized = false
+      active?.setPaused(true)
+    }
     if (eventTimer) return
     eventTimer = setTimeout(() => {
       eventTimer = undefined
@@ -189,8 +259,42 @@ export function useWorkspaceRealtime(): RealtimeContext {
       }
     }
     if (parsed.malformed && active) enqueueRecovery(true)
+    if (activityScope && parsed.invalidActivityRooms?.includes(activityScope.roomId))
+      activity.invalidate(activityScope)
     for (const event of parsed.events) {
       if (event.roomId !== null && revoked.has(event.roomId)) continue
+      if (
+        ['presence_snapshot', 'presence', 'typing_started', 'typing_stopped'].includes(event.type)
+      ) {
+        if (
+          activityScope &&
+          event.roomId === active?.id &&
+          (event.type === 'presence_snapshot' ||
+            event.type === 'presence' ||
+            event.type === 'typing_started' ||
+            event.type === 'typing_stopped')
+        )
+          activity.receive(activityScope, event)
+        continue
+      }
+      if (
+        event.type === 'error' &&
+        ['not_joined', 'authorization_pending', 'rate_limited'].includes(event.payload.code)
+      ) {
+        if (event.roomId === active?.id && activityScope) {
+          activity.stop()
+          if (
+            event.payload.code === 'not_joined' &&
+            activity.state.value.phase === 'ready' &&
+            Date.now() - lastActivityRepair >= 2000
+          ) {
+            lastActivityRepair = Date.now()
+            joinActivity()
+          } else if (event.payload.code === 'authorization_pending')
+            activity.activate(activityScope)
+        }
+        continue
+      }
       if (event.type === 'invitation') {
         void queryClient.invalidateQueries({ queryKey: queryKeys.invitations })
         void queryClient.invalidateQueries({ queryKey: queryKeys.rooms })
@@ -241,18 +345,21 @@ export function useWorkspaceRealtime(): RealtimeContext {
     // A polled newest page is not proof that the disconnect gap was bridged.
     const baseline = anchor === undefined ? known : known.filter((message) => message.id <= anchor)
     if (suspend) {
+      pauseActivity()
+      authorized = false
       room.setPaused(true)
       status.value = 'recovering'
     }
     try {
       await queryClient.cancelQueries({
         queryKey: queryKeys.room(room.id),
-        predicate: (query) => query.queryKey[2] !== 'notification-preferences',
+        predicate: (query) =>
+          !['notification-preferences', 'presence'].includes(String(query.queryKey[2])),
       })
       if (!valid()) return
-      const authorized = await api.room(room.id, controller.signal)
+      const authorizedRoom = await api.room(room.id, controller.signal)
       if (!valid()) return
-      if (!authorized.role) {
+      if (!authorizedRoom.role) {
         revoke(room.id)
         return
       }
@@ -270,6 +377,8 @@ export function useWorkspaceRealtime(): RealtimeContext {
       ])
       if (!valid()) return
       if (result.gap) {
+        pauseActivity()
+        authorized = false
         gapRoomId.value = room.id
         room.setPaused(true)
         status.value = 'fallback'
@@ -280,7 +389,7 @@ export function useWorkspaceRealtime(): RealtimeContext {
         ...(refreshedHistory?.pages.flat() || []),
       ])
       synchronizedAnchors.set(room.id, Math.max(0, ...result.messages.map((message) => message.id)))
-      queryClient.setQueryData(queryKeys.room(room.id), authorized)
+      queryClient.setQueryData(queryKeys.room(room.id), authorizedRoom)
       queryClient.setQueryData(queryKeys.members(room.id), members)
       queryClient.setQueryData<ReadState>(queryKeys.readState(room.id, room.userId), (current) =>
         retainReadCursor(current, readState),
@@ -300,15 +409,15 @@ export function useWorkspaceRealtime(): RealtimeContext {
       room.applyRecovered(merged)
       gapRoomId.value = null
       room.setPaused(false)
-      if (socket.status.value === 'OPEN' && joined !== room.id) {
-        if (socket.send(JSON.stringify({ type: 'join', room_id: String(room.id) }), false))
-          joined = room.id
-      }
+      authorized = true
+      if (suspend || joined !== room.id) joinActivity()
       status.value = socket.status.value === 'OPEN' ? 'connected' : 'fallback'
     } catch (cause) {
       if (!valid()) return
       if (cause instanceof ApiError && [403, 404].includes(cause.status)) revoke(room.id)
       else {
+        pauseActivity()
+        authorized = false
         room.setPaused(true)
         status.value = navigator.onLine ? 'fallback' : 'offline'
       }
@@ -323,6 +432,8 @@ export function useWorkspaceRealtime(): RealtimeContext {
     }
   }
   function registerRoom(room: RealtimeRoom) {
+    pauseActivity()
+    authorized = false
     if (joined !== undefined)
       socket.send(JSON.stringify({ type: 'leave', room_id: String(joined) }), false)
     joined = undefined
@@ -340,6 +451,8 @@ export function useWorkspaceRealtime(): RealtimeContext {
       void recover(true)
     return () => {
       if (active !== room) return
+      pauseActivity()
+      authorized = false
       if (joined === room.id)
         socket.send(JSON.stringify({ type: 'leave', room_id: String(room.id) }), false)
       active = undefined
@@ -354,6 +467,7 @@ export function useWorkspaceRealtime(): RealtimeContext {
     }
   }
   function sessionChanged(event: Event) {
+    pauseActivity()
     generation++
     cancelWork()
     closeSocket()
@@ -400,9 +514,11 @@ export function useWorkspaceRealtime(): RealtimeContext {
     void connect()
   })
   useEventListener(document, 'visibilitychange', () => {
+    if (document.visibilityState === 'hidden') pauseActivity()
     if (document.visibilityState === 'visible' && active) void recover(true)
   })
   onScopeDispose(() => {
+    pauseActivity()
     disposed = true
     generation++
     cancelWork()
@@ -411,6 +527,9 @@ export function useWorkspaceRealtime(): RealtimeContext {
   })
   void connect()
   return {
+    activity: activity.state,
+    typingInput: activity.input,
+    stopTyping: activity.stop,
     status: readonly(status),
     gapRoomId: readonly(gapRoomId),
     registerRoom,

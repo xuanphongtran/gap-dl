@@ -12,6 +12,9 @@ export interface RealtimeRoom {
   onAccessLost: () => void
 }
 export interface RealtimeContext {
+  activity: Readonly<Ref<RoomActivityState>>
+  typingInput: (hasText: boolean) => void
+  stopTyping: () => void
   status: Readonly<Ref<RealtimeStatus>>
   gapRoomId: Readonly<Ref<number | null>>
   registerRoom: (room: RealtimeRoom) => () => void
