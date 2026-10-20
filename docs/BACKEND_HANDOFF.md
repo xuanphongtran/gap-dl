@@ -27,17 +27,18 @@ Recheck: fresh pending invitation 29, denial before acceptance, restored access 
 
 Public-room leave/rejoin checks pass and do not close this private-room gate. Evidence: [plan](../PLAN.md), [sandbox acceptance](./ACCEPTANCE_2026-10-13.md), [rich messaging contract](./RICH_MESSAGING_CONTRACT.md).
 
-## 3. Attachments: upload/scanner ready, binding/download pending
+## 3. Attachments: contract ready, runtime readiness and frontend pending
 
-User update 2026-10-19 reopens Attachments after storage/scanner setup. The [fresh authenticated recheck](./ATTACHMENTS_RECHECK_2026-10-19.md) passes reservation 201, object upload 200, complete 202 and metadata ready/verified. This supersedes the 2026-10-16 reservation 503. The same verified ID still returns 503 in message creation; the frontend cannot finish attachment sending yet.
+User update 2026-10-20 reports completion. [Fresh contract evidence](./ATTACHMENTS_RECHECK_2026-10-20.md) confirms binding, typed summaries and the new download endpoint. The 2026-10-19 reservation/upload/ready success remains valid dated evidence. Backend processing is lightweight policy/sanitization; ClamAV is explicitly deferred and is not a frontend release gate.
 
-- [x] Enable reservation/storage/scanner for the harmless text-file path and verify completion reaches ready/verified. API reservation preflight allows Idempotency-Key from the sandbox origin.
-- [ ] Implement/deploy atomic verified attachment binding to text messages; confirm same-key retry, mixed mentions, ownership/room, quota, expiry and conflict rules. Current public develop source explicitly rejects nonempty attachment_ids.
-- [ ] Publish typed message/history/Search attachment fields and an authorized download endpoint with expiry, safe headers and membership/deletion behavior. Swagger currently exposes neither a download route nor typed message attachment objects.
-- [ ] Publish supported state transitions, file types, size/count/quota limits and retry/cancellation semantics.
-- [ ] Verify R2 browser CORS, immutable/late-write behavior, failed/expired scans, leave during upload, duplicate retry, physical delayed cleanup and quota release. Cancellation was acknowledged, but object deletion was not observed.
+- [x] Publish atomic binding and typed message/history/Search attachment summaries, with at most five own ready files, same-key retries/conflicts and mixed mentions.
+- [x] Publish authorized 60-second download, expiry/safe headers and membership/deletion semantics in Swagger and the backend frontend handoff.
+- [ ] Restore staging readiness and authenticated account setup: first registration returned 500 at 2026-10-20T02:21:08Z; health 200, readiness 503/ready:false persisted through 02:22:44Z. Readiness request IDs: `8948cbe1ba70a6f6e8da37f0950e334e`, `76be16463c1f2c3d90c269fc1bd0ecbc`, `5fe74080ea50a64a84b4860ebb5e593f`, `074bf782abb51827f451aad49b977ce7`. The underlying cause has not been identified; do not label it a scanner failure.
+- [ ] Reconcile the two uncertain registrations using retained private credentials/journals after service recovery. The controlled unique-username attempt also returned 500, request ID `2928222970f16d4f5031ffde8408e46d`. No upload, membership or message was created by this attempt. Credentials are not copied into the report; legacy fixture cleanup remains separate.
+- [ ] Verify actual binding/download, same-key canonical identity, recipient metadata, departed-member/deleted-binding denial and download headers against the deployed binary. Published/source tests alone do not close these runtime gates.
+- [ ] Verify R2 browser CORS, failed/expired processing, leave during upload, physical delayed cleanup and quota release. Logical cancellation and physical object deletion remain different observations.
 
-The disposable upload was cancelled, membership removed and account deleted; journal intent summaries have zero unconfirmed entries. No message was created by the rejected binding attempt. Frontend upload UI remains deferred until sending/download and provider/privacy gates pass. If a newer deployed API or branch supplies binding/download, provide its contract so the frontend can continue against that implementation.
+Frontend design is [ready for review](./superpowers/specs/2026-10-20-attachments-design.md) on `feat/attachments`. Preserve private recovery evidence in `/tmp/gogo-attachments-contract-qfPI80/` and `/tmp/gogo-attachments-contract-tcF6Sy/` until both registration outcomes are resolved. No extra signup/upload flood, service restart, migration or deployment was performed.
 
 ## 4. Admin cleanup: legacy disposable accounts 35 and 36
 

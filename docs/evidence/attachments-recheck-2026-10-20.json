@@ -1,0 +1,108 @@
+{
+  "startedAt": "2026-10-20T02:21:08.089Z",
+  "checks": [
+    {
+      "name": "register-disposable-member",
+      "pass": false,
+      "status": 500
+    }
+  ],
+  "cleanup": [
+    {
+      "name": "messages",
+      "confirmed": 0,
+      "unconfirmed": 0,
+      "interrupted": false
+    },
+    {
+      "name": "uploads",
+      "confirmed": 0,
+      "unconfirmed": 0,
+      "interrupted": false
+    },
+    {
+      "name": "memberships",
+      "confirmed": 0,
+      "unconfirmed": 0,
+      "interrupted": false
+    },
+    {
+      "name": "accounts",
+      "confirmed": 0,
+      "unconfirmed": 1,
+      "interrupted": false
+    }
+  ],
+  "failure": "A contract assertion or request failed; inspect private recovery journals before rerunning",
+  "finishedAt": "2026-10-20T02:21:10.593Z",
+  "scope": "Aborted authenticated HTTP probe; registration failed before upload or message creation. No native browser acceptance.",
+  "service": {
+    "healthStatus": 200,
+    "readyStatus": 503,
+    "ready": false,
+    "readinessRequestIds": [
+      "8948cbe1ba70a6f6e8da37f0950e334e",
+      "76be16463c1f2c3d90c269fc1bd0ecbc",
+      "5fe74080ea50a64a84b4860ebb5e593f",
+      "074bf782abb51827f451aad49b977ce7"
+    ]
+  },
+  "resources": {
+    "uploadsCreated": 0,
+    "messagesCreated": 0,
+    "registrationOutcome": "uncertain",
+    "accountCleanupUnconfirmed": 2
+  },
+  "registrationAudit": {
+    "at": "2026-10-20T02:26:49.245Z",
+    "checks": [
+      {
+        "name": "reconcile-registration-login",
+        "status": 401,
+        "requestId": "2b92f25aeb3b325b0611447bf92a579c"
+      }
+    ],
+    "confirmed": 0,
+    "unconfirmed": 1
+  },
+  "uniqueUsernameControl": {
+    "startedAt": "2026-10-20T02:27:48.354Z",
+    "checks": [
+      {
+        "name": "register-disposable-member",
+        "pass": false,
+        "status": 500,
+        "requestId": "2928222970f16d4f5031ffde8408e46d"
+      }
+    ],
+    "cleanup": [
+      {
+        "name": "messages",
+        "confirmed": 0,
+        "unconfirmed": 0,
+        "interrupted": false
+      },
+      {
+        "name": "uploads",
+        "confirmed": 0,
+        "unconfirmed": 0,
+        "interrupted": false
+      },
+      {
+        "name": "memberships",
+        "confirmed": 0,
+        "unconfirmed": 0,
+        "interrupted": false
+      },
+      {
+        "name": "accounts",
+        "confirmed": 0,
+        "unconfirmed": 1,
+        "interrupted": false
+      }
+    ],
+    "failure": "A contract assertion or request failed; inspect private recovery journals before rerunning",
+    "finishedAt": "2026-10-20T02:27:50.677Z",
+    "scope": "A single control attempt used a fresh unique username; registration still returned500. No upload/member/message operations occurred."
+  }
+}
