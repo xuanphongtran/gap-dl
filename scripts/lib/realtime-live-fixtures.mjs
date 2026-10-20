@@ -9,6 +9,8 @@ const load = async (file, fallback) => {
     return JSON.parse(await readFile(file, 'utf8'))
   } catch (e) {
     if (e.code === 'ENOENT') return fallback
+    // JSON errors can contain credentials; the original cause must stay private.
+    // eslint-disable-next-line preserve-caught-error
     throw Error('Invalid private fixture registry')
   }
 }
