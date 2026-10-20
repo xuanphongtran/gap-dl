@@ -1,6 +1,6 @@
 # Chat attachments frontend design
 
-Status: proposed for user review on 2026-10-20. Branch `feat/attachments`, implementation base `1b1c741`. This is the next independently reviewable feature after Release hardening. [Current contract/runtime evidence](../../ATTACHMENTS_RECHECK_2026-10-20.md) supersedes the missing binding/download contract findings from 2026-10-19. The operational readiness gate and two uncertain registrations remain open.
+Status: approved by the user on 2026-10-20; [implementation plan](../plans/2026-10-20-attachments.md) is written and awaiting review. Branch `feat/attachments`, implementation base `1b1c741`. This is the next independently reviewable feature after Release hardening. [Current contract/runtime evidence](../../ATTACHMENTS_RECHECK_2026-10-20.md) supersedes the missing binding/download contract findings from 2026-10-19. The operational readiness gate and two uncertain registrations remain open.
 
 ## Intent and scope
 
