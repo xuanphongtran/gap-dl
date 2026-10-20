@@ -19,3 +19,16 @@ export interface RealtimeContext {
   reloadConversation: () => Promise<void>
 }
 export const realtimeKey: InjectionKey<RealtimeContext> = Symbol('workspace-realtime')
+
+export interface RoomActivityScope {
+  roomId: number
+  userId: number
+  connectionEpoch: number
+  roomEpoch: number
+}
+export interface RoomActivityState {
+  roomId: number | null
+  phase: 'unknown' | 'ready' | 'unavailable'
+  onlineUserIds: readonly number[]
+  typingUserIds: readonly number[]
+}

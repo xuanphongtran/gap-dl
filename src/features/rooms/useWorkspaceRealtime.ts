@@ -197,6 +197,11 @@ export function useWorkspaceRealtime(): RealtimeContext {
       } else if (event.type === 'membership_changed') {
         void queryClient.invalidateQueries({ queryKey: queryKeys.rooms })
         if (event.roomId === active?.id) enqueueRecovery(true)
+      } else if (
+        (event.type === 'message_updated' || event.type === 'message_deleted') &&
+        event.roomId === active?.id
+      ) {
+        enqueueRecovery(true)
       } else if (event.type === 'message' && event.roomId === active?.id) {
         enqueueRecovery(false)
       } else if (event.type === 'unknown' && event.roomId === active?.id) {

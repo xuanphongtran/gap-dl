@@ -72,3 +72,12 @@ it('evicts all account inbox pages on room loss without clearing unrelated rooms
   expect(queryClient.getQueryData(queryKeys.room(8))).toEqual({ id: 8 })
   expect(queryKeys.notificationFeed(1, true)).not.toEqual(queryKeys.notificationFeed(2, true))
 })
+
+it('scopes presence by room and current account and clears it on revocation', () => {
+  expect(queryKeys.presence(7, 2)).toEqual(['room', 7, 'presence', 2])
+  queryClient.setQueryData(queryKeys.presence(7, 2), { online_user_ids: [2] })
+  queryClient.setQueryData(queryKeys.presence(7, 3), { online_user_ids: [3] })
+  clearRoomQueries(7)
+  expect(queryClient.getQueryData(queryKeys.presence(7, 2))).toBeUndefined()
+  expect(queryClient.getQueryData(queryKeys.presence(7, 3))).toBeUndefined()
+})

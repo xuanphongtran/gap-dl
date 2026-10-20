@@ -15,6 +15,7 @@ import type {
   ReadState,
   Room,
   RoomMember,
+  RoomPresence,
   SearchMessagesResponse,
   TokenPair,
 } from '../types'
@@ -125,6 +126,8 @@ export const api = {
       data: { last_read_message_id: messageId },
       signal,
     }),
+  presence: (id: number, signal?: AbortSignal) =>
+    request<RoomPresence>(`/api/v1/rooms/${id}/presence`, { signal }),
   members: (id: number, signal?: AbortSignal) =>
     request<{ members: RoomMember[] }>(`/api/v1/rooms/${id}/members`, { signal }),
   invite: (id: number, userId: number) =>

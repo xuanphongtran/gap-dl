@@ -124,3 +124,9 @@ export interface AttachmentDownloadTicket {
   download_url: string
   expires_at: string
 }
+
+export interface RoomPresence {
+  room_id: string
+  online_user_ids: number[]
+  typing_user_ids: number[]
+}

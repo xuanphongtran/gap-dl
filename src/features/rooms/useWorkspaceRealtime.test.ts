@@ -115,6 +115,12 @@ it('uses events to refresh authoritative messages and coalesces bursts', async (
           username: 'owner',
           content: 'not authoritative',
           created_at: '2026-10-14T00:00:00Z',
+          room_id: 7,
+          revision: 1,
+          edited_at: null,
+          deleted_at: null,
+          mention_user_ids: [],
+          attachments: [],
         },
       }),
     )
@@ -140,6 +146,12 @@ it('revokes before a preceding message in the same batch and clears all private 
         username: 'owner',
         content: 'untrusted',
         created_at: '2026-10-14T00:00:00Z',
+        room_id: 7,
+        revision: 1,
+        edited_at: null,
+        deleted_at: null,
+        mention_user_ids: [],
+        attachments: [],
       },
     }) +
       '\n' +
@@ -405,6 +417,12 @@ it('bridges from the last synchronized anchor even if polling already exposed a 
         username: 'owner',
         content: 'hint',
         created_at: '2026-10-14T00:00:00Z',
+        room_id: 7,
+        revision: 1,
+        edited_at: null,
+        deleted_at: null,
+        mention_user_ids: [],
+        attachments: [],
       },
     }),
   )
@@ -587,4 +605,46 @@ it('hands fallback recovery to a new room when the previous recovery is still pe
     release([200, room])
     await tick()
   }
+})
+
+it('lifecycle_update_refreshes_retained_older_page_and_search without reconnect', async () => {
+  server = Array.from({ length: 85 }, (_, i) => message(85 - i))
+  mock.onGet('/api/v1/rooms/7/messages').reply((config) => [
+    200,
+    {
+      messages: server
+        .filter((m) => config.params?.before === undefined || m.id < config.params.before)
+        .slice(0, 40),
+    },
+  ])
+  const h = setup()
+  h.known.value = [...server].reverse()
+  queryClient.setQueryData(queryKeys.messageHistory(7), {
+    pages: [server.slice(0, 40), server.slice(40, 80), server.slice(80)],
+    pageParams: [null, 46, 6],
+  })
+  const socket = await connected()
+  await expect.poll(() => h.context.status.value).toBe('connected')
+  server = server.map((m) =>
+    m.id === 2
+      ? {
+          ...m,
+          user_id: null,
+          content: '',
+          revision: 2,
+          deleted_at: '2026-10-20T01:00:00Z',
+          attachments: [],
+        }
+      : m,
+  )
+  const changed = { ...server.find((m) => m.id === 2)!, mention_user_ids: [], attachments: [] }
+  queryClient.setQueryData(queryKeys.searchMessages(7, 2, 'old'), { pages: [], pageParams: [] })
+  mock.resetHistory()
+  for (let i = 0; i < 4; i++)
+    socket.message(JSON.stringify({ type: 'message_deleted', room_id: '7', payload: changed }))
+  await expect.poll(() => h.known.value.find((m) => m.id === 2)?.revision).toBe(2)
+  expect(h.known.value.find((m) => m.id === 2)?.content).toBe('')
+  expect(queryClient.getQueryState(queryKeys.searchMessages(7, 2, 'old'))?.isInvalidated).toBe(true)
+  expect(TestSocket.instances).toHaveLength(1)
+  expect(mock.history.get.filter((c) => c.url?.endsWith('/members'))).toHaveLength(1)
 })
