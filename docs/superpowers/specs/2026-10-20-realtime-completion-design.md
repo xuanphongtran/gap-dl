@@ -1,6 +1,6 @@
 # Phase 5 realtime completion design
 
-Status: proposed for user review, 2026-10-20. No product implementation is authorized by this document alone.
+Status: approved by the user on 2026-10-20, including the reusable local fixture retention policy. Implementation follows approval of the written plan.
 
 ## Intent and scope
 
@@ -52,7 +52,7 @@ Only actual user input starts typing; restoring drafts, programmatic model updat
 
 ## Local fixtures and acceptance proposal
 
-The local DB has no available room fixture. The previous auth-only test accounts were deleted. This design proposes an explicit retention exception for local testing: create one clearly labelled reusable owner account and two rooms (public/private), intentionally keep that owner/rooms for subsequent acceptance, and keep credentials private. Publish only fixture IDs and retention status. This is a proposed decision for the user to approve, replacing the earlier requirement for an executable room cleanup path for these explicitly retained fixtures; the API has no room-delete operation.
+The local DB has no available room fixture. The previous auth-only test accounts were deleted. The user approved an explicit retention exception for local testing: create one clearly labelled reusable owner account and two rooms (public/private), intentionally keep that owner/rooms for subsequent acceptance, and keep credentials private. Publish only fixture IDs and retention status. This approved decision replaces the earlier requirement for an executable room cleanup path for these explicitly retained fixtures; the API has no room-delete operation.
 
 Create separate disposable guest/moderator accounts as needed. Journal every fixture intent before its write and cleanup progress before each deletion. Delete guest messages, remove disposable memberships and delete disposable accounts after tests. Do not mutate existing nonfixture users/rooms, old Render records, backend configuration or database schemas. Never call retained owner/rooms cleaned up. Their eventual removal requires a separately authorized BE/admin operation.
 
@@ -64,4 +64,4 @@ Local real-BE acceptance then covers two users and multiple tabs, online aggrega
 
 Record source/contract hashes, actual observed wire contracts, checks and fixture retention/cleanup separately. Update Phase 5 checkboxes only for demonstrated scope; move distributed/operational follow-ups to their existing Phase 7 gate. Mark Phase 4 follow-up work pending per the user's instruction without undoing already completed functionality. Keep the current feature branch local; no push, merge, deployment, backend restart, migration or global security setting change is authorized here.
 
-After written-spec approval, prepare the concrete implementation plan and preserve the established inline execution preference. This document is awaiting approval; no product source has changed.
+The concrete implementation plan preserves the established inline execution preference. The user approved this spec. The [implementation plan](../plans/2026-10-20-realtime-completion.md) is ready for review; no product source has changed.
