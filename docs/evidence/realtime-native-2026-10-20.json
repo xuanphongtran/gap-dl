@@ -1,0 +1,155 @@
+{
+  "checks": [
+    {
+      "name": "lifecycle-retained",
+      "simulated": true,
+      "pass": true,
+      "connections": 1,
+      "subscriptions": 2,
+      "privacyViolationCount": 0,
+      "escapedNavigationCount": 0,
+      "requestCounts": {
+        "GET /api/v1/users/me": 2,
+        "GET /api/v1/rooms": 2,
+        "GET /api/v1/users/me/invitations": 2,
+        "GET /api/v1/rooms/:id": 3,
+        "GET /api/v1/rooms/:id/read-state": 4,
+        "GET /api/v1/rooms/:id/messages": 5,
+        "GET /api/v1/rooms/:id/members": 2
+      }
+    },
+    {
+      "name": "presence-tabs",
+      "simulated": true,
+      "pass": true,
+      "connections": 3,
+      "subscriptions": 3,
+      "privacyViolationCount": 0,
+      "escapedNavigationCount": 0,
+      "requestCounts": {
+        "GET /api/v1/users/me": 6,
+        "GET /api/v1/rooms": 6,
+        "GET /api/v1/users/me/invitations": 6,
+        "GET /api/v1/rooms/:id": 6,
+        "GET /api/v1/rooms/:id/read-state": 9,
+        "GET /api/v1/rooms/:id/messages": 3,
+        "GET /api/v1/rooms/:id/members": 3,
+        "GET /api/v1/rooms/:id/notification-preferences": 1
+      }
+    },
+    {
+      "name": "typing-lifecycle",
+      "simulated": true,
+      "pass": true,
+      "connections": 2,
+      "subscriptions": 2,
+      "privacyViolationCount": 0,
+      "escapedNavigationCount": 0,
+      "requestCounts": {
+        "GET /api/v1/users/me": 4,
+        "GET /api/v1/rooms": 4,
+        "GET /api/v1/users/me/invitations": 4,
+        "GET /api/v1/rooms/:id": 4,
+        "GET /api/v1/rooms/:id/read-state": 10,
+        "GET /api/v1/rooms/:id/messages": 4,
+        "GET /api/v1/rooms/:id/members": 2
+      }
+    },
+    {
+      "name": "subscription-ack",
+      "simulated": true,
+      "pass": true,
+      "connections": 2,
+      "subscriptions": 2,
+      "privacyViolationCount": 0,
+      "escapedNavigationCount": 0,
+      "requestCounts": {
+        "GET /api/v1/users/me": 4,
+        "GET /api/v1/rooms": 4,
+        "GET /api/v1/users/me/invitations": 4,
+        "GET /api/v1/rooms/:id": 4,
+        "GET /api/v1/rooms/:id/read-state": 6,
+        "GET /api/v1/rooms/:id/messages": 2,
+        "GET /api/v1/rooms/:id/members": 2
+      }
+    },
+    {
+      "name": "activity-late-account",
+      "simulated": true,
+      "pass": true,
+      "connections": 3,
+      "subscriptions": 2,
+      "privacyViolationCount": 0,
+      "escapedNavigationCount": 0,
+      "requestCounts": {
+        "GET /api/v1/users/me": 5,
+        "GET /api/v1/rooms": 4,
+        "GET /api/v1/users/me/invitations": 4,
+        "GET /api/v1/rooms/:id": 4,
+        "GET /api/v1/rooms/:id/read-state": 6,
+        "GET /api/v1/rooms/:id/messages": 2,
+        "GET /api/v1/rooms/:id/members": 2,
+        "GET /api/v1/rooms/:id/presence": 2
+      }
+    },
+    {
+      "name": "recovery-and-rate-limit",
+      "simulated": true,
+      "pass": true,
+      "connections": 3,
+      "subscriptions": 3,
+      "privacyViolationCount": 0,
+      "escapedNavigationCount": 0,
+      "requestCounts": {
+        "GET /api/v1/users/me": 4,
+        "GET /api/v1/rooms": 4,
+        "GET /api/v1/users/me/invitations": 4,
+        "GET /api/v1/rooms/:id": 5,
+        "GET /api/v1/rooms/:id/read-state": 6,
+        "GET /api/v1/rooms/:id/messages": 7,
+        "GET /api/v1/rooms/:id/members": 4,
+        "GET /api/v1/rooms/:id/notification-preferences": 4,
+        "GET /api/v1/rooms/:id/presence": 1
+      }
+    },
+    {
+      "name": "revocation-batch",
+      "simulated": true,
+      "pass": true,
+      "connections": 1,
+      "subscriptions": 1,
+      "privacyViolationCount": 0,
+      "escapedNavigationCount": 0,
+      "requestCounts": {
+        "GET /api/v1/users/me": 2,
+        "GET /api/v1/rooms": 4,
+        "GET /api/v1/users/me/invitations": 2,
+        "GET /api/v1/rooms/:id": 2,
+        "GET /api/v1/rooms/:id/read-state": 3,
+        "GET /api/v1/rooms/:id/messages": 1,
+        "GET /api/v1/rooms/:id/members": 1
+      }
+    },
+    {
+      "name": "mobile-keyboard",
+      "simulated": true,
+      "pass": true,
+      "connections": 2,
+      "subscriptions": 2,
+      "privacyViolationCount": 0,
+      "escapedNavigationCount": 0,
+      "requestCounts": {
+        "GET /api/v1/users/me": 4,
+        "GET /api/v1/rooms": 4,
+        "GET /api/v1/users/me/invitations": 4,
+        "GET /api/v1/rooms/:id": 4,
+        "GET /api/v1/rooms/:id/read-state": 7,
+        "GET /api/v1/rooms/:id/messages": 3,
+        "GET /api/v1/rooms/:id/members": 2,
+        "POST /api/v1/rooms/:id/messages": 1,
+        "PUT /api/v1/rooms/:id/read-state": 1
+      }
+    }
+  ],
+  "cleanupComplete": true
+}

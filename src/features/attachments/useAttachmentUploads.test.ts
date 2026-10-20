@@ -374,6 +374,7 @@ it('paused pipeline exits on room change without sending more file bytes', async
   const { f, enabled, roomId } = mount()
   const work = f.select([file()])
   await settle()
+  await vi.waitFor(() => expect(release).toBeTypeOf('function'))
   enabled.value = false
   release()
   await settle()

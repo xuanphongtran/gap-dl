@@ -200,3 +200,21 @@ it('query_parameters_never_reach_sanitized_report', async () => {
   )
   expect(JSON.stringify(f.report())).not.toContain('private-secret')
 })
+it('rejects nonfixture message/invitation IDs and ownership transfer before any mutation', async () => {
+  const s = await setup(),
+    f = await prepareRealtimeFixtures(s),
+    guest = await f.createGuest(),
+    count = s.calls.length
+  for (const [actor, method, path, body] of [
+    [guest, 'POST', '/api/v1/invitations/999/accept'],
+    [f.owner, 'DELETE', `/api/v1/rooms/${f.rooms.private.id}/messages/999`],
+    [
+      f.owner,
+      'PATCH',
+      `/api/v1/rooms/${f.rooms.private.id}/members/${guest.id}`,
+      { role: 'owner' },
+    ],
+  ])
+    await expect(f.request(actor, method, path, body)).rejects.toThrow(/fixture|retained/i)
+  expect(s.calls).toHaveLength(count)
+})

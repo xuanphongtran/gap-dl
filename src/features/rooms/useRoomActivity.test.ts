@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { begin, end, mock, mountFeature, settle } from '../notifications/notification-test-utils'
+import { queryClient, queryKeys } from '../../lib/query'
 import { useRoomActivity } from './useRoomActivity'
 import type { RoomTypingCommand } from '../../lib/realtime'
 import type { RoomActivityScope } from './realtime-context'
@@ -180,4 +181,18 @@ it('activity429_blocks_focus_and_repair_until_absolute_deadline', async () => {
   await a.refresh()
   expect(mock.history.get).toHaveLength(2)
   expect(a.state.value.phase).toBe('ready')
+})
+it('stores only validated presence IDs in the query cache', async () => {
+  const { a, snapshot } = setup()
+  snapshot()
+  mock.onGet(/\/presence$/).reply(200, {
+    room_id: '7',
+    online_user_ids: [1, 2],
+    typing_user_ids: [],
+    download_url: 'private-extra',
+  })
+  await a.refresh()
+  expect(JSON.stringify(queryClient.getQueryData(queryKeys.presence(7, 1)))).not.toContain(
+    'private-extra',
+  )
 })

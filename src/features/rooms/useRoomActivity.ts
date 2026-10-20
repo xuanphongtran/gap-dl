@@ -201,7 +201,12 @@ export function useRoomActivity(options: {
       try {
         const data = await queryClient.fetchQuery({
           queryKey: queryKeys.presence(s.roomId, s.userId),
-          queryFn: ({ signal }) => api.presence(s.roomId, AbortSignal.any([signal, abort.signal])),
+          queryFn: async ({ signal }) => {
+            const result = await api.presence(s.roomId, AbortSignal.any([signal, abort.signal]))
+            const safe = parseRoomPresence(result, s.roomId)
+            if (!safe) throw new Error('Invalid room activity')
+            return safe
+          },
           staleTime: 0,
           retry: false,
         })

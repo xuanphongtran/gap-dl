@@ -231,3 +231,26 @@ it.each(['not_joined', 'authorization_pending', 'rate_limited'])(
     ).toEqual({ events: [{ type: 'error', roomId: 7, payload: { code } }], malformed: false })
   },
 )
+
+it('accepts a full nullable-author file-only lifecycle DTO but retains only its revision hint', () => {
+  const payload = {
+    ...dto,
+    attachments: [
+      {
+        id: 12,
+        filename: 'file.txt',
+        content_type: 'text/plain',
+        size_bytes: 4,
+        sha256: 'a'.repeat(64),
+        verified: true,
+        download_url: 'never-retain',
+      },
+    ],
+  }
+  expect(
+    parseRealtimeFrame(JSON.stringify({ type: 'message_updated', room_id: '7', payload })),
+  ).toEqual({
+    events: [{ type: 'message_updated', roomId: 7, payload: { id: 9, revision: 2 } }],
+    malformed: false,
+  })
+})

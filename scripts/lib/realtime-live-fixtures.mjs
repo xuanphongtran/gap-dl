@@ -157,7 +157,21 @@ export async function prepareRealtimeFixtures({ directory, apiOrigin }) {
     if (room && !fixtureIds().has(Number(room[1])))
       throw Error('Request outside retained fixture rooms')
     if (method === 'GET') return raw(account, method, path, body)
-    const message = /^\/api\/v1\/rooms\/\d+\/messages(?:\/\d+)?$/.test(path)
+    const recorded = await load(temporaryFile, { entries: [] })
+    const messagePath = path.match(/^(\/api\/v1\/rooms\/\d+\/messages)(?:\/(\d+))?$/)
+    const message =
+      messagePath &&
+      ((method === 'POST' && !messagePath[2]) ||
+        (['PATCH', 'DELETE'].includes(method) &&
+          messagePath[2] &&
+          recorded.entries.some(
+            (e) =>
+              e.kind === 'operation' &&
+              e.recovery.method === 'POST' &&
+              e.recovery.path === messagePath[1] &&
+              e.resource?.status === 201 &&
+              e.resource.data.id === Number(messagePath[2]),
+          )))
     const join = method === 'POST' && path.endsWith('/join')
     const leave =
       method === 'DELETE' && path.endsWith('/membership') && account.id !== registry.owner.id
@@ -169,10 +183,19 @@ export async function prepareRealtimeFixtures({ directory, apiOrigin }) {
     const memberAction =
       member &&
       registry.guests.some((a) => a.id === Number(member[1])) &&
-      ['PATCH', 'DELETE'].includes(method)
+      (method === 'DELETE' || (method === 'PATCH' && ['member', 'moderator'].includes(body?.role)))
     const respond =
       /^\/api\/v1\/invitations\/\d+\/(accept|decline)$/.test(path) &&
-      account.id !== registry.owner.id
+      account.id !== registry.owner.id &&
+      recorded.entries.some(
+        (e) =>
+          e.kind === 'operation' &&
+          e.recovery.method === 'POST' &&
+          e.recovery.path?.endsWith('/invitations') &&
+          e.recovery.body?.user_id === account.id &&
+          e.resource?.status === 201 &&
+          e.resource.data.id === Number(path.split('/')[4]),
+      )
     if (!message && !join && !leave && !invite && !memberAction && !respond)
       throw Error('Mutation outside disposable fixture resources or retained owner')
     const journal = await openFixtureJournal(temporaryFile)
@@ -186,7 +209,13 @@ export async function prepareRealtimeFixtures({ directory, apiOrigin }) {
     )
     return { ...resource, headers: new Headers() }
   }
-  async function cleanup() {
+  async function cleanup({ minimumWriteIntervalMs = 0 } = {}) {
+    if (
+      !Number.isSafeInteger(minimumWriteIntervalMs) ||
+      minimumWriteIntervalMs < 0 ||
+      minimumWriteIntervalMs > 2000
+    )
+      throw Error('Invalid cleanup pacing')
     const journal = await load(temporaryFile, { entries: [] })
     // Resolve messages before memberships, then delete disposable accounts.
     const operations = journal.entries.filter((e) => e.kind === 'operation'),
@@ -198,6 +227,8 @@ export async function prepareRealtimeFixtures({ directory, apiOrigin }) {
         errors.push('uncertain')
         continue
       }
+      if (minimumWriteIntervalMs)
+        await new Promise((resolve) => setTimeout(resolve, minimumWriteIntervalMs))
       e.status = 'cleaning'
       await save(temporaryFile, journal)
       try {
@@ -240,6 +271,8 @@ export async function prepareRealtimeFixtures({ directory, apiOrigin }) {
         (a) => a.resource?.id === e.recovery.userId || a.resource?.id === e.recovery.body?.user_id,
       )
       if (guest && guest.status !== 'cleaned' && e.status === 'cleaned') {
+        if (minimumWriteIntervalMs)
+          await new Promise((resolve) => setTimeout(resolve, minimumWriteIntervalMs))
         e.status = 'cleaning'
         await save(temporaryFile, journal)
       }

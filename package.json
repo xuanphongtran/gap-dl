@@ -22,7 +22,9 @@
     "acceptance:recovery": "node scripts/check-recovery.mjs",
     "acceptance:history": "node scripts/check-history-cost.mjs",
     "acceptance:attachments": "node scripts/check-attachments.mjs",
-    "activity:contract:check": "node scripts/check-room-activity-contract.mjs"
+    "activity:contract:check": "node scripts/check-room-activity-contract.mjs",
+    "acceptance:realtime": "node scripts/check-realtime.mjs",
+    "acceptance:realtime:local": "node scripts/check-realtime-local.mjs"
   },
   "dependencies": {
     "@fontsource/press-start-2p": "^5.3.0",

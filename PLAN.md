@@ -101,6 +101,8 @@ Keep endpoint functions in `src/lib/api.ts`, Axios transport in `src/lib/http.ts
 
 ## 4. Durable read state and unread counts — P1
 
+**Further Phase 4 work is pending by user instruction (2026-10-20).** Existing behavior and earlier evidence below are preserved. Phase 5 does not close additional read-state acceptance.
+
 **Dependency:** The Swagger-documented GET/PUT read-state DTO and cursor semantics are verified with test accounts. This slice does not require WebSocket.
 
 - [x] Add typed `GET/PUT /api/v1/rooms/{id}/read-state` functions and room-scoped Vue Query keys. PUT sends `{ last_read_message_id }`; consume `{ room_id, last_read_message_id, unread_count }`. Advance a cursor only when messages are viewed; debounce writes without moving backward.
@@ -115,14 +117,18 @@ Keep endpoint functions in `src/lib/api.ts`, Axios transport in `src/lib/http.ts
 
 ## 5. WebSocket-assisted REST integration — P1
 
-**Scope approved on 2026-10-13.** [Reviewed contract and verification](./docs/WEBSOCKET_CONTRACT.md) and [approved design](./docs/superpowers/specs/2026-10-13-websocket-design.md) define the first release. SSE, presence/typing presentation, and distributed-delivery guarantees remain deferred.
+**Scope approved on 2026-10-13.** [Reviewed contract and verification](./docs/WEBSOCKET_CONTRACT.md) and [approved design](./docs/superpowers/specs/2026-10-13-websocket-design.md) define the first release. The approved 2026-10-20 completion adds typed lifecycle reconciliation and room presence/typing; SSE and distributed-delivery guarantees remain deferred.
 
-- [x] Confirm URL, access-JWT query transport, origin handling, join/leave commands, documented envelopes, newline batching, no replay, and drain 1001. Authenticated sandbox-origin upgrade and native development-origin browser connections passed. Runtime presence envelopes are absent from AsyncAPI; lifecycle events lack complete revision/tombstone coverage.
+- [x] Confirm URL, access-JWT query transport, origin handling, join/leave commands, documented envelopes, newline batching, no replay, and drain 1001. Authenticated sandbox-origin upgrade and native development-origin browser connections passed. The 2026-10-20 local contract publishes full lifecycle DTOs; spec 07 plus authenticated local wire checks pin presence/typing despite AsyncAPI publication drift.
 - [x] Use `@vueuse/core` for one connection per authenticated tab. Subscribe only after REST authorization, close on logout/account change, and process membership revocation before data events. Keep REST for durable state and all writes.
 - [x] Reconcile history/read state after reconnect and foreground recovery; preserve drafts/scroll, dedupe by ID/revision, bridge up to ten additional pages, and expose explicit reload beyond the bound. Keep HTTP polling because lifecycle/read-state event coverage is incomplete.
 - [x] Add bounded reconnect/backoff and offline/retry UI. Tests cover token rotation, account/room races, stale frames, malformed batches, revocation, missed pages, failed connections, and drain 1001. Local-branch browser smoke with the deployed backend covers invitations, message events, reconnect, revocation, and logout at desktop/mobile sizes.
 - [x] Verify the changed frontend on the designated sandbox host, including multiple real browser tabs. [2026-10-16 hosted acceptance](./docs/SANDBOX_RELEASE_ACCEPTANCE_2026-10-16.md) verifies the deployed bundle, native sockets, missed-message recovery, draft retention, revocation and active-socket logout. Any different production origin needs its own acceptance.
-- [ ] Verify published presence/typing/lifecycle schemas and distributed recovery before their UI or delivery guarantees enter scope. SSE has no verified contract.
+- [x] Complete typed lifecycle update/delete reconciliation across retained history and Search, including nullable authors and tombstones, without trusting event content.
+- [x] Complete room-scoped online/typing presentation and actual-input scheduling: current-socket snapshot acknowledgement, 2000ms starts, 1500ms idle stop, 5000ms expiry, safe HTTP repair and account/room/reconnect/revocation isolation.
+- [x] Verify eight synthetic native scenarios with real sockets and seven local-BE native journey groups using the approved reusable owner/two rooms. See [Phase 5 completion acceptance](./docs/REALTIME_COMPLETION_ACCEPTANCE_2026-10-20.md). Preserve HTTP polling and existing Phase 4 behavior.
+- [ ] Deploy and accept this completion build on the selected host. Earlier sandbox acceptance covers its earlier bundle, not these new presence/typing changes.
+- [ ] BE: publish observed presence/typing/read-state schemas in AsyncAPI. Distributed recovery and SSE remain Phase 7 contract/rollout gates.
 
 **Exit gate for this slice:** Authorized REST state converges after connection loss and membership changes, stale private callbacks cannot repopulate another account, and transport failure exposes guarded REST recovery. Hosted multi-tab/reconnect acceptance and private re-invitation now pass on the designated sandbox; operational and distributed guarantees remain separate gates.
 
