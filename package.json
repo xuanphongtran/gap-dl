@@ -21,7 +21,8 @@
     "search:scroll:check": "node scripts/check-search-scroll.mjs",
     "acceptance:recovery": "node scripts/check-recovery.mjs",
     "acceptance:history": "node scripts/check-history-cost.mjs",
-    "acceptance:attachments": "node scripts/check-attachments.mjs"
+    "acceptance:attachments": "node scripts/check-attachments.mjs",
+    "activity:contract:check": "node scripts/check-room-activity-contract.mjs"
   },
   "dependencies": {
     "@fontsource/press-start-2p": "^5.3.0",
@@ -47,6 +48,7 @@
     "typescript-eslint": "^8.70.1",
     "vite": "^8.3.1",
     "vitest": "^5.0.2",
-    "vue-tsc": "^3.3.11"
+    "vue-tsc": "^3.3.11",
+    "ws": "8.22.0"
   }
 }
