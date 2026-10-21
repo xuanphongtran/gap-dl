@@ -70,11 +70,13 @@ Owners and completion dates are not assigned in this repository. Close each item
 
 ## 6. Phase 5 local completion and AsyncAPI publication drift — 2026-10-20
 
-[Local completion acceptance](./REALTIME_COMPLETION_ACCEPTANCE_2026-10-20.md) verifies presence/typing/lifecycle against local port 8080, including native two-account/multi-tab behavior, reauthorization, removal/reinvitation and cleanup. No Render retry or backend changes were performed. Owner 3 and rooms 1/2 are intentionally retained; disposable guest resources are journaled separately.
+[Local completion acceptance](./REALTIME_COMPLETION_ACCEPTANCE_2026-10-21.md) verifies presence/typing/lifecycle against local port 8080, including native two-account/multi-tab behavior, reauthorization, removal/reinvitation and cleanup. No Render retry or backend changes were performed. Owner 3 and rooms 1/2 are intentionally retained; disposable guest resources are journaled separately.
 
 - [x] Verify runtime against written BE `spec/07-presence-read-state.md` at `e8f7041`: snapshots, first/last-tab presence, start/refresh/null stop/expiry and activity errors.
 - [ ] Publish `presence_snapshot`, `presence`, `typing_started`, `typing_stopped`, `read_state` and client typing commands in AsyncAPI, including string room IDs, aggregate per-user semantics, 5000ms expiry and error codes. Current lifecycle Message DTOs are published and consumed as REST reconciliation hints.
 - [ ] Accept the new frontend bundle on the selected deployment origin; earlier hosted evidence does not cover it.
 - [ ] Verify distributed/cross-node/SSE behavior through its own contract and rollout. Local process success is not evidence for those guarantees.
+
+Post-review follow-up (2026-10-21): health returns 200 and source/AsyncAPI hash remain unchanged, but the private reusable registry/journals are unavailable after session continuation. Restore that registry before rerunning the updated native local acceptance. No retained owner/rooms were recreated. The earlier real-BE pass remains dated 2026-10-20.
 
 Further Phase 4 work remains pending. Attachment storage/provider acceptance retains its separate gate.
