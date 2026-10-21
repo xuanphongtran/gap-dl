@@ -38,6 +38,7 @@ export function useWorkspaceRealtime(): RealtimeContext {
   let socketToken: string | undefined
   let userId: number | undefined
   let retryTimer: ReturnType<typeof setTimeout> | undefined
+  let activityJoinTimer: ReturnType<typeof setTimeout> | undefined
   let eventTimer: ReturnType<typeof setTimeout> | undefined
   let connectController: AbortController | undefined
   let recoveryController: AbortController | undefined
@@ -65,6 +66,8 @@ export function useWorkspaceRealtime(): RealtimeContext {
     )
   }
   function pauseActivity() {
+    clearTimeout(activityJoinTimer)
+    activityJoinTimer = undefined
     activity.pause()
     activityScope = undefined
   }
@@ -88,6 +91,22 @@ export function useWorkspaceRealtime(): RealtimeContext {
     if (socket.send(JSON.stringify({ type: 'join', room_id: String(active.id) }), false))
       joined = active.id
     else pauseActivity()
+  }
+  function repairActivitySubscription() {
+    const scope = activityScope
+    if (!scope || !currentActivity(scope)) return
+    // Losing the subscription always clears confirmation, even during the send cooldown.
+    activity.activate(scope)
+    if (activityJoinTimer) return
+    const repair = () => {
+      activityJoinTimer = undefined
+      if (!currentActivity(scope)) return
+      lastActivityRepair = Date.now()
+      joinActivity()
+    }
+    const delay = Math.max(0, 2000 - (Date.now() - lastActivityRepair))
+    if (delay) activityJoinTimer = setTimeout(repair, delay)
+    else repair()
   }
   const socket = useWebSocket(url, {
     immediate: false,
@@ -283,15 +302,8 @@ export function useWorkspaceRealtime(): RealtimeContext {
       ) {
         if (event.roomId === active?.id && activityScope) {
           activity.stop()
-          if (
-            event.payload.code === 'not_joined' &&
-            activity.state.value.phase === 'ready' &&
-            Date.now() - lastActivityRepair >= 2000
-          ) {
-            lastActivityRepair = Date.now()
-            joinActivity()
-          } else if (event.payload.code === 'authorization_pending')
-            activity.activate(activityScope)
+          if (event.payload.code === 'not_joined') repairActivitySubscription()
+          else if (event.payload.code === 'authorization_pending') activity.activate(activityScope)
         }
         continue
       }

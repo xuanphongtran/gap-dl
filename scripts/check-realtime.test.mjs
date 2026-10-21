@@ -157,3 +157,31 @@ it('detects escaped future web targets and excludes Chrome internal browser UI',
   expect(page.escapes).toBe(1)
   expect(JSON.stringify(page.blocked)).not.toContain('do-not-retain')
 })
+it('visibility helper minimizes only the current page window and waits for actual document state', async () => {
+  const { setRealtimeVisibility } = await import('./lib/realtime-browser.mjs')
+  expect(setRealtimeVisibility).toBeTypeOf('function')
+  const calls = [],
+    browser = {
+      command: async (method, params, session) => {
+        calls.push({ method, params, session })
+        return method === 'Target.getTargetInfo'
+          ? { targetInfo: { targetId: 'target' } }
+          : method === 'Browser.getWindowForTarget'
+            ? { windowId: 42 }
+            : {}
+      },
+      waitFor: async (session, expression) => {
+        calls.push({ session, expression })
+      },
+    }
+  await setRealtimeVisibility(browser, 'current-page', true)
+  expect(calls).toContainEqual({
+    method: 'Browser.setWindowBounds',
+    params: { windowId: 42, bounds: { windowState: 'minimized' } },
+    session: undefined,
+  })
+  expect(calls.at(-1)).toEqual({
+    session: 'current-page',
+    expression: "document.visibilityState==='hidden'",
+  })
+})

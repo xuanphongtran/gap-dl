@@ -196,3 +196,72 @@ it('stores only validated presence IDs in the query cache', async () => {
     'private-extra',
   )
 })
+
+it('a stale repair schedules one bounded replacement and recovers without reconnect', async () => {
+  const { a, snapshot, send } = setup()
+  snapshot()
+  let resolve!: (v: [number, unknown]) => void
+  mock.onGet(/\/presence$/).reply(
+    () =>
+      new Promise((r) => {
+        resolve = r
+      }),
+  )
+  a.invalidate(current)
+  await settle()
+  a.receive(current, { type: 'presence', roomId: 7, payload: { user_id: 3, online: true } })
+  resolve([200, { room_id: '7', online_user_ids: [1, 2], typing_user_ids: [2] }])
+  await settle()
+  expect(a.state.value.phase).toBe('unavailable')
+  expect(a.state.value.typingUserIds).toEqual([])
+  mock
+    .onGet(/\/presence$/)
+    .reply(200, { room_id: '7', online_user_ids: [1, 2, 3], typing_user_ids: [] })
+  await vi.advanceTimersByTimeAsync(1999)
+  expect(mock.history.get).toHaveLength(1)
+  await vi.advanceTimersByTimeAsync(1)
+  await settle()
+  expect(mock.history.get).toHaveLength(2)
+  expect(a.state.value.phase).toBe('ready')
+  expect(a.state.value.onlineUserIds).toEqual([1, 2, 3])
+  expect(send).not.toHaveBeenCalled()
+  a.input(true)
+  expect(send).toHaveBeenCalledOnce()
+})
+it('a queued replacement repair cannot survive account replacement or pause', async () => {
+  const { a, snapshot } = setup()
+  snapshot()
+  let resolve!: (v: [number, unknown]) => void
+  mock.onGet(/\/presence$/).reply(
+    () =>
+      new Promise((r) => {
+        resolve = r
+      }),
+  )
+  a.invalidate(current)
+  await settle()
+  a.receive(current, { type: 'presence', roomId: 7, payload: { user_id: 3, online: true } })
+  resolve([200, { room_id: '7', online_user_ids: [1, 2], typing_user_ids: [] }])
+  await settle()
+  current = { ...first, userId: 4, connectionEpoch: 2 }
+  a.pause()
+  await vi.advanceTimersByTimeAsync(10000)
+  expect(mock.history.get).toHaveLength(1)
+})
+it('automatic invalidation repair respects Retry-After and does not replay typing', async () => {
+  const { a, snapshot, send } = setup()
+  snapshot()
+  mock.onGet(/\/presence$/).reply(429, { error: 'Limited' }, { 'Retry-After': '3' })
+  a.invalidate(current)
+  await settle()
+  await vi.advanceTimersByTimeAsync(2999)
+  expect(mock.history.get).toHaveLength(1)
+  mock
+    .onGet(/\/presence$/)
+    .reply(200, { room_id: '7', online_user_ids: [1, 2], typing_user_ids: [] })
+  await vi.advanceTimersByTimeAsync(1)
+  await settle()
+  expect(mock.history.get).toHaveLength(2)
+  expect(a.state.value.phase).toBe('ready')
+  expect(send).not.toHaveBeenCalled()
+})

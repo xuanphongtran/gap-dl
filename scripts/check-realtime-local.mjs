@@ -9,7 +9,11 @@ import {
   withAcceptanceBrowser,
   requireLoopback,
 } from './lib/acceptance-browser.mjs'
-import { startRealtimeProxy, openRealtimePage } from './lib/realtime-browser.mjs'
+import {
+  startRealtimeProxy,
+  openRealtimePage,
+  setRealtimeVisibility,
+} from './lib/realtime-browser.mjs'
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 export async function realtimeLocalMain({
@@ -138,6 +142,19 @@ export async function realtimeLocalMain({
           await ev(b, "document.querySelector('.composer textarea').blur()")
           await wait(a, "!document.querySelector('.typing-indicator')")
           await sleep(2100)
+          await input(b, ' hidden transition')
+          await has(a, guest.credentials.username + ' is typing')
+          await setRealtimeVisibility(browser, b.session, true)
+          await wait(a, "!document.querySelector('.typing-indicator')")
+          await sleep(2100)
+          await setRealtimeVisibility(browser, b.session, false)
+          await wait(b, "!!document.querySelector('.composer textarea:not(:disabled)')")
+          assert.equal(await ev(a, "!!document.querySelector('.typing-indicator')"), false)
+          await input(b, ' restored input')
+          await has(a, guest.credentials.username + ' is typing')
+          await ev(b, "document.querySelector('.composer textarea').blur()")
+          await wait(a, "!document.querySelector('.typing-indicator')")
+          await sleep(2100)
           rawSocket = new WebSocket(
             apiOrigin.replace('http:', 'ws:') +
               '/api/v1/ws?token=' +
@@ -180,7 +197,8 @@ export async function realtimeLocalMain({
           await wait(a, "!document.body.textContent.includes('Realtime revised local target')")
         })
         await record('foreground fresh snapshot and offline recovery', async () => {
-          await ev(a, "document.dispatchEvent(new Event('visibilitychange'))")
+          await setRealtimeVisibility(browser, a.session, true)
+          await setRealtimeVisibility(browser, a.session, false)
           await has(a, '2 online')
           await browser.command(
             'Network.emulateNetworkConditions',

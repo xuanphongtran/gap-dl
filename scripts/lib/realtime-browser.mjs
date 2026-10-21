@@ -212,3 +212,15 @@ export async function openRealtimePage({ browser, appOrigin, apiOrigin, frontend
     },
   }
 }
+
+export async function setRealtimeVisibility(browser, session, hidden) {
+  const { targetInfo } = await browser.command('Target.getTargetInfo', {}, session)
+  const { windowId } = await browser.command('Browser.getWindowForTarget', {
+    targetId: targetInfo.targetId,
+  })
+  await browser.command('Browser.setWindowBounds', {
+    windowId,
+    bounds: { windowState: hidden ? 'minimized' : 'normal' },
+  })
+  await browser.waitFor(session, `document.visibilityState==='${hidden ? 'hidden' : 'visible'}'`)
+}

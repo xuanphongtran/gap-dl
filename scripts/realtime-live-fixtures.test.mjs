@@ -15,10 +15,13 @@ async function setup() {
     roomId = 0,
     failRegistration = false,
     failRoom = false,
-    failDelete = false
+    failDelete = false,
+    failMessageDelete = false,
+    nextMessage = 0
   const calls = [],
     accounts = new Map(),
-    rooms = new Map()
+    rooms = new Map(),
+    messages = new Map()
   const server = createServer(async (req, res) => {
     const path = new URL(req.url, 'http://localhost').pathname
     calls.push({ method: req.method, path })
@@ -74,6 +77,28 @@ async function setup() {
     }
     if (/^\/api\/v1\/rooms\/\d+$/.test(path))
       return reply(200, rooms.get(Number(path.split('/').at(-1))))
+    if (/^\/api\/v1\/rooms\/\d+\/messages$/.test(path) && req.method === 'POST') {
+      const message = {
+        id: ++nextMessage,
+        user_id: user.id,
+        content: body.content,
+        revision: 1,
+        deleted_at: null,
+      }
+      messages.set(message.id, message)
+      return reply(201, message)
+    }
+    if (/^\/api\/v1\/rooms\/\d+\/messages\/\d+$/.test(path) && req.method === 'DELETE') {
+      if (failMessageDelete) {
+        failMessageDelete = false
+        return reply(503, { error: 'Temporary failure' })
+      }
+      const id = Number(path.split('/').at(-1)),
+        message = messages.get(id)
+      if (!message) return reply(404)
+      messages.delete(id)
+      return reply(200, { ...message, content: '', deleted_at: '2026-10-21T00:00:00Z' })
+    }
     if (path.endsWith('/membership')) return reply(204)
     return reply(404)
   })
@@ -89,6 +114,11 @@ async function setup() {
     directory,
     apiOrigin: 'http://127.0.0.1:' + server.address().port,
     calls,
+    messageCount: () => messages.size,
+    hasAccount: (id) => [...accounts.values()].some((a) => a.id === id),
+    failMessageDeleteOnce: () => {
+      failMessageDelete = true
+    },
     failRegistration: () => {
       failRegistration = true
     },
@@ -217,4 +247,22 @@ it('rejects nonfixture message/invitation IDs and ownership transfer before any 
   ])
     await expect(f.request(actor, method, path, body)).rejects.toThrow(/fixture|retained/i)
   expect(s.calls).toHaveLength(count)
+})
+
+it('message cleanup retries through the retained owner after the guest was deleted', async () => {
+  const s = await setup(),
+    f = await prepareRealtimeFixtures(s),
+    guest = await f.createGuest()
+  await f.request(guest, 'POST', `/api/v1/rooms/${f.rooms.private.id}/messages`, {
+    content: 'Disposable',
+  })
+  s.failMessageDeleteOnce()
+  const first = await f.cleanup()
+  expect(first.unconfirmed).toBe(1)
+  expect(s.hasAccount(guest.id)).toBe(false)
+  expect(s.messageCount()).toBe(1)
+  const second = await f.cleanup()
+  expect(second.unconfirmed).toBe(0)
+  expect(s.messageCount()).toBe(0)
+  expect(s.hasAccount(f.owner.id)).toBe(true)
 })

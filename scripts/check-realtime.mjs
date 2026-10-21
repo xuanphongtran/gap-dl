@@ -9,7 +9,11 @@ import {
   startAcceptanceApp,
   withAcceptanceBrowser,
 } from './lib/acceptance-browser.mjs'
-import { openRealtimePage, startRealtimeProxy } from './lib/realtime-browser.mjs'
+import {
+  openRealtimePage,
+  startRealtimeProxy,
+  setRealtimeVisibility,
+} from './lib/realtime-browser.mjs'
 
 export const realtimeScenarios = [
   'lifecycle-retained',
@@ -165,6 +169,23 @@ export async function realtimeMain() {
                 await text(a, 'Member 2 is typing')
                 await ev(b, "document.querySelector('.composer textarea').blur()")
                 await wait(a, "!document.body.textContent.includes('is typing')")
+                await sleep(2100)
+                await input(b, ' hide')
+                await text(a, 'Member 2 is typing')
+                const startsBeforeHide = api.snapshot().commands.typing_started
+                const joinsBeforeHide = api.snapshot().commands.join
+                await setRealtimeVisibility(browser, b.session, true)
+                await wait(a, "!document.querySelector('.typing-indicator')")
+                await sleep(2100)
+                assert.equal(api.snapshot().commands.typing_started, startsBeforeHide)
+                await setRealtimeVisibility(browser, b.session, false)
+                await wait(b, "!!document.querySelector('.composer textarea:not(:disabled)')")
+                assert.ok(api.snapshot().commands.join > joinsBeforeHide)
+                assert.equal(api.snapshot().commands.typing_started, startsBeforeHide)
+                await input(b, ' resumed')
+                await text(a, 'Member 2 is typing')
+                await ev(b, "document.querySelector('.composer textarea').blur()")
+                await wait(a, "!document.querySelector('.typing-indicator')")
                 api.broadcast({
                   type: 'typing_started',
                   room_id: '7',

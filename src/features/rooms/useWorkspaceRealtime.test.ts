@@ -798,3 +798,60 @@ it('lifecycle_update_refreshes_retained_older_page_and_search without reconnect'
   expect(TestSocket.instances).toHaveLength(1)
   expect(mock.history.get.filter((c) => c.url?.endsWith('/members'))).toHaveLength(1)
 })
+
+it('repeated not_joined clears readiness during cooldown and repairs only the current room', async () => {
+  const h = setup(),
+    socket = await connected()
+  await expect.poll(() => h.context.status.value).toBe('connected')
+  socket.message(snapshot)
+  const error = JSON.stringify({
+    type: 'error',
+    room_id: '7',
+    payload: { code: 'not_joined', message: 'No subscription' },
+  })
+  socket.message(error)
+  expect(socket.sent.filter((c) => JSON.parse(c).type === 'join')).toHaveLength(2)
+  socket.message(snapshot)
+  socket.message(error)
+  expect(h.context.activity.value.phase).toBe('unknown')
+  h.context.typingInput(true)
+  expect(starts(socket)).toHaveLength(0)
+  await expect
+    .poll(() => socket.sent.filter((c) => JSON.parse(c).type === 'join').length, { timeout: 3000 })
+    .toBe(3)
+  expect(h.context.activity.value.phase).toBe('unknown')
+  socket.message(snapshot)
+  h.context.typingInput(true)
+  expect(starts(socket)).toHaveLength(1)
+  socket.message(error)
+  h.unregister()
+  h.context.registerRoom({
+    id: 8,
+    userId: 2,
+    messages: () => [],
+    setPaused: () => {},
+    applyRecovered: () => {},
+    reset: () => {},
+    onAccessLost: () => {},
+  })
+  await expect
+    .poll(
+      () =>
+        socket.sent.filter((c) => {
+          const v = JSON.parse(c)
+          return v.type === 'join' && v.room_id === '8'
+        }).length,
+    )
+    .toBe(1)
+  const previous = socket.sent.filter((c) => {
+    const v = JSON.parse(c)
+    return v.type === 'join' && v.room_id === '7'
+  }).length
+  await new Promise((r) => setTimeout(r, 2100))
+  expect(
+    socket.sent.filter((c) => {
+      const v = JSON.parse(c)
+      return v.type === 'join' && v.room_id === '7'
+    }),
+  ).toHaveLength(previous)
+})

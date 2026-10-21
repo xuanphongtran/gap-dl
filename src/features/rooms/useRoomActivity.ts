@@ -29,6 +29,8 @@ export function useRoomActivity(options: {
   let confirmed = false
   let online = new Set<number>()
   const deadlines = new Map<number, number>()
+  let repairTimer: ReturnType<typeof setTimeout> | undefined
+  let needsRepair = false
   let expiry: ReturnType<typeof setTimeout> | undefined
   let idle: ReturnType<typeof setTimeout> | undefined
   let refreshStart: ReturnType<typeof setTimeout> | undefined
@@ -85,6 +87,9 @@ export function useRoomActivity(options: {
     generation++
     version++
     confirmed = false
+    clearTimeout(repairTimer)
+    repairTimer = undefined
+    needsRepair = false
     controller?.abort()
     controller = undefined
     pending = undefined
@@ -115,6 +120,9 @@ export function useRoomActivity(options: {
         invalidate(s)
         return
       }
+      needsRepair = false
+      clearTimeout(repairTimer)
+      repairTimer = undefined
       confirmed = true
       online = new Set(snapshot.online_user_ids)
       deadlines.clear()
@@ -184,12 +192,28 @@ export function useRoomActivity(options: {
     online.clear()
     deadlines.clear()
     publish('unavailable')
+    needsRepair = confirmed
     void refresh()
+  }
+  function scheduleRepair() {
+    if (!needsRepair || !confirmed || !current() || !visible() || repairTimer || pending) return
+    const s = scope!,
+      g = generation
+    const delay = Math.max(0, Math.max(nextRead, blockedUntil) - Date.now())
+    repairTimer = setTimeout(() => {
+      repairTimer = undefined
+      if (current(s) && g === generation && needsRepair) void refresh()
+    }, delay)
   }
   function refresh(): Promise<void> {
     if (!current() || !visible()) return Promise.resolve()
     if (pending) return pending
-    if (Date.now() < Math.max(nextRead, blockedUntil)) return Promise.resolve()
+    if (Date.now() < Math.max(nextRead, blockedUntil)) {
+      scheduleRepair()
+      return Promise.resolve()
+    }
+    clearTimeout(repairTimer)
+    repairTimer = undefined
     const s = scope!,
       g = generation,
       v = version
@@ -210,12 +234,18 @@ export function useRoomActivity(options: {
           staleTime: 0,
           retry: false,
         })
-        if (!valid() || v !== version || !confirmed) return
+        if (!valid()) return
+        if (v !== version) {
+          if (state.value.phase === 'unavailable') needsRepair = confirmed
+          return
+        }
+        if (!confirmed) return
         const snapshot = parseRoomPresence(data, s.roomId)
         if (!snapshot) throw new Error('Invalid room activity')
         online = new Set(snapshot.online_user_ids)
         deadlines.clear()
         for (const id of snapshot.typing_user_ids) deadlines.set(id, Date.now() + TTL)
+        needsRepair = false
         version++
         publish('ready')
       } catch (error) {
@@ -233,6 +263,7 @@ export function useRoomActivity(options: {
         if (g === generation) {
           pending = undefined
           controller = undefined
+          scheduleRepair()
         }
       }
     })()

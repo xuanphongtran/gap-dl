@@ -251,7 +251,9 @@ export async function prepareRealtimeFixtures({ directory, apiOrigin }) {
           if (method === 'POST' && /\/messages$/.test(path) && e.resource.status === 201) {
             const id = e.resource.data.id
             if (!Number.isSafeInteger(id) || id <= 0) throw Error('Unresolved message identity')
-            const result = await raw(account, 'DELETE', path + '/' + id)
+            // The room owner can clean a journaled message after its author is revoked or deleted.
+            await verify(registry.owner)
+            const result = await raw(registry.owner, 'DELETE', path + '/' + id)
             if (result.status !== 200 || !result.data.deleted_at)
               throw Error('Message cleanup not confirmed')
           }
