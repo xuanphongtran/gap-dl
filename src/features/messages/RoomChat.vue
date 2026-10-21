@@ -10,6 +10,9 @@ import PixelButton from '../../components/base/PixelButton.vue'
 import PixelEmptyState from '../../components/base/PixelEmptyState.vue'
 import PixelField from '../../components/base/PixelField.vue'
 import MessageComposer from './MessageComposer.vue'
+import TypingIndicator from './TypingIndicator.vue'
+import RoomActivityStatus from '../rooms/RoomActivityStatus.vue'
+import type { RoomActivityState } from '../rooms/realtime-context'
 import NotificationPreferencesControl from '../notifications/NotificationPreferencesControl.vue'
 import MentionRecipientPicker from './MentionRecipientPicker.vue'
 import { useMentionSend } from './useMentionSend'
@@ -34,6 +37,7 @@ let searchScrollTop = 0
 function openSearch() {
   if (!canReadPrivateData.value || !profile.value?.id) return
   searchScrollTop = listEl.value?.scrollTop || 0
+  realtime?.stopTyping()
   searchOpen.value = true
 }
 function closeSearch(restore = true) {
@@ -80,6 +84,12 @@ const membersQuery = useQuery({
   queryKey: computed(() => queryKeys.members(roomId.value)),
   queryFn: ({ signal }) => api.members(roomId.value, signal),
   enabled: canReadPrivateData,
+})
+const activity = computed<RoomActivityState>(() => {
+  const current = realtime?.activity.value
+  return canReadPrivateData.value && membersQuery.data.value && current?.roomId === roomId.value
+    ? current
+    : { roomId: roomId.value, phase: 'unknown', onlineUserIds: [], typingUserIds: [] }
 })
 const profileQuery = useQuery({
   queryKey: queryKeys.profile,
@@ -595,6 +605,17 @@ function formatDate(value: string) {
         year: 'numeric',
       }).format(date)
 }
+watch(
+  [canReadPrivateData, searchOpen, sending, () => mentionSend.locked.value],
+  ([allowed, search, busy, locked]) => {
+    if (!allowed || search || busy || locked) realtime?.stopTyping()
+  },
+  { flush: 'sync' },
+)
+function typingInput(hasText: boolean) {
+  if (canReadPrivateData.value && !searchOpen.value && !sending.value && !mentionSend.locked.value)
+    realtime?.typingInput(hasText)
+}
 </script>
 
 <template>
@@ -808,6 +829,12 @@ function formatDate(value: string) {
             {{ file.filename }}
           </li>
         </ul>
+        <TypingIndicator
+          v-if="!searchOpen && profile?.id"
+          :activity="activity"
+          :members="members"
+          :user-id="profile.id"
+        />
         <MessageComposer
           v-model="draft"
           :disabled="!isMember || realtimePaused"
@@ -821,6 +848,8 @@ function formatDate(value: string) {
           :cooldown-seconds="mentionSend.cooldownSeconds.value"
           :error="mentionSend.error.value || visibleError || ''"
           @send="send"
+          @activity="typingInput"
+          @activity-stop="realtime?.stopTyping()"
         />
       </section>
 
@@ -837,13 +866,22 @@ function formatDate(value: string) {
           :enabled="canReadPrivateData"
           @access-lost="loseRoomAccess"
         />
-        <p class="muted panel-subtitle">{{ members.length }} people in this room</p>
+        <p class="muted panel-subtitle">
+          {{ members.length }} people in this room ·
+          <RoomActivityStatus :activity="activity" :members="members" :user-id="profile?.id" />
+        </p>
         <div class="member-list">
           <div v-for="member in members" :key="member.user_id" class="member-row">
             <PixelAvatar :name="member.username" />
             <div class="member-info">
               <strong>{{ member.username }}</strong
-              ><small>{{ member.role }}</small>
+              ><small
+                >{{ member.role }} ·
+                <RoomActivityStatus
+                  :activity="activity"
+                  :members="members"
+                  :member-id="member.user_id"
+              /></small>
             </div>
             <details
               v-if="

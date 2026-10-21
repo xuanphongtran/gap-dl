@@ -117,3 +117,64 @@ it('processing_blocks_enter_without_locking_caption', async () => {
     app.unmount()
   }
 })
+
+it('emits activity only from enabled native input and stops on blur, send and IME end', async () => {
+  const draft = ref('restored'),
+    locked = ref(false),
+    activity = vi.fn(),
+    stop = vi.fn(),
+    send = vi.fn(),
+    host = document.createElement('div')
+  const app = createApp({
+    render: () =>
+      h(MessageComposer, {
+        modelValue: draft.value,
+        disabled: false,
+        sending: false,
+        locked: locked.value,
+        error: '',
+        'onUpdate:modelValue': (v) => {
+          draft.value = v
+        },
+        onActivity: activity,
+        onActivityStop: stop,
+        onSend: send,
+      }),
+  })
+  app.mount(host)
+  try {
+    const t = host.querySelector('textarea')!
+    t.dispatchEvent(new Event('focus'))
+    draft.value = 'programmatic'
+    await nextTick()
+    expect(activity).not.toHaveBeenCalled()
+    t.value = 'actual'
+    t.dispatchEvent(new Event('input'))
+    await nextTick()
+    expect(activity).toHaveBeenCalledWith(true)
+    t.dispatchEvent(new CompositionEvent('compositionstart'))
+    t.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Enter',
+        isComposing: true,
+        bubbles: true,
+        cancelable: true,
+      }),
+    )
+    expect(send).not.toHaveBeenCalled()
+    t.dispatchEvent(new CompositionEvent('compositionend'))
+    expect(stop).toHaveBeenCalledOnce()
+    t.dispatchEvent(new Event('blur'))
+    expect(stop).toHaveBeenCalledTimes(2)
+    t.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
+    expect(send).toHaveBeenCalledOnce()
+    expect(stop).toHaveBeenCalledTimes(3)
+    locked.value = true
+    await nextTick()
+    activity.mockClear()
+    t.dispatchEvent(new Event('input'))
+    expect(activity).not.toHaveBeenCalled()
+  } finally {
+    app.unmount()
+  }
+})

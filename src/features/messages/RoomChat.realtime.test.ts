@@ -114,6 +114,12 @@ const msgEvent = JSON.stringify({
     username: 'owner',
     content: 'not authoritative',
     created_at: '2026-10-14T00:00:00Z',
+    room_id: 7,
+    revision: 1,
+    edited_at: null,
+    deleted_at: null,
+    mention_user_ids: [],
+    attachments: [],
   },
 })
 it('refreshes the rendered message before the polling interval', async () => {
@@ -168,6 +174,12 @@ it('gates recovery without losing the composer draft or scroll position', async 
       role: 'member',
       created_by: 1,
       created_at: '2026-10-14T00:00:00Z',
+      room_id: 7,
+      revision: 1,
+      edited_at: null,
+      deleted_at: null,
+      mention_user_ids: [],
+      attachments: [],
     },
   ])
   await expect.poll(() => host.textContent).toContain('Private 1')

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseRealtimeFrame, websocketURL } from './realtime'
+import { parseRealtimeFrame, parseRoomPresence, websocketURL } from './realtime'
 
 const removed = {
   type: 'membership_changed',
@@ -41,7 +41,7 @@ describe('realtime protocol', () => {
       ).malformed,
     ).toBe(true)
   })
-  it('recognizes undocumented events without accepting their payload', () => {
+  it('isolates invalid activity without retaining its payload', () => {
     expect(
       parseRealtimeFrame(
         JSON.stringify({
@@ -51,8 +51,9 @@ describe('realtime protocol', () => {
         }),
       ),
     ).toEqual({
-      events: [{ type: 'unknown', roomId: 7 }],
+      events: [],
       malformed: false,
+      invalidActivityRooms: [7],
     })
   })
   it('validates documented messages, invitations, notifications and errors', () => {
@@ -66,6 +67,12 @@ describe('realtime protocol', () => {
           username: 'guest',
           content: 'hello',
           created_at: '2026-10-14T00:00:00Z',
+          room_id: 7,
+          revision: 1,
+          edited_at: null,
+          deleted_at: null,
+          mention_user_ids: [],
+          attachments: [],
         },
       },
       {
@@ -102,4 +109,148 @@ it('does not coerce membership action or role arrays into valid strings', () => 
   ]) {
     expect(parseRealtimeFrame(JSON.stringify({ ...removed, payload })).malformed).toBe(true)
   }
+})
+
+const dto = {
+  id: 9,
+  room_id: 7,
+  user_id: null,
+  username: 'Deleted user',
+  content: '',
+  created_at: '2026-10-20T00:00:00Z',
+  revision: 2,
+  edited_at: null,
+  deleted_at: null,
+  mention_user_ids: [],
+  attachments: [],
+}
+it.each(['message', 'message_updated', 'message_deleted'] as const)(
+  'validates %s nullable author DTO and returns safe hint only',
+  (type) => {
+    const payload = {
+      ...dto,
+      ...(type === 'message_deleted' ? { deleted_at: '2026-10-20T01:00:00Z' } : {}),
+    }
+    const parsed = parseRealtimeFrame(JSON.stringify({ type, room_id: '7', payload }))
+    expect(parsed).toEqual({
+      events: [{ type, roomId: 7, payload: { id: 9, revision: 2 } }],
+      malformed: false,
+    })
+    expect(JSON.stringify(parsed)).not.toMatch(/username|content|attachments|created_at/)
+  },
+)
+it.each([
+  { room_id: 8 },
+  { revision: undefined },
+  { revision: 0 },
+  { id: 9007199254740992 },
+  { created_at: 'yesterday' },
+  { edited_at: 'not-date' },
+  { mention_user_ids: [0] },
+  { attachments: undefined },
+])('rejects invalid lifecycle fields %j', (patch) => {
+  expect(
+    parseRealtimeFrame(
+      JSON.stringify({ type: 'message_updated', room_id: '7', payload: { ...dto, ...patch } }),
+    ).malformed,
+  ).toBe(true)
+})
+it('rejects nonempty tombstones and malformed file metadata', () => {
+  for (const payload of [
+    { ...dto, content: 'erased' },
+    { ...dto, attachments: [{ id: 10 }] },
+  ])
+    expect(
+      parseRealtimeFrame(
+        JSON.stringify({
+          type: 'message_deleted',
+          room_id: '7',
+          payload: { ...payload, deleted_at: '2026-10-20T01:00:00Z' },
+        }),
+      ).malformed,
+    ).toBe(true)
+})
+it('validates and projects presence snapshots for HTTP and WS', () => {
+  const p = { room_id: '7', online_user_ids: [3, 2], typing_user_ids: [2], private: 'ignored' }
+  expect(parseRoomPresence(p, 7)).toEqual({
+    room_id: '7',
+    online_user_ids: [2, 3],
+    typing_user_ids: [2],
+  })
+  expect(parseRoomPresence({ ...p, room_id: '8' }, 7)).toBeNull()
+  expect(parseRoomPresence({ ...p, online_user_ids: [2, 2] }, 7)).toBeNull()
+  expect(parseRoomPresence({ ...p, typing_user_ids: [0] }, 7)).toBeNull()
+  expect(
+    parseRealtimeFrame(JSON.stringify({ type: 'presence_snapshot', room_id: '7', payload: p }))
+      .events[0],
+  ).toEqual({ type: 'presence_snapshot', roomId: 7, payload: parseRoomPresence(p, 7) })
+})
+it('validates presence and typing payloads, keeping bad activity isolated from durable recovery', () => {
+  const frame = [
+    { type: 'presence', room_id: '7', payload: { user_id: 2, online: true } },
+    {
+      type: 'typing_started',
+      room_id: '7',
+      payload: { user_id: 2, expires_at: '2026-10-20T00:00:05Z' },
+    },
+    { type: 'typing_stopped', room_id: '7', payload: { user_id: 2, expires_at: null } },
+  ]
+    .map((x) => JSON.stringify(x))
+    .join('\n')
+  expect(parseRealtimeFrame(frame).events.map((e) => e.type)).toEqual([
+    'presence',
+    'typing_started',
+    'typing_stopped',
+  ])
+  const malformed = parseRealtimeFrame(
+    JSON.stringify({
+      type: 'typing_stopped',
+      room_id: '7',
+      payload: { user_id: 2, expires_at: 'invalid' },
+    }) +
+      '\n' +
+      JSON.stringify(removed),
+  )
+  expect(malformed).toEqual({
+    events: [{ type: 'membership_changed', roomId: 7, payload: removed.payload }],
+    malformed: false,
+    invalidActivityRooms: [7],
+  })
+})
+it.each(['not_joined', 'authorization_pending', 'rate_limited'])(
+  'recognizes safe activity protocol error %s',
+  (code) => {
+    expect(
+      parseRealtimeFrame(
+        JSON.stringify({
+          type: 'error',
+          room_id: '7',
+          payload: { code, message: 'private-detail' },
+        }),
+      ),
+    ).toEqual({ events: [{ type: 'error', roomId: 7, payload: { code } }], malformed: false })
+  },
+)
+
+it('accepts a full nullable-author file-only lifecycle DTO but retains only its revision hint', () => {
+  const payload = {
+    ...dto,
+    attachments: [
+      {
+        id: 12,
+        filename: 'file.txt',
+        content_type: 'text/plain',
+        size_bytes: 4,
+        sha256: 'a'.repeat(64),
+        verified: true,
+        download_url: 'never-retain',
+      },
+    ],
+  }
+  expect(
+    parseRealtimeFrame(JSON.stringify({ type: 'message_updated', room_id: '7', payload })),
+  ).toEqual({
+    events: [{ type: 'message_updated', roomId: 7, payload: { id: 9, revision: 2 } }],
+    malformed: false,
+  })
 })

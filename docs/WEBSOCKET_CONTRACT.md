@@ -1,9 +1,23 @@
 # WebSocket contract and verification
 
+**Local activity protocol verified (2026-10-20):** [Seventeen real-BE checks](./evidence/realtime-activity-contract-2026-10-20.json) pass on port8080: authorized/forbidden joins, typed initial/duplicate-join snapshots, first/last-tab presence, typing refresh/stop/TTL and controlled rate-limit errors. Owner3 and rooms1(public)/2(private) are intentionally retained by approval; disposable guests4/5 were deleted. This pins the written BE spec07 behavior despite AsyncAPI publication drift; frontend activity and typed lifecycle completion have [dated local/native acceptance with the post-review BE rerun gate](./REALTIME_COMPLETION_ACCEPTANCE_2026-10-21.md). Private reusable registry: `/tmp/gogo-realtime-phase5-R946Zj/registry.json`.
+
+**Local contract recheck (2026-10-20):** Local port 8080 AsyncAPI SHA-256 is `f9d402402bdacad3ff032110c587fb6b678d2dd36f49f034cc171adbb5494626`. It now publishes `message_updated`/`message_deleted` with full Message revision/tombstone and typed attachment metadata, superseding the earlier lifecycle absence below. Presence/typing/read-state remain absent from AsyncAPI; presence/typing have a written BE contract in `spec/07-presence-read-state.md` at source `e8f7041`. The subsequent authenticated activity probe above confirms runtime behavior. [Evidence](./evidence/realtime-phase5-recheck-2026-10-20.json) and [approved design](./superpowers/specs/2026-10-20-realtime-completion-design.md) distinguish documented support from runtime acceptance. Further Phase 4 work is pending by user instruction.
+
 **Hosted continuation (2026-10-16):** [Sandbox release acceptance](./SANDBOX_RELEASE_ACCEPTANCE_2026-10-16.md) closes the named sandbox's WebSocket multi-tab/reconnect and Mentions/Inbox deployment gates with native browser evidence. Earlier deployment limitations below are historical. Attachments and operational/distributed gates remain open.
 
 
 Reviewed on 2026-10-14 against [AsyncAPI UI](https://gogo-dl.onrender.com/asyncapi/) and [YAML](https://gogo-dl.onrender.com/asyncapi/asyncapi.yaml), AsyncAPI 3.0.0 / API 1.0.0. This release uses events to reconcile durable REST state; it does not replace the REST write path.
+
+## Completion behavior — 2026-10-20
+
+`message`, `message_updated` and `message_deleted` require a matching full Message DTO, safe IDs/revision, nullable author, timestamps and typed arrays. The parser retains only ID/revision hints. Update/delete refresh retained history and invalidate Search; no raw event text/files enter durable state. Malformed activity is isolated from durable recovery, while revocation still wins within a batch.
+
+`presence_snapshot` is `{room_id:string,online_user_ids:number[],typing_user_ids:number[]}` with distinct positive IDs. `presence` contains `{user_id,online}`; typing events contain `{user_id,expires_at}` with a valid start deadline or null stop. Commands contain only type and string room ID. The current socket's snapshot confirms subscription; full recovery sends one authorized duplicate join. HTTP repair cannot establish first confirmation. Local generations/event versions reject old reads and frames. Same-token reconnect has a distinct actual connection epoch.
+
+Typing starts/refreshes at most once per 2000ms, including room changes on the same connection; idle stop is 1500ms and visible deadlines are capped at 5000ms. Actual input is required after a recovery. Activity updates do not fetch history/member/read-state on each keystroke. `not_joined` clears readiness and performs a guarded rejoin; authorization-pending/rate feedback is handled locally. Forbidden/revoked still clears private state. REST read-state behavior and five-second polling remain.
+
+The historical 2026-10-14 protocol inventory below describes the first slice. This completion supersedes its presence/lifecycle deferrals only for the locally verified scope. AsyncAPI publication, selected-host rollout, SSE and cross-node guarantees are separate gates.
 
 ## Transport and authentication
 

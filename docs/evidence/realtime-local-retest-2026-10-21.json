@@ -1,0 +1,10 @@
+{
+  "status": "blocked-before-mutations",
+  "reason": "Existing private reusable registry and journals unavailable after session continuation",
+  "healthStatus": 200,
+  "backendSource": "e8f704179367cb80c72f9571fb477df725c4f42e",
+  "asyncApiSha256": "f9d402402bdacad3ff032110c587fb6b678d2dd36f49f034cc171adbb5494626",
+  "newFixtureMutations": 0,
+  "retainedResourcesRecreated": false,
+  "previousAcceptance": "realtime-local-native-2026-10-20.json"
+}

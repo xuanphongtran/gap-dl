@@ -114,6 +114,12 @@ const msgEvent = JSON.stringify({
     username: 'owner',
     content: 'not authoritative',
     created_at: '2026-10-14T00:00:00Z',
+    room_id: 7,
+    revision: 1,
+    edited_at: null,
+    deleted_at: null,
+    mention_user_ids: [],
+    attachments: [],
   },
 })
 
@@ -326,7 +332,7 @@ it('refreshes Search from an undocumented reconciliation hint and ignores other-
   await nextTick()
   expect(mock.history.get.filter((c) => c.url?.endsWith('/search'))).toHaveLength(count)
   mock.onGet('/api/v1/rooms/7/messages/search').reply(200, { messages: [], next_before: null })
-  socket.message(JSON.stringify({ type: 'presence_snapshot', room_id: '7', payload: {} }))
+  socket.message(JSON.stringify({ type: 'future_durable_hint', room_id: '7', payload: {} }))
   await expect
     .poll(() => host.querySelector('.room-search')?.textContent)
     .toContain('No matching messages')
@@ -406,7 +412,8 @@ it('revalidates a changed query after paginated results and a bubbling foregroun
   visibility.mockReturnValue('visible')
   document.dispatchEvent(new Event('visibilitychange', { bubbles: true }))
   setTimeout(
-    () => socket.message(JSON.stringify({ type: 'presence_snapshot', room_id: '7', payload: {} })),
+    () =>
+      socket.message(JSON.stringify({ type: 'future_durable_hint', room_id: '7', payload: {} })),
     50,
   )
   await expect

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import MockAdapter from 'axios-mock-adapter'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { request } from './api'
+import { api, request } from './api'
 import { ApiError, errorMessage, http, publicHttp } from './http'
 import { clearSession, readSession, saveSession } from './session'
 
@@ -192,4 +192,13 @@ describe('notification contracts', () => {
       ['/api/v1/users/me/notifications/9/read', undefined],
     ])
   })
+})
+
+it('reads presence through authenticated transport with AbortSignal', async () => {
+  const data = { room_id: '7', online_user_ids: [1], typing_user_ids: [] },
+    controller = new AbortController()
+  privateMock.onGet('/api/v1/rooms/7/presence').reply(200, data)
+  expect(await api.presence(7, controller.signal)).toEqual(data)
+  expect(privateMock.history.get[0]!.signal).toBe(controller.signal)
+  expect(privateMock.history.get[0]!.headers?.Authorization).toBe('Bearer old')
 })

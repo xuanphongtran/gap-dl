@@ -1152,3 +1152,14 @@ a:hover {
 .pending-attachments {
   padding: 0 16px;
 }
+
+.room-activity,
+.typing-indicator {
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.typing-indicator {
+  margin: 0;
+  padding: 4px 16px;
+  font-size: 0.8rem;
+}

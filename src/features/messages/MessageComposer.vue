@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import PixelAlert from '../../components/base/PixelAlert.vue'
 import PixelButton from '../../components/base/PixelButton.vue'
 import { MAX_MESSAGE_BYTES, messageContentBytes } from '../../lib/messages'
@@ -16,7 +16,17 @@ const props = withDefaults(
   }>(),
   { cooldownSeconds: 0 },
 )
-const emit = defineEmits<{ 'update:modelValue': [value: string]; send: [] }>()
+const emit = defineEmits<{
+  'update:modelValue': [value: string]
+  send: []
+  activity: [hasText: boolean]
+  activityStop: []
+}>()
+const composing = ref(false)
+const editable = computed(() => !props.disabled && !props.sending && !props.locked)
+watch(editable, (enabled) => {
+  if (!enabled) emit('activityStop')
+})
 const contentBytes = computed(() => messageContentBytes(props.modelValue))
 const overLimit = computed(() => contentBytes.value > MAX_MESSAGE_BYTES)
 const blocked = computed(
@@ -30,11 +40,36 @@ const blocked = computed(
     !!props.blockedReason,
 )
 function send() {
-  if (!blocked.value) emit('send')
+  if (!blocked.value && !composing.value) {
+    emit('activityStop')
+    emit('send')
+  }
+}
+function keydown(event: KeyboardEvent) {
+  if (
+    event.key !== 'Enter' ||
+    event.shiftKey ||
+    event.ctrlKey ||
+    event.altKey ||
+    event.metaKey ||
+    event.isComposing ||
+    composing.value ||
+    event.keyCode === 229
+  )
+    return
+  event.preventDefault()
+  send()
 }
 
+function compositionEnd() {
+  composing.value = false
+  emit('activityStop')
+}
 function update(event: Event) {
-  emit('update:modelValue', (event.target as HTMLTextAreaElement).value)
+  if (!editable.value) return
+  const value = (event.target as HTMLTextAreaElement).value
+  emit('update:modelValue', value)
+  emit('activity', !!value.trim())
 }
 </script>
 
@@ -57,7 +92,10 @@ function update(event: Event) {
         :aria-invalid="overLimit || undefined"
         :aria-describedby="overLimit ? 'message-size-error' : undefined"
         @input="update"
-        @keydown.enter.exact.prevent="send"
+        @keydown="keydown"
+        @blur="emit('activityStop')"
+        @compositionstart="composing = true"
+        @compositionend="compositionEnd"
       ></textarea>
       <PixelButton
         variant="primary"

@@ -1,0 +1,201 @@
+{
+  "apiOrigin": "http://127.0.0.1:8080",
+  "origin": "http://localhost:3000",
+  "startedAt": "2026-10-20T09:45:20.429Z",
+  "passed": true,
+  "activitySupported": true,
+  "checks": [
+    {
+      "name": "local /health",
+      "passed": true
+    },
+    {
+      "name": "local /readyz",
+      "passed": true
+    },
+    {
+      "name": "local /swagger/doc.json",
+      "passed": true
+    },
+    {
+      "name": "local /asyncapi/asyncapi.yaml",
+      "passed": true
+    },
+    {
+      "name": "public nonmember presence403 and private404",
+      "passed": true
+    },
+    {
+      "name": "unauthorized websocket join denied",
+      "passed": true
+    },
+    {
+      "name": "fixture public join and private invite acceptance",
+      "passed": true
+    },
+    {
+      "name": "initial owner snapshot matches typed contract",
+      "passed": true
+    },
+    {
+      "name": "first guest subscription emits online and snapshot",
+      "passed": true
+    },
+    {
+      "name": "second tab is aggregated once and first close stays online",
+      "passed": true
+    },
+    {
+      "name": "last guest tab close emits offline",
+      "passed": true
+    },
+    {
+      "name": "duplicate join returns a fresh snapshot",
+      "passed": true
+    },
+    {
+      "name": "typing start has user identity and five-second deadline",
+      "passed": true
+    },
+    {
+      "name": "controlled repeated start is rate_limited",
+      "passed": true
+    },
+    {
+      "name": "typing refresh extends deadline and explicit stop uses null",
+      "passed": true
+    },
+    {
+      "name": "typing expires without a client stop",
+      "passed": true
+    },
+    {
+      "name": "private leave revokes presence and typing access",
+      "passed": true
+    }
+  ],
+  "swaggerSha256": "176cf2df1f586bc16c2336241f9b4bd15731ce5a92527effcd6c9351420ad9de",
+  "asyncapiSha256": "f9d402402bdacad3ff032110c587fb6b678d2dd36f49f034cc171adbb5494626",
+  "cleanup": {
+    "confirmed": 10,
+    "unconfirmed": 0,
+    "errors": 0
+  },
+  "httpChecks": [
+    {
+      "method": "GET",
+      "path": "/api/v1/users/me",
+      "status": 200,
+      "requestId": "2439b7f3ac5687f0711a9060d9fdb395"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/rooms/:id",
+      "status": 200,
+      "requestId": "395871ff857bb47286f5df5b325d8152"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/rooms/:id",
+      "status": 200,
+      "requestId": "4a561bb398085eb5dd64d7f9c9f4674c"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/register",
+      "status": 201,
+      "requestId": "ff468f107c48ded1fb2186d551807d52"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/users/me",
+      "status": 200,
+      "requestId": "786436dd4221f341fca1106d904ba01d"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/rooms/:id/presence",
+      "status": 403,
+      "requestId": "533cfcf2f2b5cf832c4414b44ca8b137"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/rooms/:id/presence",
+      "status": 404,
+      "requestId": "a3d974b3a57e763e802a9efe5b772719"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/rooms/:id/join",
+      "status": 200,
+      "requestId": "855a543519d7d8686f983d650fb314c4"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/rooms/:id/invitations",
+      "status": 201,
+      "requestId": "d44931a4d8977fad45b478545705aad5"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/invitations/:id/accept",
+      "status": 200,
+      "requestId": "dfbd05c2737e24d8463da37967ec8da9"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/rooms/:id/presence",
+      "status": 200,
+      "requestId": "5205e8a417dd204fd431930690cb86fe"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/rooms/:id/membership",
+      "status": 204,
+      "requestId": "657bf2f142d5c9b913b17778f909440e"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/rooms/:id/presence",
+      "status": 404,
+      "requestId": "18f4618c8f577d5d6eda6ec53128eed6"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/users/me",
+      "status": 200,
+      "requestId": "181fe691a84d8482b54770b8767b5059"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/users/me",
+      "status": 204,
+      "requestId": "22c9bdd1ffe5b69d571a76f9428c315c"
+    }
+  ],
+  "cleanupChecks": [
+    {
+      "kind": "guest",
+      "id": 5,
+      "status": 204
+    }
+  ],
+  "retained": [
+    {
+      "kind": "owner",
+      "id": 3,
+      "status": "retained"
+    },
+    {
+      "kind": "room",
+      "id": 1,
+      "status": "retained"
+    },
+    {
+      "kind": "room",
+      "id": 2,
+      "status": "retained"
+    }
+  ],
+  "finishedAt": "2026-10-20T09:45:29.637Z"
+}
