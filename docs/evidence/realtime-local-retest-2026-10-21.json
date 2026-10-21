@@ -6,5 +6,7 @@
   "asyncApiSha256": "f9d402402bdacad3ff032110c587fb6b678d2dd36f49f034cc171adbb5494626",
   "newFixtureMutations": 0,
   "retainedResourcesRecreated": false,
-  "previousAcceptance": "realtime-local-native-2026-10-20.json"
+  "previousAcceptance": "realtime-local-native-2026-10-20.json",
+  "resolvedBy": "realtime-local-native-2026-10-21.json",
+  "replacementApprovedByUser": true
 }

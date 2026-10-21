@@ -65,3 +65,7 @@ Local real-BE acceptance then covers two users and multiple tabs, online aggrega
 Record source/contract hashes, actual observed wire contracts, checks and fixture retention/cleanup separately. Update Phase 5 checkboxes only for demonstrated scope; move distributed/operational follow-ups to their existing Phase 7 gate. Mark Phase 4 follow-up work pending per the user's instruction without undoing already completed functionality. Keep the current feature branch local; no push, merge, deployment, backend restart, migration or global security setting change is authorized here.
 
 The concrete implementation plan preserves the established inline execution preference. The user approved this spec. The [implementation plan](../plans/2026-10-20-realtime-completion.md) is ready for review; no product source has changed.
+
+## User-approved fixture replacement — 2026-10-21
+
+The original private `/tmp` registry/journals were lost after session continuation. The user explicitly approved creating a replacement retained owner and public/private rooms. Replacement owner9/rooms3/4 are retained; guest10 and all52 temporary journal entries were cleaned after the post-review native7/7 pass. Store and reuse the replacement registry in an owner-only, git-ignored workspace directory outside disposable plan scratch. Original owner3/rooms1/2 remain unreconciled and untouched, not classified as cleaned. This explicit approval supersedes reuse of the lost registry; it does not authorize automatic fixture duplication after future registry loss.

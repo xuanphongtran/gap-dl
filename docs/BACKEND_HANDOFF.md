@@ -77,6 +77,6 @@ Owners and completion dates are not assigned in this repository. Close each item
 - [ ] Accept the new frontend bundle on the selected deployment origin; earlier hosted evidence does not cover it.
 - [ ] Verify distributed/cross-node/SSE behavior through its own contract and rollout. Local process success is not evidence for those guarantees.
 
-Post-review follow-up (2026-10-21): health returns 200 and source/AsyncAPI hash remain unchanged, but the private reusable registry/journals are unavailable after session continuation. Restore that registry before rerunning the updated native local acceptance. No retained owner/rooms were recreated. The earlier real-BE pass remains dated 2026-10-20.
+Post-review follow-up closed (2026-10-21): health/source/AsyncAPI remain unchanged. After the original registry was lost, the user explicitly approved replacement fixtures. Native local7/7 passes on the reviewed build, including actual hide/restore, using retained owner9/rooms3/4. Guest10 was deleted204 and all52 temporary journal entries are cleaned. The replacement registry is private and git-ignored in the workspace, outside disposable scratch. Original owner3/rooms1/2 remain unreconciled and were not mutated; reconcile them separately rather than claiming cleanup.
 
 Further Phase 4 work remains pending. Attachment storage/provider acceptance retains its separate gate.
