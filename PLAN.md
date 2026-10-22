@@ -174,6 +174,18 @@ Keep endpoint functions in `src/lib/api.ts`, Axios transport in `src/lib/http.ts
 
 **Exit gate:** The frontend works through expected backend failures. Any real-time scale claim has measured two-instance evidence from the backend rollout.
 
+## 8. Release candidate stability — proposed
+
+Preparation is recorded in [Phase8 scope and exit criteria](./docs/PHASE_8_PREPARATION.md). `develop` now contains the Phase5–7 follow-up through PR17 (`b58254e`). The proposed next work is reliable fixture ownership, history-timeout diagnosis, production-build local smoke and repeatable release evidence. This is a proposal for scope review, not an approved implementation plan.
+
+- [ ] Confirm the Phase8 objective and review its implementation design/plan before code changes.
+- [ ] Prevent concurrent live runners from deleting each other’s disposable fixtures.
+- [ ] Diagnose the recorded history pagination timeout and add a regression for its established cause.
+- [ ] Verify the exact production build against local8080 with bounded native desktop/mobile/privacy checks.
+- [ ] Record repeatable release checks, artifact identity, cleanup and independent review.
+
+Broker/cross-node remains pending by user instruction. Hosted runtime, AsyncAPI publication, physical R2 cleanup/quota and real operational/production measurements retain their existing external gates.
+
 ## Delivery order
 
 ```text
