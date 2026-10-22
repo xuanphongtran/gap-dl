@@ -26,7 +26,9 @@ The latest reviewed operation matrix and unresolved runtime checks are in [docs/
 
 **Phase 5 completion (2026-10-21):** Typed lifecycle reconciliation and scoped room presence/typing are implemented and independently reviewed on `feat/realtime-completion`. Repository checks pass335/335; native synthetic8/8 and post-review local-BE7/7 pass. [Acceptance](./docs/REALTIME_COMPLETION_ACCEPTANCE_2026-10-21.md) records actual hide/restore, fixture replacement approved after registry loss, cleanup and remaining host/publication/Phase7 gates. Further Phase4 work remains pending.
 
-**Local attachment retest (2026-10-22):** The backend configuration update restores real upload/scanning. [Acceptance](./docs/ATTACHMENTS_LOCAL_ACCEPTANCE_2026-10-22.md) records seven passing API/provider groups, native R2 CORS/download, binding/retry/history/Search and membership/tombstone denial. [Release preflight](./docs/RELEASE_PREFLIGHT_2026-10-22.md) confirms matching hosted assets and route fallback only. Continue locally by user instruction; Four native product picker/send/download/mobile checks also pass. Extended live edge cases, host and operational gates remain separately tracked.
+**Local attachment retest (2026-10-22):** The backend configuration update restores real upload/scanning. [Acceptance](./docs/ATTACHMENTS_LOCAL_ACCEPTANCE_2026-10-22.md) records seven passing API/provider groups, native R2 CORS/download, binding/retry/history/Search and membership/tombstone denial. [Release preflight](./docs/RELEASE_PREFLIGHT_2026-10-22.md) confirms matching hosted assets and route fallback only. Continue locally by user instruction. Four native product picker/send/download/mobile checks also pass. Extended live edge cases, host and operational gates remain separately tracked.
+
+**Phase 4 resumed (2026-10-22):** User resumes read-state/unread acceptance. [Current local evidence](./docs/READ_STATE_LOCAL_ACCEPTANCE_2026-10-22.md) passes ten API/wire/native groups and 40 focused tests. No product fix was needed; selected-host and Phase7 operational gates remain separate.
 
 ## 0. Frontend source and component foundation — P0, implement first
 
@@ -103,7 +105,7 @@ Keep endpoint functions in `src/lib/api.ts`, Axios transport in `src/lib/http.ts
 
 ## 4. Durable read state and unread counts — P1
 
-**Further Phase 4 work is pending by user instruction (2026-10-20).** Existing behavior and earlier evidence below are preserved. Phase 5 does not close additional read-state acceptance.
+**Resumed and locally accepted (2026-10-22).** The user resumed Phase 4 after attachment acceptance commit `1332e80`. [Ten fresh live groups](./docs/READ_STATE_LOCAL_ACCEPTANCE_2026-10-22.md) pass against local8080, including native visibility, two-context convergence/reload, injected failure/explicit retry, rapid navigation, revocation and logout. Existing implementation needs no product change. Selected-host functional acceptance remains separate under the local-only instruction.
 
 **Dependency:** The Swagger-documented GET/PUT read-state DTO and cursor semantics are verified with test accounts. This slice does not require WebSocket.
 
@@ -112,6 +114,8 @@ Keep endpoint functions in `src/lib/api.ts`, Axios transport in `src/lib/http.ts
 - [x] Clear read state on logout, account switch, and membership loss. Existing account-switch tests and the sandbox browser removal/logout checks verify cleanup. Browser reload, two-tab convergence after foregrounding, and explicit retry after an injected failed write passed on 2026-10-13.
 - [x] Complete deterministic rapid-room-switch and overlapping-write checks. Eight mounted-composable tests exercise real Vue Query, Axios cancellation, viewport measurement, and debounce behavior. Temporary removal of cancellation/generation protection and monotonic merging causes the expected failures; production source is restored.
 - [x] Retest private-room rejoin: fresh pending invitation, denial before acceptance, restored access and hidden old feed passed on 2026-10-15; see [backend recheck](./docs/BACKEND_RECHECK_2026-10-15.md).
+
+- [x] Reaccept Phase 4 against the current local backend after Phase 5: ten API/wire/native groups and 40 focused tests pass on 2026-10-22; journals confirm cleanup. See [current evidence](./docs/READ_STATE_LOCAL_ACCEPTANCE_2026-10-22.md).
 
 **Completion record (2026-10-02):** Added room-scoped read-state queries, monotonic cursor merging, a debounced visible-message acknowledgement, membership revocation cleanup, and server-backed unread badges. The deployed two-account smoke verified own-message exclusion, tombstones counting by ID, monotonic stale writes, duplicate acknowledgement, membership denial, and cleanup of disposable accounts. Local checks cover cursor merging and API payloads; browser multi-tab convergence and final-host CORS remain release gates.
 
@@ -172,7 +176,7 @@ Source structure + base components → Contract inventory → Hardening/membersh
                                              └───────→ Search + Mentions/Inbox (sandbox accepted)
 Next locally: Complete remaining attachment product/edge-case acceptance
 Next hosted: Working API environment → affected-flow smoke → operational evidence
-Deferred: Phase4 follow-up, SSE and distributed recovery (separate gates)
+Deferred: Hosted functional acceptance, SSE and distributed recovery (separate gates)
 ```
 
-The foundation, lifecycle, initial read state, WebSocket, Search and Mentions/Inbox slices have recorded acceptance. Phase5 presence/typing is locally accepted; further Phase4 work remains pending. Attachments frontend implementation and fresh local API/provider/privacy checks pass, including four native product checks; extended live edge cases, host and physical-cleanup gates stay explicit. The selected-host bundle matches current source, but its Render API environment is unavailable; continue against local8080 as requested. AsyncAPI publication, hosted functional acceptance and distributed/operational guarantees require separate evidence. Live writes must retain durable private cleanup journals.
+The foundation, lifecycle, initial read state, WebSocket, Search and Mentions/Inbox slices have recorded acceptance. Phase5 presence/typing is locally accepted; Phase 4 is locally reaccepted with ten fresh live groups. Attachments frontend implementation and fresh local API/provider/privacy checks pass, including four native product checks; extended live edge cases, host and physical-cleanup gates stay explicit. The selected-host bundle matches current source, but its Render API environment is unavailable; continue against local8080 as requested. AsyncAPI publication, hosted functional acceptance and distributed/operational guarantees require separate evidence. Live writes must retain durable private cleanup journals.
