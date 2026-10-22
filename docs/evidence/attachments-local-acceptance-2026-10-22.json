@@ -1,0 +1,396 @@
+{
+  "date": "2026-10-22",
+  "apiOrigin": "http://127.0.0.1:8080",
+  "frontendSource": "5cbc6ff",
+  "backendSource": "fe6ba4177216905494f9a1358b47cbfed18abaee",
+  "scope": "Real local API, real R2, native provider browser and native Vue product picker/send/download/mobile",
+  "swagger": {
+    "requiredOperations": 34,
+    "paths": 32,
+    "operations": 42,
+    "sha256": "176cf2df1f586bc16c2336241f9b4bd15731ce5a92527effcd6c9351420ad9de"
+  },
+  "uploadSmoke": {
+    "startedAt": "2026-10-22T07:47:26.703Z",
+    "checks": [
+      {
+        "name": "reservation returns a usable HTTPS ticket",
+        "pass": true
+      },
+      {
+        "name": "original-byte upload succeeds and create-only replay is rejected",
+        "pass": true
+      },
+      {
+        "name": "completion reaches ready verified metadata",
+        "pass": true
+      }
+    ],
+    "uploadStatus": 200,
+    "createOnlyStatus": 412,
+    "attachmentCancellationConfirmed": true,
+    "attachmentJournal": {
+      "confirmed": 3,
+      "unconfirmed": 0
+    },
+    "cleanupComplete": true
+  },
+  "binding": {
+    "startedAt": "2026-10-22T08:34:23.967Z",
+    "checks": [
+      {
+        "name": "Public verified upload, caption plus mention binding, canonical retry and changed-payload conflict",
+        "pass": true
+      },
+      {
+        "name": "Recipient history and Search include bound attachment metadata",
+        "pass": true
+      },
+      {
+        "name": "Recipient downloads original bytes with safe disposition and no-store",
+        "pass": true
+      },
+      {
+        "name": "Public departed member denied fresh download while owner retains access",
+        "pass": true
+      },
+      {
+        "name": "Private verified file binding and member download",
+        "pass": true
+      },
+      {
+        "name": "Private moderator can download then removed member receives concealed 404",
+        "pass": true
+      },
+      {
+        "name": "Message tombstone removes attachment access and history exposure",
+        "pass": true
+      }
+    ],
+    "http": [
+      {
+        "method": "POST",
+        "path": "/api/v1/rooms/:id/attachments/uploads",
+        "status": 201,
+        "requestId": "9231701e7106433f147fd953bf6c3a4f"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/rooms/:id/attachments/:id/complete",
+        "status": 202,
+        "requestId": "0c30f483b637f311602304583fc6bf1f"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/rooms/:id/attachments/:id",
+        "status": 200,
+        "requestId": "bef31878e5d16e101e11d206d8844136"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/rooms/:id/messages",
+        "status": 201,
+        "requestId": "3591b54a95d2ac105248646a50755aa9"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/rooms/:id/messages",
+        "status": 201,
+        "requestId": "471ff93fca11065c7d5e6f45ccc928c9"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/rooms/:id/messages",
+        "status": 409,
+        "requestId": "fe4172b5c19392999e3fb2b48ef6445a"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/rooms/:id/messages",
+        "status": 200,
+        "requestId": "d4bf1f598e350df015e94fcfbeb5c6ca"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/rooms/:id/messages/search?q=phase-six-binding",
+        "status": 200,
+        "requestId": "f1f4490357e6637905daa5f81f52877a"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/rooms/:id/messages/:id/attachments/:id/download",
+        "status": 200,
+        "requestId": "7643a7b894c182e973e28df642a9dd86"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/rooms/:id/messages/:id/attachments/:id/download",
+        "status": 403,
+        "requestId": "f4e6aa5b19eb80c98c38dad84fe3a462"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/rooms/:id/messages/:id/attachments/:id/download",
+        "status": 200,
+        "requestId": "19347edf97ba8f306d942bdf0a3eb497"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/rooms/:id/attachments/uploads",
+        "status": 201,
+        "requestId": "df6d85f0f50375be7322d8c584d70396"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/rooms/:id/attachments/:id/complete",
+        "status": 202,
+        "requestId": "07c28b4301fac5e70f9885d556dfa548"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/rooms/:id/attachments/:id",
+        "status": 200,
+        "requestId": "d127f3c4bad167731c05112f0c431c6b"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/rooms/:id/attachments/:id",
+        "status": 200,
+        "requestId": "99253e1d67f6d681d96780c02396e6f3"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/rooms/:id/messages",
+        "status": 201,
+        "requestId": "3b2ed3eb2f70bfa95baf421851031ef4"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/rooms/:id/messages",
+        "status": 201,
+        "requestId": "4a1e0944237d20bb04d698e4883fbdde"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/rooms/:id/messages",
+        "status": 409,
+        "requestId": "f66512b8e0fc7d5325bcab28b76df1c0"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/rooms/:id/messages/:id/attachments/:id/download",
+        "status": 200,
+        "requestId": "2fccd17d739d3659dd4c056eaf45c709"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/rooms/:id/messages/:id/attachments/:id/download",
+        "status": 200,
+        "requestId": "968278366825975015fa7238e6450cff"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/rooms/:id/messages/:id/attachments/:id/download",
+        "status": 404,
+        "requestId": "043e42df1dba6f549e1eba948b21c7bb"
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/v1/rooms/:id/messages/:id",
+        "status": 200,
+        "requestId": "843c2ac9a93f3af64ce9581c274e64fd"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/rooms/:id/messages/:id/attachments/:id/download",
+        "status": 404,
+        "requestId": "2da4bf796b40fddadf07d860d1988792"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/rooms/:id/messages",
+        "status": 200,
+        "requestId": "ee4221e4e47160cb88c33154c9d029d3"
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/v1/rooms/:id/messages/:id",
+        "status": 200,
+        "requestId": "cd49632f81750b9e75c5d6d420903976"
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/v1/rooms/:id/messages/:id",
+        "status": 200,
+        "requestId": "a15e4391767823ccea039f444d7a60fd"
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/v1/rooms/:id/attachments/:id",
+        "status": 204,
+        "requestId": "154e400d99ab95cd7fbc934157266da5"
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/v1/rooms/:id/messages/:id",
+        "status": 200,
+        "requestId": "1e1180803da534216f22f2a8380c1ad1"
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/v1/rooms/:id/attachments/:id",
+        "status": 204,
+        "requestId": "1f336286e6103ca6b02c7abc8a064668"
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/v1/rooms/:id/messages/:id",
+        "status": 200,
+        "requestId": "e2c358498d0b2c5fefc95a37525b2e59"
+      }
+    ],
+    "nativeUpload": {
+      "nativePut": 200,
+      "cors": "browser enforced",
+      "providerCredentials": false,
+      "origin": "http://localhost:3000"
+    },
+    "downloadHeaders": {
+      "type": "text/plain",
+      "disposition": "attachment; filename=phase-six-binding.txt",
+      "cache": "private, no-store",
+      "nosniff": null
+    },
+    "nativeDownload": {
+      "nativeDownload": true,
+      "sha256Matches": true,
+      "providerCredentials": false
+    },
+    "fixtureCleanup": {
+      "confirmed": 81,
+      "unconfirmed": 0,
+      "errors": 0
+    },
+    "retained": [
+      {
+        "kind": "owner",
+        "id": 9,
+        "status": "retained"
+      },
+      {
+        "kind": "room",
+        "id": 3,
+        "status": "retained"
+      },
+      {
+        "kind": "room",
+        "id": 4,
+        "status": "retained"
+      }
+    ],
+    "journal": {
+      "confirmed": 10,
+      "unconfirmed": 0
+    },
+    "cleanupComplete": true
+  },
+  "limits": [
+    "Signed URLs and credentials omitted. Minimal-page provider CORS evidence and the four native product UI checks are recorded separately.",
+    "Fresh ticket denial tested after leave/removal/deletion; previously issued signed links are not claimed instantly revocable.",
+    "Physical object deletion, quota release and delayed cleanup were not observed.",
+    "No antivirus guarantee; harmless TXT files only.",
+    "Earlier Render registrations and original local owner3/rooms1/2 remain separately unresolved."
+  ],
+  "health": {
+    "status": 200,
+    "data": {
+      "status": "ok",
+      "time": "2026-10-22T08:37:51.729740536Z"
+    }
+  },
+  "readyz": {
+    "status": 200,
+    "data": {
+      "ready": true
+    }
+  },
+  "productUI": {
+    "startedAt": "2026-10-22T08:39:20.142Z",
+    "checks": [
+      {
+        "name": "Native file input uploads through real R2 and reaches Ready",
+        "pass": true
+      },
+      {
+        "name": "Native caption, attachment and mention send clears the upload row",
+        "pass": true
+      },
+      {
+        "name": "Product Download control saves the original bytes",
+        "pass": true
+      },
+      {
+        "name": "390px product attachment layout has no horizontal overflow",
+        "pass": true
+      }
+    ],
+    "downloadEvents": [
+      {
+        "targetType": "page",
+        "origin": "blank"
+      },
+      {
+        "state": "inProgress"
+      },
+      {
+        "state": "inProgress"
+      },
+      {
+        "state": "inProgress"
+      },
+      {
+        "state": "inProgress"
+      },
+      {
+        "state": "inProgress"
+      },
+      {
+        "state": "completed"
+      }
+    ],
+    "providerCredentials": false,
+    "fixtureCleanup": {
+      "confirmed": 85,
+      "unconfirmed": 0,
+      "errors": 0
+    },
+    "retained": [
+      {
+        "kind": "owner",
+        "id": 9,
+        "status": "retained"
+      },
+      {
+        "kind": "room",
+        "id": 3,
+        "status": "retained"
+      },
+      {
+        "kind": "room",
+        "id": 4,
+        "status": "retained"
+      }
+    ],
+    "nativeJournalUnconfirmed": 0,
+    "cleanupComplete": true,
+    "handlerErrors": 0
+  },
+  "repositoryVerification": {
+    "command": "npm run check",
+    "exitCode": 0,
+    "testFilesPassed": 55,
+    "testsPassed": 335,
+    "formatLintTypecheckBuild": "passed",
+    "initialAttempt": "Lint included private diagnostic scripts/generated bundles. Archived those filenames with .private suffixes before the successful complete rerun; lint configuration unchanged."
+  }
+}

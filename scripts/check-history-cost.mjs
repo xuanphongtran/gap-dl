@@ -23,7 +23,19 @@ export function historyMetrics(input) {
     new Set(input.renderedIds).size !== input.messageCount
   )
     throw Error('Missing or duplicate rendered rows')
+  const postSwitchIds = input.postSwitchRenderedIds
+  if (
+    postSwitchIds &&
+    (postSwitchIds.length !== input.messageCount ||
+      new Set(postSwitchIds).size !== input.messageCount ||
+      postSwitchIds.some((id) => !input.renderedIds.includes(id)))
+  )
+    throw Error('Missing or changed post-switch rendered rows')
   const heap = input.heapSample?.usedSize
+  const laterHeap = (sample) =>
+    Number.isFinite(sample?.usedSize) && sample.usedSize > 0 ? sample.usedSize : null
+  const heapAfterIdle = laterHeap(input.heapAfterIdle)
+  const heapAfterSwitch = laterHeap(input.heapAfterSwitch)
   return {
     messageCount: input.messageCount,
     renderedRows: input.renderedIds.length,
@@ -35,9 +47,13 @@ export function historyMetrics(input) {
     heapBytes: Number.isFinite(heap) && heap > 0 ? heap : null,
     heapUnavailableReason:
       Number.isFinite(heap) && heap > 0 ? null : 'Chrome heap sampling unavailable',
-    heapAfterIdleBytes: input.heapAfterIdle?.usedSize ?? null,
-    heapAfterSwitchBytes: input.heapAfterSwitch?.usedSize ?? null,
-    postSwitchRenderedRows: input.postSwitchRenderedRows ?? null,
+    heapAfterIdleBytes: heapAfterIdle,
+    heapAfterIdleUnavailableReason:
+      heapAfterIdle === null ? 'Chrome idle heap sampling unavailable' : null,
+    heapAfterSwitchBytes: heapAfterSwitch,
+    heapAfterSwitchUnavailableReason:
+      heapAfterSwitch === null ? 'Chrome post-switch heap sampling unavailable' : null,
+    postSwitchRenderedRows: postSwitchIds?.length ?? input.postSwitchRenderedRows ?? null,
   }
 }
 const difference = (before, after) =>
@@ -148,10 +164,11 @@ export async function historyMain({ sizes = [40, 1000], runs = 3 } = {}) {
                 }
                 await idle()
               }
-              const postSwitchRenderedRows = await ev(
+              const postSwitchRenderedIds = await ev(
                 s,
-                "document.querySelectorAll('[data-message-id]').length",
+                "[...document.querySelectorAll('[data-message-id]')].map(e=>Number(e.dataset.messageId))",
               )
+              const postSwitchRenderedRows = postSwitchRenderedIds.length
               assert.equal(postSwitchRenderedRows, messageCount)
               const heapAfterSwitch = await heap(),
                 snapshot = fixture.snapshot()
@@ -167,6 +184,7 @@ export async function historyMain({ sizes = [40, 1000], runs = 3 } = {}) {
                 heapAfterIdle,
                 heapAfterSwitch,
                 postSwitchRenderedRows,
+                postSwitchRenderedIds,
               })
             },
           )

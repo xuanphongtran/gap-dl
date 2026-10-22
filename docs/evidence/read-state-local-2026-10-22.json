@@ -1,0 +1,546 @@
+{
+  "date": "2026-10-22",
+  "apiOrigin": "http://127.0.0.1:8080",
+  "frontendSource": "1332e80",
+  "backendCheckout": "fe6ba4177216905494f9a1358b47cbfed18abaee",
+  "scope": "Existing Phase4 REST, same-user WebSocket fanout, native Vue read-state/unread acceptance with two disposable accounts",
+  "run": {
+    "startedAt": "2026-10-22T08:48:00.992Z",
+    "checks": [
+      {
+        "name": "Authoritative unread excludes own sends and preserves tombstones by ID",
+        "pass": true
+      },
+      {
+        "name": "Positive cursor validation, room isolation and monotonic duplicate/concurrent acknowledgements",
+        "pass": true
+      },
+      {
+        "name": "Changed cursor fans out to same user tabs without another member receiving private state",
+        "pass": true
+      },
+      {
+        "name": "Membership loss denies state and rejoin resets the cursor",
+        "pass": true
+      },
+      {
+        "name": "Room list loading shows authoritative unread without acknowledging messages",
+        "pass": true
+      },
+      {
+        "name": "Hidden tab receives new content without advancing read state; visible viewed content advances",
+        "pass": true
+      },
+      {
+        "name": "Second tab converges on foreground and reload preserves the durable cursor",
+        "pass": true
+      },
+      {
+        "name": "Injected failed PUT stays unacknowledged until explicit retry succeeds",
+        "pass": true
+      },
+      {
+        "name": "Rapid room switches settle only the current room and a revoked private room clears its read UI",
+        "pass": true
+      },
+      {
+        "name": "Logout clears unread badges and private read UI in the browser",
+        "pass": true
+      }
+    ],
+    "http": [
+      {
+        "method": "GET",
+        "room": 3,
+        "status": 200,
+        "requestId": "953a7146be63e94fefe8e03918693bab"
+      },
+      {
+        "method": "GET",
+        "room": 3,
+        "status": 200,
+        "requestId": "2a7335e275ddd331ee2d832091daa445"
+      },
+      {
+        "method": "GET",
+        "room": 3,
+        "status": 200,
+        "requestId": "240972b923e1acb072345f310baa4a5c"
+      },
+      {
+        "method": "GET",
+        "room": 3,
+        "status": 200,
+        "requestId": "297c8b2e85fb85daee4f3a0162590cf0"
+      },
+      {
+        "method": "GET",
+        "room": 3,
+        "status": 200,
+        "requestId": "8582534f1069357386145827d8aef642"
+      },
+      {
+        "method": "PUT",
+        "room": 3,
+        "status": 400,
+        "requestId": "e01f0009b9918a085005a7c1aa3c631e"
+      },
+      {
+        "method": "PUT",
+        "room": 3,
+        "status": 400,
+        "requestId": "ea036d77f8f789fe6407d45fcecc798a"
+      },
+      {
+        "method": "PUT",
+        "room": 3,
+        "status": 404,
+        "requestId": "a4cdfbdd9c2f2e46688373f9362c2c28"
+      },
+      {
+        "method": "PUT",
+        "room": 3,
+        "status": 200,
+        "requestId": "51c588fb136db7107d23acca02a263fc"
+      },
+      {
+        "method": "PUT",
+        "room": 3,
+        "status": 200,
+        "requestId": "64b9380988f7198077d98f41e2470511"
+      },
+      {
+        "method": "GET",
+        "room": 3,
+        "status": 200,
+        "requestId": "438b589f4e4949b507bddaaac733dd05"
+      },
+      {
+        "method": "PUT",
+        "room": 3,
+        "status": 200,
+        "requestId": "4b47a7ba228ee2c8f88a60e399327356"
+      },
+      {
+        "method": "PUT",
+        "room": 3,
+        "status": 200,
+        "requestId": "705703ef261774417268ad5192302697"
+      },
+      {
+        "method": "PUT",
+        "room": 3,
+        "status": 200,
+        "requestId": "fac60f963fa4953e5c1c9558182e6b3d"
+      },
+      {
+        "method": "PUT",
+        "room": 3,
+        "status": 200,
+        "requestId": "c73496c60f77597f8b3e956fad3126f1"
+      },
+      {
+        "method": "GET",
+        "room": 3,
+        "status": 403,
+        "requestId": "2da605621234cfd7d668d118e6c70cf1"
+      },
+      {
+        "method": "PUT",
+        "room": 3,
+        "status": 403,
+        "requestId": "3f8717170ad3dc86e8d9eb0d3153d01d"
+      },
+      {
+        "method": "GET",
+        "room": 3,
+        "status": 200,
+        "requestId": "2814c6b62b761dfc13d189400faba8df"
+      },
+      {
+        "method": "PUT",
+        "room": 4,
+        "status": 200,
+        "requestId": "f64ea33de88a6cbc2c05c8d0fe8d32c7"
+      },
+      {
+        "method": "GET",
+        "room": 4,
+        "status": 404,
+        "requestId": "a548a65cd87b1ed5c285663f2e7efd02"
+      },
+      {
+        "method": "PUT",
+        "room": 4,
+        "status": 404,
+        "requestId": "409539b45a6644083b8325b95b4bfc4a"
+      },
+      {
+        "method": "GET",
+        "room": 4,
+        "status": 200,
+        "requestId": "0c181d9703002597b55e9f2f4eecfb48"
+      },
+      {
+        "method": "GET",
+        "room": 3,
+        "status": 200,
+        "requestId": "0478f04f89bae258e10b6ff99f30c8c1"
+      },
+      {
+        "method": "GET",
+        "room": 3,
+        "status": 200,
+        "requestId": "0569012e8f94fdc16c5bf566aceeaf25"
+      },
+      {
+        "method": "GET",
+        "room": 3,
+        "status": 200,
+        "requestId": "453b6cd5fe2a74347be070653f3ae93d"
+      },
+      {
+        "method": "GET",
+        "room": 3,
+        "status": 200,
+        "requestId": "c8e73a87fb94b3b24ab652781bd43568"
+      },
+      {
+        "method": "GET",
+        "room": 3,
+        "status": 200,
+        "requestId": "fcbba6e564d8bc1ae4f9182a14426ecb"
+      },
+      {
+        "method": "GET",
+        "room": 3,
+        "status": 200,
+        "requestId": "1f231960811cb4ca28c7753467ac624d"
+      },
+      {
+        "method": "GET",
+        "room": 3,
+        "status": 200,
+        "requestId": "6cc6915125db294c4882b5e766d912ee"
+      },
+      {
+        "method": "GET",
+        "room": 3,
+        "status": 200,
+        "requestId": "ad988ab18e7800d5811e936e2bad0c0c"
+      },
+      {
+        "method": "GET",
+        "room": 3,
+        "status": 200,
+        "requestId": "21e2d3fa784794c542422f0e9ca8cef6"
+      },
+      {
+        "method": "GET",
+        "room": 3,
+        "status": 200,
+        "requestId": "9a7a9c8e0ce486889d5a9c2a652a8926"
+      },
+      {
+        "method": "GET",
+        "room": 3,
+        "status": 200,
+        "requestId": "965d495045e51759d13ada7913d35c12"
+      },
+      {
+        "method": "GET",
+        "room": 3,
+        "status": 200,
+        "requestId": "47ba110411186467e029af1ae21f7353"
+      },
+      {
+        "method": "GET",
+        "room": 3,
+        "status": 200,
+        "requestId": "942bdb090c756443bb0338e1845a121d"
+      },
+      {
+        "method": "GET",
+        "room": 3,
+        "status": 200,
+        "requestId": "3bc17fd182654e62d139d7a4b83b19b6"
+      },
+      {
+        "method": "GET",
+        "room": 3,
+        "status": 200,
+        "requestId": "08c59c70e8ac8e767386c4e66541b165"
+      },
+      {
+        "method": "GET",
+        "room": 3,
+        "status": 200,
+        "requestId": "dde56e9158c4be3b68535a936a56c9f1"
+      },
+      {
+        "method": "GET",
+        "room": 3,
+        "status": 200,
+        "requestId": "db5692983c981b3506833d8f4fcb4323"
+      },
+      {
+        "method": "GET",
+        "room": 3,
+        "status": 200,
+        "requestId": "ee26cb950263980cfedfa231ec673df8"
+      },
+      {
+        "method": "GET",
+        "room": 3,
+        "status": 200,
+        "requestId": "44967a3cbcd87ce24057e51dbf29a705"
+      },
+      {
+        "method": "GET",
+        "room": 3,
+        "status": 200,
+        "requestId": "ac3683d832bc81ce259e85310a5b1cd8"
+      },
+      {
+        "method": "GET",
+        "room": 4,
+        "status": 200,
+        "requestId": "8cee7e1271309f624e7788bda0036740"
+      },
+      {
+        "method": "GET",
+        "room": 4,
+        "status": 200,
+        "requestId": "a45e8f2912b7250a3ca0a9b7b08b0842"
+      },
+      {
+        "method": "GET",
+        "room": 4,
+        "status": 200,
+        "requestId": "863ef2a8747207ff0d731fd009f2094b"
+      },
+      {
+        "method": "GET",
+        "room": 4,
+        "status": 200,
+        "requestId": "913b726e09b636c281e954d7a012e45d"
+      },
+      {
+        "method": "GET",
+        "room": 4,
+        "status": 404,
+        "requestId": "3bfea8661c71220762426dc6c6c61880"
+      }
+    ],
+    "observedNativeStates": [
+      {
+        "session": 0,
+        "room": 4,
+        "cursor": 0,
+        "unread": 46
+      },
+      {
+        "session": 0,
+        "room": 3,
+        "cursor": 0,
+        "unread": 14
+      },
+      {
+        "session": 0,
+        "room": 3,
+        "cursor": 0,
+        "unread": 14
+      },
+      {
+        "session": 0,
+        "room": 3,
+        "cursor": 187,
+        "unread": 0
+      },
+      {
+        "session": 0,
+        "room": 3,
+        "cursor": 187,
+        "unread": 0
+      },
+      {
+        "session": 0,
+        "room": 3,
+        "cursor": 187,
+        "unread": 0
+      },
+      {
+        "session": 0,
+        "room": 3,
+        "cursor": 187,
+        "unread": 1
+      },
+      {
+        "session": 0,
+        "room": 3,
+        "cursor": 187,
+        "unread": 1
+      },
+      {
+        "session": 0,
+        "room": 3,
+        "cursor": 188,
+        "unread": 0
+      },
+      {
+        "session": 0,
+        "room": 3,
+        "cursor": 188,
+        "unread": 0
+      },
+      {
+        "session": 0,
+        "room": 3,
+        "cursor": 188,
+        "unread": 0
+      },
+      {
+        "session": 1,
+        "room": 4,
+        "cursor": 0,
+        "unread": 46
+      },
+      {
+        "session": 1,
+        "room": 3,
+        "cursor": 188,
+        "unread": 0
+      },
+      {
+        "session": 1,
+        "room": 4,
+        "cursor": 0,
+        "unread": 46
+      },
+      {
+        "session": 1,
+        "room": 3,
+        "cursor": 188,
+        "unread": 0
+      },
+      {
+        "session": 0,
+        "room": 3,
+        "cursor": 188,
+        "unread": 1
+      },
+      {
+        "session": 0,
+        "room": 4,
+        "cursor": 0,
+        "unread": 46
+      },
+      {
+        "session": 0,
+        "room": 3,
+        "cursor": 189,
+        "unread": 0
+      },
+      {
+        "session": 0,
+        "room": 3,
+        "cursor": 189,
+        "unread": 0
+      },
+      {
+        "session": 0,
+        "room": 3,
+        "cursor": 189,
+        "unread": 0
+      },
+      {
+        "session": 0,
+        "room": 4,
+        "cursor": 0,
+        "unread": 46
+      },
+      {
+        "session": 0,
+        "room": 3,
+        "cursor": 189,
+        "unread": 0
+      },
+      {
+        "session": 0,
+        "room": 4,
+        "cursor": 0,
+        "unread": 46
+      },
+      {
+        "session": 0,
+        "room": 4,
+        "cursor": 186,
+        "unread": 0
+      },
+      {
+        "session": 0,
+        "room": 4,
+        "cursor": 186,
+        "unread": 0
+      },
+      {
+        "session": 0,
+        "room": 4,
+        "cursor": 186,
+        "unread": 0
+      }
+    ],
+    "nativePutAttempts": 5,
+    "native503Injected": 1,
+    "nativeReadJournalFiles": 5,
+    "heldWrite": false,
+    "fixtureCleanup": {
+      "confirmed": 130,
+      "unconfirmed": 0,
+      "errors": 0
+    },
+    "retained": [
+      {
+        "kind": "owner",
+        "id": 9,
+        "status": "retained"
+      },
+      {
+        "kind": "room",
+        "id": 3,
+        "status": "retained"
+      },
+      {
+        "kind": "room",
+        "id": 4,
+        "status": "retained"
+      }
+    ],
+    "nativeWriteIntentsResolvedByGuestDeletion": 8,
+    "readJournal": {
+      "confirmed": 22,
+      "unconfirmed": 0
+    },
+    "cleanupComplete": true
+  },
+  "focusedVerification": {
+    "command": "npm test -- src/features/messages/read-state.test.ts src/features/messages/useViewedReadState.test.ts src/features/rooms/useWorkspaceRealtime.test.ts",
+    "exitCode": 0,
+    "filesPassed": 3,
+    "testsPassed": 40
+  },
+  "limitations": [
+    "The 503 is one injected browser failure, not a naturally observed outage.",
+    "Rapid native navigation is supplemented by existing deterministic overlapping-response tests; response inversion is not claimed in this native run.",
+    "Native users share an account across independent temporary browser contexts.",
+    "Selected-host, distributed, and operational acceptance remain separate.",
+    "Historical Render registrations and original local owner3/rooms1/2 remain separately unreconciled."
+  ],
+  "repositoryVerification": {
+    "command": "npm run check",
+    "exitCode": 0,
+    "testFilesPassed": 55,
+    "testsPassed": 335,
+    "formatLintTypecheckBuild": "passed"
+  }
+}

@@ -52,23 +52,41 @@ export async function runAcceptanceSuite({
       }
     }
   } finally {
-    await close()
+    try {
+      await close()
+      report.cleanupComplete = true
+    } catch {
+      report.cleanupComplete = false
+      exit = 1
+    }
     await writeFile(reportFile, JSON.stringify(report, null, 2), { mode: 0o600 })
   }
   return exit
 }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+export async function closeRecoveryResources(app, api) {
+  const results = await Promise.allSettled([
+    Promise.resolve().then(() => app?.close()),
+    Promise.resolve().then(() => api.close()),
+  ])
+  if (results.some((result) => result.status === 'rejected'))
+    throw Error('Recovery resource cleanup failed')
+}
 export async function recoveryMain() {
   const dir = await mkdtemp(join(tmpdir(), 'gogo-recovery-'))
   const api = await startRecoveryApi()
   let app
+  let cleanupHandled = false
   try {
     app = await startAcceptanceApp(api.origin)
     const exit = await runAcceptanceSuite({
       origin: api.origin,
       scenarios,
       reportFile: join(dir, 'report.json'),
-      close: async () => {},
+      close: async () => {
+        cleanupHandled = true
+        await closeRecoveryResources(app, api)
+      },
       runScenario: async (name) => {
         api.setScenario(name)
         const artifactDir = join(dir, name)
@@ -271,8 +289,7 @@ export async function recoveryMain() {
     )
     return exit
   } finally {
-    await app?.close()
-    await api.close()
+    if (!cleanupHandled) await closeRecoveryResources(app, api)
   }
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href)

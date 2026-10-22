@@ -1,0 +1,66 @@
+{
+  "origin": "https://chat-sb.xuanphong.io.vn",
+  "scope": "Read-only frontend routes and assets; no API calls or page scripts executed",
+  "routes": [
+    {
+      "path": "/",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "htmlSha256": "0b268a30da73a9e9b9243106d6df7b555ce5d35ade1cd759871127ac259609cf",
+      "sameOrigin": true,
+      "deploymentProtectionDetected": false
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "htmlSha256": "0b268a30da73a9e9b9243106d6df7b555ce5d35ade1cd759871127ac259609cf",
+      "sameOrigin": true,
+      "deploymentProtectionDetected": false
+    },
+    {
+      "path": "/app/rooms/3",
+      "status": 200,
+      "contentType": "text/html; charset=utf-8",
+      "htmlSha256": "0b268a30da73a9e9b9243106d6df7b555ce5d35ade1cd759871127ac259609cf",
+      "sameOrigin": true,
+      "deploymentProtectionDetected": false
+    }
+  ],
+  "assets": [
+    {
+      "path": "/assets/index-CueJzhB9.js",
+      "status": 200,
+      "sha256": "2bf1bfb2e1b05d731bc67a0fe543ee9611303563555dd1b7b19e8206db554cc5"
+    },
+    {
+      "path": "/assets/index-BO9PhTyv.css",
+      "status": 200,
+      "sha256": "ffeb3306fe4623faadb16fe26fa45f5c5be547c27a3960ca3d04690908771224"
+    }
+  ],
+  "bundleMarkers": {
+    "typing_started": true,
+    "presence_snapshot": true,
+    "attachment_ids": true,
+    "not_joined": true
+  },
+  "configuredKnownApiOrigins": [
+    "https://gogo-dl.onrender.com"
+  ],
+  "environmentNormalizedBuildComparison": [
+    {
+      "path": "/assets/index-CueJzhB9.js",
+      "sha256": "2bf1bfb2e1b05d731bc67a0fe543ee9611303563555dd1b7b19e8206db554cc5",
+      "matchesHostedDigest": true
+    },
+    {
+      "path": "/assets/index-BO9PhTyv.css",
+      "sha256": "ffeb3306fe4623faadb16fe26fa45f5c5be547c27a3960ca3d04690908771224",
+      "matchesHostedDigest": true
+    }
+  ],
+  "date": "2026-10-22",
+  "frontendSource": "5cbc6ff",
+  "functionalAcceptance": "Pending; user requests local-only backend testing. No hosted API calls made."
+}

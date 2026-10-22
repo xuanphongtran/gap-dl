@@ -3,7 +3,7 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, expect, it } from 'vitest'
-import { runAcceptanceSuite } from './check-recovery.mjs'
+import { closeRecoveryResources, runAcceptanceSuite } from './check-recovery.mjs'
 const directories = []
 afterEach(async () => {
   for (const d of directories.splice(0)) await rm(d, { recursive: true, force: true })
@@ -93,4 +93,49 @@ it('fixture rejects a changed payload under an existing mention key', async () =
   } finally {
     await fixture.close()
   }
+})
+
+it('persists scenario evidence and returns failure when cleanup rejects without exposing its error', async () => {
+  const file = await reportFile()
+  const exit = await runAcceptanceSuite({
+    origin: 'http://127.0.0.1:1234',
+    scenarios: ['workspace-503'],
+    reportFile: file,
+    runScenario: async () => ({}),
+    close: async () => {
+      throw Error('Bearer private-cleanup-secret')
+    },
+  })
+  expect(exit).toBe(1)
+  const report = JSON.parse(await readFile(file, 'utf8'))
+  expect(report.checks).toEqual([{ name: 'workspace-503', simulated: true, pass: true }])
+  expect(report.cleanupComplete).toBe(false)
+  expect(JSON.stringify(report)).not.toMatch(/Bearer|secret/)
+})
+
+it('attempts API cleanup even if closing the application fails and records incomplete cleanup', async () => {
+  const file = await reportFile()
+  let apiClosed = false
+  const exit = await runAcceptanceSuite({
+    origin: 'http://127.0.0.1:1234',
+    scenarios: ['workspace-503'],
+    reportFile: file,
+    runScenario: async () => ({}),
+    close: () =>
+      closeRecoveryResources(
+        {
+          close: () => {
+            throw Error('private provider details')
+          },
+        },
+        {
+          close: async () => {
+            apiClosed = true
+          },
+        },
+      ),
+  })
+  expect(apiClosed).toBe(true)
+  expect(exit).toBe(1)
+  expect(JSON.parse(await readFile(file, 'utf8')).cleanupComplete).toBe(false)
 })
