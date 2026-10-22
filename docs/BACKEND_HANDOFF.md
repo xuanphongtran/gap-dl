@@ -44,6 +44,8 @@ Latest [fresh test rerun](./ATTACHMENTS_RETEST_2026-10-20.md), 08:43 UTC: health
 
 The user has switched testing to local port 8080 because Render quota is exhausted. [Local verification](./ATTACHMENTS_LOCAL_ACCEPTANCE_2026-10-20.md) confirms readiness 200, registration/profile/native auth and cleanup of two disposable accounts. There is no available local public room, so attachment testing awaits a room fixture or explicit cleanup/retention strategy. This closes local availability/auth checks only; it does not resolve the old Render registrations or prove provider/binding/download behavior.
 
+**Local follow-up — 2026-10-22:** [Fresh acceptance](./ATTACHMENTS_LOCAL_ACCEPTANCE_2026-10-22.md) supersedes the local availability/fixture blocker: owner9/rooms3/4 are the approved retained fixtures. The exact initial reservation503 (`attachment uploads unavailable`) was resolved after the user changed backend configuration. Real R2 upload/scanning, caption+file+mention binding, canonical retry/409, recipient history/Search, safe original-byte downloads and public/private/tombstone ticket denial now pass. Native Chrome provider PUT/CORS and download also pass, followed by four real product picker/send/download/mobile checks. Physical object cleanup/quota release and extended live edge cases and selected-host journeys stay open; historical Render uncertain registrations and legacy account cleanup are unchanged. Continue with local8080 only.
+
 ## 4. Admin cleanup: legacy disposable accounts 35 and 36
 
 The 2026-10-15 read-only audit still finds account 36 in public room 2; account 35 is absent from that membership list. Account deletion remains unconfirmed for both.

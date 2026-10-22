@@ -180,3 +180,7 @@ Final: no deferred Minor findings. No re-review dispatched; one fix pass verifie
 Final verification: sourcebc4f59b, npm run check270 tests/49files + format/lint/types/build PASS; attachment native7/7 and recovery7/7 PASS, Search scroll PASS before review (Search source unchanged). Sanitized reports copied into docs/evidence/attachments-acceptance-2026-10-20.json. Branch retained locally; no push, merge, deployment or backend write.
 
 Resumed-session readiness: one fresh safe GET at08:17:54Z again503/ready:false, requestID68aedf9bb8ab5fafa8dcff108908c6b6; both registration recovery directories still present. No new live fixture writes.
+
+### Local live follow-up — 2026-10-22
+
+[Fresh acceptance](../../ATTACHMENTS_LOCAL_ACCEPTANCE_2026-10-22.md) records seven real API/provider groups plus four native product UI checks after the backend configuration update. Core local binding/retry/history/Search, original-byte downloads, public/private/tombstone denial, real provider CORS and picker/send/download/mobile checks pass. The cumulative private fixture journal has85 confirmed/0 unresolved; native mutation cleanup also has0 unresolved. This supersedes the local readiness/fixture blocker in the dated execution record above. Additional live navigation/expiry/failure cases, delayed physical cleanup/quota, historical Render/admin cleanup and selected-host acceptance remain open; the broader live-flow checkbox is intentionally not closed. Continue with local8080 only by user instruction.
