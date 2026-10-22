@@ -1,0 +1,728 @@
+{
+  "date": "2026-10-22",
+  "branch": "test/phase-five-seven-completion",
+  "baseCommit": "d14ad0e",
+  "scope": "Local frontend completion; broker/cross-node remains pending by explicit user instruction. Hosted and real operational gates are not claimed.",
+  "phase5Activity": {
+    "apiOrigin": "http://127.0.0.1:8080",
+    "origin": "http://localhost:3000",
+    "startedAt": "2026-10-22T09:06:39.689Z",
+    "passed": true,
+    "activitySupported": true,
+    "checks": [
+      {
+        "name": "local /health",
+        "passed": true
+      },
+      {
+        "name": "local /readyz",
+        "passed": true
+      },
+      {
+        "name": "local /swagger/doc.json",
+        "passed": true
+      },
+      {
+        "name": "local /asyncapi/asyncapi.yaml",
+        "passed": true
+      },
+      {
+        "name": "public nonmember presence403 and private404",
+        "passed": true
+      },
+      {
+        "name": "unauthorized websocket join denied",
+        "passed": true
+      },
+      {
+        "name": "fixture public join and private invite acceptance",
+        "passed": true
+      },
+      {
+        "name": "initial owner snapshot matches typed contract",
+        "passed": true
+      },
+      {
+        "name": "first guest subscription emits online and snapshot",
+        "passed": true
+      },
+      {
+        "name": "second tab is aggregated once and first close stays online",
+        "passed": true
+      },
+      {
+        "name": "last guest tab close emits offline",
+        "passed": true
+      },
+      {
+        "name": "duplicate join returns a fresh snapshot",
+        "passed": true
+      },
+      {
+        "name": "typing start has user identity and five-second deadline",
+        "passed": true
+      },
+      {
+        "name": "controlled repeated start is rate_limited",
+        "passed": true
+      },
+      {
+        "name": "typing refresh extends deadline and explicit stop uses null",
+        "passed": true
+      },
+      {
+        "name": "typing expires without a client stop",
+        "passed": true
+      },
+      {
+        "name": "private leave revokes presence and typing access",
+        "passed": true
+      }
+    ],
+    "swaggerSha256": "176cf2df1f586bc16c2336241f9b4bd15731ce5a92527effcd6c9351420ad9de",
+    "asyncapiSha256": "f9d402402bdacad3ff032110c587fb6b678d2dd36f49f034cc171adbb5494626",
+    "cleanup": {
+      "confirmed": 137,
+      "unconfirmed": 0,
+      "errors": 0
+    },
+    "httpChecks": [
+      {
+        "method": "GET",
+        "path": "/api/v1/users/me",
+        "status": 200,
+        "requestId": "25d4e4aa61c929e227668fc7f7a696ba"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/rooms/:id",
+        "status": 200,
+        "requestId": "c6e4967d90f2761453afe2479be0d327"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/rooms/:id",
+        "status": 200,
+        "requestId": "c5f28b1394511f1145cb130593437118"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/auth/register",
+        "status": 201,
+        "requestId": "dedea57db1b751fbf431f3bd3484255d"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/users/me",
+        "status": 200,
+        "requestId": "489d643b811f6938083d16e0fc201dc5"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/rooms/:id/presence",
+        "status": 403,
+        "requestId": "d2bae618aef6dab61f65b01e1b29ca41"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/rooms/:id/presence",
+        "status": 404,
+        "requestId": "6c55d9022e9e2116ac177bcfe603633f"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/rooms/:id/join",
+        "status": 200,
+        "requestId": "3e6ff35fab39987a716d1f52fcf707a8"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/rooms/:id/invitations",
+        "status": 201,
+        "requestId": "23872de7d4751d98509dca1c638fcad7"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/invitations/:id/accept",
+        "status": 200,
+        "requestId": "06974a64045df2eae593fd31217c7f65"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/rooms/:id/presence",
+        "status": 200,
+        "requestId": "0de4bc2b3cf0fdc7774ce6aaf2695768"
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/v1/rooms/:id/membership",
+        "status": 204,
+        "requestId": "a6670a48113d8aba01c207558eac8682"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/rooms/:id/presence",
+        "status": 404,
+        "requestId": "d6701b0f01c59b69fd4972f1751761a6"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/users/me",
+        "status": 200,
+        "requestId": "f8faa18b9fa94aa6aa450fb7446ed774"
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/v1/users/me",
+        "status": 204,
+        "requestId": "047eea1fc4ca2f191d1de1b91bdbf601"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/users/me",
+        "status": 200,
+        "requestId": "2a1aedf2388dc1316845d44df4875a4b"
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/v1/users/me",
+        "status": 204,
+        "requestId": "9ff80a93c7bedab1b5772032fdc74f0e"
+      }
+    ],
+    "cleanupChecks": [
+      {
+        "kind": "guest",
+        "id": 25,
+        "status": 204
+      },
+      {
+        "kind": "guest",
+        "id": 26,
+        "status": 204
+      }
+    ],
+    "retained": [
+      {
+        "kind": "owner",
+        "id": 9,
+        "status": "retained"
+      },
+      {
+        "kind": "room",
+        "id": 3,
+        "status": "retained"
+      },
+      {
+        "kind": "room",
+        "id": 4,
+        "status": "retained"
+      }
+    ],
+    "finishedAt": "2026-10-22T09:06:48.920Z"
+  },
+  "phase6Edges": {
+    "startedAt": "2026-10-22T09:09:15.606Z",
+    "checks": [
+      {
+        "name": "Real original-byte mismatch is rejected and cannot bind to a message",
+        "pass": true
+      },
+      {
+        "name": "Real expired reservation cannot complete, re-reserve or create a message",
+        "pass": true
+      }
+    ],
+    "http": [
+      {
+        "method": "POST",
+        "path": "/api/v1/rooms/:id/attachments/uploads",
+        "status": 201,
+        "requestId": "894e93bcced34f902f9e86297877bdc3"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/rooms/:id/attachments/uploads",
+        "status": 201,
+        "requestId": "4e29ecbc730edf6689fc70f63c390e04"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/rooms/:id/attachments/:id/complete",
+        "status": 202,
+        "requestId": "78fb8f2ff67480f88e4450ffad2fc31a"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/rooms/:id/attachments/:id",
+        "status": 200,
+        "requestId": "4be5d19544f1bbe157585b1c16790df7"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/rooms/:id/messages",
+        "status": 409,
+        "requestId": "c2550bc5f09ce1f050c32ee6ff5b94f1"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/rooms/:id/attachments/:id/complete",
+        "status": 409,
+        "requestId": "ab0543e72dc3341828cbf16e8beba106"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/rooms/:id/attachments/uploads",
+        "status": 409,
+        "requestId": "306739dc56d992d7abf1d1133826205c"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/rooms/:id/messages",
+        "status": 409,
+        "requestId": "6068bd5dfc5032631953b3551d826fe1"
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/v1/rooms/:id/attachments/:id",
+        "status": 204,
+        "requestId": "a87f2033c6e532f687e8ea1e3e87ef80"
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/v1/rooms/:id/attachments/:id",
+        "status": 204,
+        "requestId": "c909294b95a8b0e36b3b02cc1b343ba4"
+      }
+    ],
+    "uploadExpiresAt": "2026-10-22T09:14:15.945874Z",
+    "rejectedState": "rejected",
+    "cancellationConfirmed": true,
+    "fixtureCleanup": {
+      "confirmed": 139,
+      "unconfirmed": 0,
+      "errors": 0
+    },
+    "retained": [
+      {
+        "kind": "owner",
+        "id": 9,
+        "status": "retained"
+      },
+      {
+        "kind": "room",
+        "id": 3,
+        "status": "retained"
+      },
+      {
+        "kind": "room",
+        "id": 4,
+        "status": "retained"
+      }
+    ],
+    "journal": {
+      "confirmed": 7,
+      "unconfirmed": 0
+    },
+    "cleanupComplete": true
+  },
+  "phase6Navigation": {
+    "startedAt": "2026-10-22T09:15:48.260Z",
+    "checks": [
+      {
+        "name": "Navigation during an upload cancels the reserved file before provider bytes are forwarded",
+        "pass": true
+      },
+      {
+        "name": "Returning to the room has no discarded upload or stale send",
+        "pass": true
+      }
+    ],
+    "downloadEvents": [],
+    "providerPutHeldBeforeDispatch": true,
+    "providerBytesForwarded": 0,
+    "cancel204": true,
+    "providerCredentials": false,
+    "fixtureCleanup": {
+      "confirmed": 143,
+      "unconfirmed": 0,
+      "errors": 0
+    },
+    "retained": [
+      {
+        "kind": "owner",
+        "id": 9,
+        "status": "retained"
+      },
+      {
+        "kind": "room",
+        "id": 3,
+        "status": "retained"
+      },
+      {
+        "kind": "room",
+        "id": 4,
+        "status": "retained"
+      }
+    ],
+    "nativeJournalUnconfirmed": 0,
+    "cleanupComplete": true,
+    "handlerErrors": 0
+  },
+  "phase7Recovery": {
+    "checks": [
+      {
+        "name": "login-503",
+        "simulated": true,
+        "pass": true,
+        "requestCounts": {
+          "POST /api/v1/auth/login": 2,
+          "GET /api/v1/users/me": 2,
+          "GET /api/v1/rooms": 1,
+          "GET /api/v1/users/me/invitations": 1
+        },
+        "canonicalMessageCount": 0
+      },
+      {
+        "name": "workspace-503",
+        "simulated": true,
+        "pass": true,
+        "requestCounts": {
+          "POST /api/v1/auth/login": 1,
+          "GET /api/v1/users/me": 4,
+          "GET /api/v1/rooms": 3,
+          "GET /api/v1/users/me/invitations": 2,
+          "GET /api/v1/rooms/:id/read-state": 2
+        },
+        "canonicalMessageCount": 0
+      },
+      {
+        "name": "mention-response-loss",
+        "simulated": true,
+        "pass": true,
+        "requestCounts": {
+          "POST /api/v1/auth/login": 1,
+          "GET /api/v1/users/me": 5,
+          "GET /api/v1/rooms": 2,
+          "GET /api/v1/users/me/invitations": 2,
+          "GET /api/v1/rooms/:id/read-state": 6,
+          "GET /api/v1/rooms/:id": 3,
+          "GET /api/v1/rooms/:id/messages": 4,
+          "GET /api/v1/rooms/:id/members": 2,
+          "POST /api/v1/rooms/:id/messages": 2
+        },
+        "canonicalMessageCount": 1
+      },
+      {
+        "name": "inbox-429",
+        "simulated": true,
+        "pass": true,
+        "requestCounts": {
+          "POST /api/v1/auth/login": 1,
+          "GET /api/v1/users/me": 6,
+          "GET /api/v1/rooms": 3,
+          "GET /api/v1/users/me/invitations": 2,
+          "GET /api/v1/rooms/:id/read-state": 6,
+          "GET /api/v1/users/me/notifications": 2
+        },
+        "canonicalMessageCount": 0
+      },
+      {
+        "name": "inbox-429-no-header",
+        "simulated": true,
+        "pass": true,
+        "requestCounts": {
+          "POST /api/v1/auth/login": 1,
+          "GET /api/v1/users/me": 4,
+          "GET /api/v1/rooms": 3,
+          "GET /api/v1/users/me/invitations": 2,
+          "GET /api/v1/rooms/:id/read-state": 4,
+          "GET /api/v1/users/me/notifications": 2
+        },
+        "canonicalMessageCount": 0
+      },
+      {
+        "name": "inbox-429-malformed-header",
+        "simulated": true,
+        "pass": true,
+        "requestCounts": {
+          "POST /api/v1/auth/login": 1,
+          "GET /api/v1/users/me": 4,
+          "GET /api/v1/rooms": 4,
+          "GET /api/v1/users/me/invitations": 2,
+          "GET /api/v1/rooms/:id/read-state": 4,
+          "GET /api/v1/users/me/notifications": 2
+        },
+        "canonicalMessageCount": 0
+      },
+      {
+        "name": "session-change",
+        "simulated": true,
+        "pass": true,
+        "requestCounts": {
+          "POST /api/v1/auth/login": 2,
+          "GET /api/v1/users/me": 6,
+          "GET /api/v1/rooms": 4,
+          "GET /api/v1/users/me/invitations": 3
+        },
+        "canonicalMessageCount": 0
+      }
+    ],
+    "cleanupComplete": true
+  },
+  "phase7History": {
+    "firstAttempt": {
+      "runs": [
+        {
+          "run": 1,
+          "messageCount": 40,
+          "renderedRows": 40,
+          "loadMs": 183,
+          "requestCounts": {
+            "POST /api/v1/auth/login": 1,
+            "GET /api/v1/users/me": 9,
+            "GET /api/v1/rooms": 3,
+            "GET /api/v1/users/me/invitations": 3,
+            "GET /api/v1/rooms/:id/read-state": 26,
+            "GET /api/v1/rooms/:id": 19,
+            "GET /api/v1/rooms/:id/messages": 27,
+            "GET /api/v1/rooms/:id/members": 16
+          },
+          "idleRequestCounts": {
+            "GET /api/v1/users/me": 3,
+            "GET /api/v1/rooms/:id/read-state": 7,
+            "GET /api/v1/rooms/:id": 3,
+            "GET /api/v1/rooms/:id/messages": 7,
+            "GET /api/v1/rooms/:id/members": 3
+          },
+          "hiddenRequestCounts": {
+            "GET /api/v1/users/me": 1,
+            "GET /api/v1/rooms/:id/read-state": 1,
+            "GET /api/v1/rooms/:id": 1,
+            "GET /api/v1/rooms/:id/messages": 2,
+            "GET /api/v1/rooms/:id/members": 1
+          },
+          "visibilityMode": "simulated",
+          "heapBytes": 11134188,
+          "heapUnavailableReason": null,
+          "heapAfterIdleBytes": 12822608,
+          "heapAfterIdleUnavailableReason": null,
+          "heapAfterSwitchBytes": 11129452,
+          "heapAfterSwitchUnavailableReason": null,
+          "postSwitchRenderedRows": 40
+        },
+        {
+          "run": 2,
+          "messageCount": 40,
+          "renderedRows": 40,
+          "loadMs": 179,
+          "requestCounts": {
+            "POST /api/v1/auth/login": 1,
+            "GET /api/v1/users/me": 9,
+            "GET /api/v1/rooms": 3,
+            "GET /api/v1/users/me/invitations": 3,
+            "GET /api/v1/rooms/:id/read-state": 26,
+            "GET /api/v1/rooms/:id": 19,
+            "GET /api/v1/rooms/:id/messages": 27,
+            "GET /api/v1/rooms/:id/members": 16
+          },
+          "idleRequestCounts": {
+            "GET /api/v1/users/me": 3,
+            "GET /api/v1/rooms/:id/read-state": 7,
+            "GET /api/v1/rooms/:id": 3,
+            "GET /api/v1/rooms/:id/messages": 7,
+            "GET /api/v1/rooms/:id/members": 3
+          },
+          "hiddenRequestCounts": {
+            "GET /api/v1/users/me": 1,
+            "GET /api/v1/rooms/:id/read-state": 1,
+            "GET /api/v1/rooms/:id": 1,
+            "GET /api/v1/rooms/:id/messages": 2,
+            "GET /api/v1/rooms/:id/members": 1
+          },
+          "visibilityMode": "simulated",
+          "heapBytes": 11184708,
+          "heapUnavailableReason": null,
+          "heapAfterIdleBytes": 12827960,
+          "heapAfterIdleUnavailableReason": null,
+          "heapAfterSwitchBytes": 11127676,
+          "heapAfterSwitchUnavailableReason": null,
+          "postSwitchRenderedRows": 40
+        },
+        {
+          "run": 3,
+          "messageCount": 40,
+          "renderedRows": 40,
+          "loadMs": 196,
+          "requestCounts": {
+            "POST /api/v1/auth/login": 1,
+            "GET /api/v1/users/me": 9,
+            "GET /api/v1/rooms": 3,
+            "GET /api/v1/users/me/invitations": 3,
+            "GET /api/v1/rooms/:id/read-state": 26,
+            "GET /api/v1/rooms/:id": 19,
+            "GET /api/v1/rooms/:id/messages": 27,
+            "GET /api/v1/rooms/:id/members": 16
+          },
+          "idleRequestCounts": {
+            "GET /api/v1/users/me": 3,
+            "GET /api/v1/rooms/:id/read-state": 7,
+            "GET /api/v1/rooms/:id": 3,
+            "GET /api/v1/rooms/:id/messages": 7,
+            "GET /api/v1/rooms/:id/members": 3
+          },
+          "hiddenRequestCounts": {
+            "GET /api/v1/users/me": 1,
+            "GET /api/v1/rooms/:id/read-state": 1,
+            "GET /api/v1/rooms/:id": 1,
+            "GET /api/v1/rooms/:id/messages": 2,
+            "GET /api/v1/rooms/:id/members": 1
+          },
+          "visibilityMode": "simulated",
+          "heapBytes": 11175148,
+          "heapUnavailableReason": null,
+          "heapAfterIdleBytes": 12859660,
+          "heapAfterIdleUnavailableReason": null,
+          "heapAfterSwitchBytes": 11135144,
+          "heapAfterSwitchUnavailableReason": null,
+          "postSwitchRenderedRows": 40
+        },
+        {
+          "run": 1,
+          "messageCount": 1000,
+          "renderedRows": 1000,
+          "loadMs": 4714,
+          "requestCounts": {
+            "POST /api/v1/auth/login": 1,
+            "GET /api/v1/users/me": 9,
+            "GET /api/v1/rooms": 3,
+            "GET /api/v1/users/me/invitations": 3,
+            "GET /api/v1/rooms/:id/read-state": 28,
+            "GET /api/v1/rooms/:id": 19,
+            "GET /api/v1/rooms/:id/messages": 257,
+            "GET /api/v1/rooms/:id/members": 16,
+            "PUT /api/v1/rooms/:id/read-state": 1
+          },
+          "idleRequestCounts": {
+            "GET /api/v1/users/me": 2,
+            "GET /api/v1/rooms/:id/read-state": 7,
+            "GET /api/v1/rooms/:id": 2,
+            "GET /api/v1/rooms/:id/messages": 54,
+            "GET /api/v1/rooms/:id/members": 2
+          },
+          "hiddenRequestCounts": {},
+          "visibilityMode": "simulated",
+          "heapBytes": 65788064,
+          "heapUnavailableReason": null,
+          "heapAfterIdleBytes": 21998316,
+          "heapAfterIdleUnavailableReason": null,
+          "heapAfterSwitchBytes": 66032592,
+          "heapAfterSwitchUnavailableReason": null,
+          "postSwitchRenderedRows": 1000
+        },
+        {
+          "run": 2,
+          "messageCount": 1000,
+          "renderedRows": 1000,
+          "loadMs": 4742,
+          "requestCounts": {
+            "POST /api/v1/auth/login": 1,
+            "GET /api/v1/users/me": 10,
+            "GET /api/v1/rooms": 3,
+            "GET /api/v1/users/me/invitations": 3,
+            "GET /api/v1/rooms/:id/read-state": 28,
+            "GET /api/v1/rooms/:id": 20,
+            "GET /api/v1/rooms/:id/messages": 279,
+            "GET /api/v1/rooms/:id/members": 17,
+            "PUT /api/v1/rooms/:id/read-state": 1
+          },
+          "idleRequestCounts": {
+            "GET /api/v1/users/me": 2,
+            "GET /api/v1/rooms/:id/read-state": 6,
+            "GET /api/v1/rooms/:id": 2,
+            "GET /api/v1/rooms/:id/messages": 53,
+            "GET /api/v1/rooms/:id/members": 2
+          },
+          "hiddenRequestCounts": {},
+          "visibilityMode": "simulated",
+          "heapBytes": 56026236,
+          "heapUnavailableReason": null,
+          "heapAfterIdleBytes": 22300428,
+          "heapAfterIdleUnavailableReason": null,
+          "heapAfterSwitchBytes": 22406380,
+          "heapAfterSwitchUnavailableReason": null,
+          "postSwitchRenderedRows": 1000
+        }
+      ],
+      "failed": true
+    },
+    "firstAttemptFailure": "Sixth run timed out waiting for a page after880 rows; cause not established.",
+    "targetedRetry": {
+      "runs": [
+        {
+          "run": 1,
+          "messageCount": 1000,
+          "renderedRows": 1000,
+          "loadMs": 4723,
+          "requestCounts": {
+            "POST /api/v1/auth/login": 1,
+            "GET /api/v1/users/me": 10,
+            "GET /api/v1/rooms": 3,
+            "GET /api/v1/users/me/invitations": 3,
+            "GET /api/v1/rooms/:id/read-state": 27,
+            "GET /api/v1/rooms/:id": 20,
+            "GET /api/v1/rooms/:id/messages": 255,
+            "GET /api/v1/rooms/:id/members": 16,
+            "PUT /api/v1/rooms/:id/read-state": 1
+          },
+          "idleRequestCounts": {
+            "GET /api/v1/users/me": 2,
+            "GET /api/v1/rooms/:id/read-state": 6,
+            "GET /api/v1/rooms/:id": 2,
+            "GET /api/v1/rooms/:id/messages": 53,
+            "GET /api/v1/rooms/:id/members": 2
+          },
+          "hiddenRequestCounts": {},
+          "visibilityMode": "simulated",
+          "heapBytes": 56437072,
+          "heapUnavailableReason": null,
+          "heapAfterIdleBytes": 22294668,
+          "heapAfterIdleUnavailableReason": null,
+          "heapAfterSwitchBytes": 67647948,
+          "heapAfterSwitchUnavailableReason": null,
+          "postSwitchRenderedRows": 1000
+        }
+      ]
+    },
+    "summary": "Five initial runs passed; one1000-row run failed during pagination; the bounded1000-row retry passed. Not an uninterrupted six-run pass."
+  },
+  "regressions": {
+    "initialRed": {
+      "failed": 5,
+      "passed": 8
+    },
+    "cleanupWiringRed": {
+      "failed": 1,
+      "passed": 5
+    },
+    "finalGreen": {
+      "passed": 14,
+      "files": 2
+    },
+    "independentReview": "One P3 CLI-cleanup wiring issue found and fixed; correction reviewed with no findings,14 focused tests independently passed."
+  },
+  "infrastructureGates": {
+    "brokerCrossNode": "pending by user instruction",
+    "hostedRuntime": "local-only testing requested; Render quota exhausted",
+    "asyncapiPublication": "presence/typing/read-state schemas still missing",
+    "physicalObjectCleanupAndQuota": "requires operator evidence; no public verification endpoint",
+    "realWarmupRollingDrainAndProductionMetrics": "requires coordinated runtime/environment observation"
+  },
+  "repositoryVerification": {
+    "command": "npm run check",
+    "exitCode": 0,
+    "testFilesPassed": 55,
+    "testsPassed": 341,
+    "formatLintTypecheckBuild": "passed"
+  }
+}

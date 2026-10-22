@@ -53,3 +53,46 @@ it('rejects a missing canonical identity even when the rendered row count is cor
     }),
   ).toThrow(/rows/)
 })
+
+it('explains unavailable later heap samples even when the first sample succeeds', () => {
+  const report = historyMetrics({
+    messageCount: 2,
+    renderedIds: [1, 2],
+    loadMs: 10,
+    heapSample: { usedSize: 1000 },
+    heapAfterIdle: null,
+    heapAfterSwitch: { usedSize: NaN },
+  })
+  expect(report.heapBytes).toBe(1000)
+  expect(report.heapUnavailableReason).toBeNull()
+  expect(report.heapAfterIdleBytes).toBeNull()
+  expect(report.heapAfterIdleUnavailableReason).toBeTruthy()
+  expect(report.heapAfterSwitchBytes).toBeNull()
+  expect(report.heapAfterSwitchUnavailableReason).toBeTruthy()
+})
+
+it.each([
+  [1, 1],
+  [1, 3],
+])('rejects changed post-switch identities %j with an unchanged row count', (...ids) => {
+  expect(() =>
+    historyMetrics({
+      messageCount: 2,
+      renderedIds: [1, 2],
+      postSwitchRenderedIds: ids,
+      postSwitchRenderedRows: 2,
+      loadMs: 10,
+    }),
+  ).toThrow(/rows/)
+})
+
+it('accepts the same post-switch identities in another order without publishing them', () => {
+  const report = historyMetrics({
+    messageCount: 2,
+    renderedIds: [1, 2],
+    postSwitchRenderedIds: [2, 1],
+    loadMs: 10,
+  })
+  expect(report.postSwitchRenderedRows).toBe(2)
+  expect(JSON.stringify(report)).not.toMatch(/renderedIds|postSwitchRenderedIds/)
+})

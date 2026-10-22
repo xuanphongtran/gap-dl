@@ -82,3 +82,16 @@ Owners and completion dates are not assigned in this repository. Close each item
 Post-review follow-up closed (2026-10-21): health/source/AsyncAPI remain unchanged. After the original registry was lost, the user explicitly approved replacement fixtures. Native local7/7 passes on the reviewed build, including actual hide/restore, using retained owner9/rooms3/4. Guest10 was deleted204 and all52 temporary journal entries are cleaned. The replacement registry is private and git-ignored in the workspace, outside disposable scratch. Original owner3/rooms1/2 remain unreconciled and were not mutated; reconcile them separately rather than claiming cleanup.
 
 Further Phase 4 work remains pending. Attachment storage/provider acceptance retains its separate gate.
+
+## 7. Remaining environment evidence after Phase 5–7 local follow-up — 2026-10-22
+
+[Fresh completion evidence](./PHASE_FIVE_SEVEN_LOCAL_2026-10-22.md) records17 activity checks, actual attachment hash rejection/five-minute expiry, native cancellation, recovery7/7 and341 passing tests. The frontend/tooling local work is accepted; these are the remaining backend/operator gates:
+
+- [ ] Publish activity/read-state schemas in AsyncAPI; its current hash remains unchanged and omits them.
+- [ ] Verify actual delayed R2 object deletion and quota release for the private journaled attachment IDs. Cancellation204 and account deletion prove logical cleanup scheduling only. The reviewed repository uses a five-minute upload deadline and cleanup no earlier than upload expiry plus ten minutes. Do not infer physical deletion or released capacity from an expired signed URL,404 authorization denial or successful cancellation.
+- [ ] Coordinate real local warm-up/readiness loss, rolling restart and graceful drain observations. No backend restart/configuration change was performed by the frontend acceptance.
+- [ ] Supply a working selected-host API environment when hosted testing resumes; the user currently requires local-only tests.
+- [ ] Collect actual production traffic/latency/long-session memory after rollout; synthetic development-app measurements do not establish production budgets.
+- [ ] Broker/two-instance/cross-node work is explicitly pending by user instruction on2026-10-22.
+
+Three old release-tool Minor findings are fixed, including review's CLI cleanup wiring correction. One history-run pagination timeout remains recorded alongside a passing targeted retry; its cause is not established. Historical Render/local legacy cleanup records above are unchanged. No backend mutation is authorized merely by listing this handoff.
