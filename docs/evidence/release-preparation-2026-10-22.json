@@ -1,0 +1,23 @@
+{
+  "date": "2026-10-22",
+  "scope": "Documentation consolidation quality check; no live/native journeys or hosted deployment rerun",
+  "baseCommit": "0a0cb6a",
+  "runtimeImplementationCommit": "b787af6",
+  "command": "npm run check",
+  "exitCode": 0,
+  "testFilesPassed": 55,
+  "testsPassed": 341,
+  "formatLintTypecheckBuild": "passed",
+  "buildArtifacts": [
+    {
+      "path": "dist/assets/index-BO9PhTyv.css",
+      "sha256": "ffeb3306fe4623faadb16fe26fa45f5c5be547c27a3960ca3d04690908771224"
+    },
+    {
+      "path": "dist/assets/index-C5y7mBkU.js",
+      "sha256": "b40f14874673ef3d2967a49f8d53a09189765c3fc3d6019676cee28994f886ca"
+    }
+  ],
+  "artifactStatus": "Quality-check build using current local environment; not a selected/published release candidate",
+  "published": false
+}
