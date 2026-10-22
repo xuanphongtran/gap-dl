@@ -1,98 +1,45 @@
-# Frontend product specification: Gogo DL Web Chat
+# Product specification
 
-**Status:** Frontend planning update, 2026-10-02. The REST contract source is the deployed [Swagger JSON](https://gogo-dl.onrender.com/swagger/doc.json), checked after the API update on 2026-10-02 (Swagger 2.0, API version 1.0, 24 paths, 31 operations). Check it again before implementing each feature and verify authenticated behavior against the API at `VITE_API_BASE_URL`. The first WebSocket slice is implemented on `feat/websocket-integration` with REST recovery; Room presence/typing and typed lifecycle completion are locally accepted on `feat/realtime-completion`; selected-host rollout and SSE remain separate gates. See [the reviewed WS contract](./docs/WEBSOCKET_CONTRACT.md).
+Current frontend behavior, updated 2026-10-22. Status is in [PLAN.md](PLAN.md); unresolved work is in [docs/PENDING.md](docs/PENDING.md).
 
-Swagger documents `PATCH/DELETE /api/v1/rooms/{id}/messages/{message_id}`, `GET/PUT /api/v1/rooms/{id}/read-state`, `GET /api/v1/rooms/{id}/presence`, and `GET /api/v1/rooms/{id}/messages/search`. The 2026-10-14 review also covers attachment reservation/metadata/completion, typed mention sends, notification inbox/read, and notification preferences: see [rich messaging evidence](./docs/RICH_MESSAGING_CONTRACT.md). Uploads and scanner pass the 2026-10-19 HTTP recheck; binding/download contracts are now published, and the [2026-10-22 local retest](./docs/ATTACHMENTS_LOCAL_ACCEPTANCE_2026-10-22.md) passes real binding/download/privacy and native provider CORS checks; native product picker/send/download/mobile also pass, while physical cleanup and selected-host gates remain separate; mentions/inbox are implemented with [local acceptance](./docs/MENTIONS_INBOX_ACCEPTANCE_2026-10-15.md), with [direct CORS reverified](./docs/BACKEND_RECHECK_2026-10-15.md) and [sandbox deployment acceptance complete](./docs/SANDBOX_RELEASE_ACCEPTANCE_2026-10-16.md). WebSocket schemas are reviewed separately in AsyncAPI. Endpoint presence in Swagger does not confirm authenticated runtime behavior.
+## Account and rooms
 
-The reviewed frontend operation and DTO matrix is in [docs/API_CONTRACT.md](./docs/API_CONTRACT.md).
+- Register/sign in, retain the session across reloads in the same tab, and share one token-refresh request between concurrent 401s. Final auth failure/logout clears session and private cache.
+- Discover public rooms before joining; messages/members require membership. Concealed private-room 404 must reveal no private details.
+- Support create/join/leave, invitations, role management, profile updates and deletion. Explain owner transfer conflicts on 409. The server remains authoritative for every action.
+- Membership loss immediately clears room data, drafts, editors, read state, Search and pending private UI. Late callbacks cannot restore removed data or another account's cache.
 
-## 1. Scope and release map
+## Messages and read state
 
-The existing Vue 3 and TypeScript client supports account access, room text chat, invitations, membership actions, profile settings, older-page loading, and five-second HTTP polling of the newest message page. Preserve these flows and the 8-bit/pixel UI while adding backend capabilities in independently usable releases.
+- Trim message content; require a nonblank caption and at most 4,000 UTF-8 bytes. Preserve drafts on failed sends. No automatic replay of uncertain writes.
+- Eligible authors edit their own messages using `{ content, revision }`; managers can delete eligible messages. On409 preserve the edit and offer explicit retry/discard against the fresh revision.
+- Merge by message ID and increasing revision. Tombstones stay ID-stable and content-free; nullable/deleted authors render neutrally. Keep scroll while loading older pages with `before`.
+- Read state is `{ room_id, last_read_message_id, unread_count }`. Advance only for viewed messages in a visible/focused conversation; debounce and keep cursors monotonic. Use authoritative unread counts; own messages are excluded and tombstones count by ID.
+- Read state is account/membership scoped. Reload, foreground recovery and explicit failed-write retry converge through REST; leaving/rejoining starts a new membership state.
 
-### Frontend foundation
+## Realtime and recovery
 
-Before adding new API-driven features, organize the existing source by responsibility and extract repeated pixel UI patterns into reusable base components. Route views compose feature components; base components provide presentation and accessible interactions without importing API clients, Vue Query, Pinia, or router state. Keep typed REST endpoints in `src/lib/api.ts`, Axios transport in `src/lib/http.ts`, shared Vue Query keys in `src/lib/query.ts`, and session state in Pinia.
+- Use one authenticated `@vueuse/core` WebSocket per tab. Authorize through REST before joining; close/reconcile on token/account/room boundaries. Apply revocation before other events in a batch.
+- Parse newline-separated envelopes; treat message/lifecycle events as REST reconciliation hints. Keep REST writes and newest-page polling every five seconds while visible.
+- Reconnect/foreground recovery reauthorizes and bridges at most ten additional 40-message pages. Beyond that bound, offer explicit conversation reload while preserving the draft.
+- Presence aggregates subscriptions across tabs. Only a current-socket snapshot confirms activity readiness; unknown/recovering state does not mean zero online.
+- Native editable input starts typing. Refresh at most once/2,000 ms; stop after 1,500 ms idle or blur/send/Search/hide; expire within 5,000 ms. HTTP repair is scoped/coalesced and cannot restore stale activity.
+- Workspace/network errors have explicit retry. Honor valid `Retry-After`; do not invent a countdown for missing/malformed values. Preserve action failures separately from read-recovery feedback.
 
-The initial base set covers buttons, form fields, panels, alerts, empty/loading states, and avatars. Each component needs a small typed public interface, semantic HTML, keyboard and focus behavior, disabled/loading states where applicable, and consistent use of `src/style.css` pixel tokens. Feature-specific chat rows, room links, and invitation cards stay in feature folders. The foundation must preserve existing routes, copy, responsive layout, and network behavior.
+## Search, mentions and attachments
 
-| Area | Frontend scope | Prerequisite |
-| --- | --- | --- |
-| Frontend foundation | Organize source and establish reusable pixel components before new feature work. | Existing UI regression checks |
-| API reliability | Verify validation, errors, rate limits, deleted authors, and account-deletion behavior. | Frontend foundation and deployed response contracts |
-| Membership | Align public/private room and role UI with the final authorization matrix. | Deployed authorization behavior |
-| Message lifecycle | Add edit/delete UI. | Swagger documents lifecycle endpoints and revision fields; verify behavior with accounts. |
-| Read state | Preserve durable REST read state/unread; complete scoped presence and typing independently. | Swagger documents read-state endpoints and cursor fields; verify behavior with accounts. |
-| Rich messaging | Add search, attachments, mentions, and inbox in separate releases. | Released APIs and provider gates |
-| Realtime and operations | Add reconnect/recovery when explicitly in scope; handle warm-up and transient failures. | Verified transport and deployment contracts |
+- Search is room scoped, paginated and deletion/revision aware. Opening or reading Search does not acknowledge found messages. Preserve conversation drafts and scroll; clear results on access loss.
+- Select mention recipients by user ID. Retry uncertain mention/file sends only with the original immutable caption, recipients, attachment IDs and idempotency key. Clear pending private state on account/access loss.
+- Inbox is private and metadata-only, with pagination, explicit read/retry and account/room preferences. Leave/rejoin generations and deleted references cannot restore old notification content.
+- Select up to five PNG/JPEG/TXT files, at most 10 MiB each. Upload progress/cancel/retry and processing state precede verified-file sends. The frontend requires captions; inbound file-only messages still render.
+- Discarding an unsent selection cancels its owned upload; a file already owned by an uncertain keyed send is not canceled on ordinary room navigation. Enforce expiry and show processing failures without claiming success.
+- Keep Files, bytes and signed tickets outside persistent stores/query caches/logs. Provider PUTs carry only the issued ticket headers and no API credentials/cookies.
+- Download requests obtain fresh authorized short-lived HTTPS tickets. History/Search use safe processed metadata; tombstones expose no files. Membership/deletion denies new tickets; already-issued links are not claimed instantly revocable.
 
-## 2. Existing journeys to preserve
+## Architecture and presentation
 
-| Journey | Expected behavior | Existing API |
-| --- | --- | --- |
-| Account | Register/sign in, persist tab session, refresh one expired access token, clear session and private cache on final auth failure. | Auth and profile REST operations |
-| Browse | Show accessible rooms and pending invitations with loading, empty, and error states. | Rooms and invitations reads |
-| Chat | Load room, members, newest messages, then older pages with `before`; retain per-room draft and scroll position. | Room, members, messages reads |
-| Send | Preserve draft on failure, show returned message once, reconcile by message ID. | Message POST |
-| Membership | Create/join/leave, invite/accept/decline, manage eligible roles, invalidate affected queries. | Room/invitation/member operations |
-| Profile | Update profile and confirm deletion. Explain ownership conflict on `409`. | Profile GET/PATCH/DELETE |
-
-## 3. API hardening and data integrity
-
-- The current Swagger error model exposes an `error` string. Show safe form-level feedback; map validation to individual inputs only if a later documented response adds stable field details. Client validation helps usability and never substitutes for server authorization.
-- Trim message content and enforce the documented 4,000 UTF-8 byte limit. Content validation returns `400`; `413` refers to an oversized HTTP request body. Keep the draft editable when it exceeds the limit.
-- On `429`, honor a valid integer `Retry-After`, disable only the affected action for that interval, and allow retry afterward. On `413`, explain the relevant size limit. Distinguish final `401`, `403`, concealed `404`, `409`, network failure, and temporary `503` without revealing private-resource existence or backend internals.
-- Capture `X-Request-ID` for safe support details when present. Never log tokens, message bodies, signed URLs, or raw error stacks. Do not automatically replay writes without a confirmed idempotency contract.
-- Account deletion may be rejected while the user owns rooms; explain ownership transfer. Deleted authors can remain in message history with nullable identity; display a neutral deleted-user label while preserving the message ID and deletion state.
-- Confirm server normalization and bounds for email, username, room name, avatar URL, and message content before adding matching client hints.
-
-## 4. Rooms and permissions
-
-- The deployed `GET /api/v1/rooms` discovers public rooms before membership; their `role` is `null`. An unaffiliated user can read public room details and join by ID, while members and messages require membership. A concealed private-room `404` must not reveal details.
-- Treat visibility as immutable unless the deployed API supports changing it. Owners transfer ownership before leaving or deleting their account. Use confirmed idempotent join/leave/invitation responses.
-- Show owner/moderator/member actions according to the returned role, while the API remains authoritative. On membership loss, clear that room's cached details, members, messages, read state, and pending private UI; return to the room list.
-
-## 5. Message lifecycle
-
-- After verifying the documented lifecycle endpoints with accounts, let an eligible current-member author edit their own text. Owners/moderators may delete other users' messages but may not rewrite their text. Confirm the complete role matrix before showing controls.
-- `PATCH /api/v1/rooms/{id}/messages/{message_id}` takes `{ content, revision }` and returns a Message. Send the current revision when editing. A `409` conflict keeps the local edit, fetches the latest server version, and offers explicit retry/discard; never silently overwrite newer text.
-- Deletion renders an ID-stable, content-free tombstone. Repeated deletes converge on the same state. Show an edited indicator only when the API supplies it. Merge history, polling, mutations, and eventual events by message ID and increasing revision; ignore older results.
-- Edits/deletes do not create a new unread item. `before=<message ID>` pagination must continue to work through tombstones and preserve reading position.
-
-## 6. Read state, unread, presence, and typing
-
-- `GET/PUT /api/v1/rooms/{id}/read-state` returns `{ room_id, last_read_message_id, unread_count }`; PUT takes `{ last_read_message_id }` with a positive integer. Advance the room cursor only when messages are actually viewed, never merely because a list query loaded. Keep writes monotonic and retry safely. The returned cursor can be `0`; own messages are excluded from unread; tombstones still count by ID.
-- Scope read state to current account and membership; clear it on logout or room removal. Show unread counts from an authoritative API projection or a documented full-history calculation, never only from the newest 40-message cache.
-- Presence is visible only to current room members and aggregates a user's subscriptions across tabs. Reconnection requires an authorized snapshot. Typing is ephemeral, throttled, and expires; it is not durable Vue Query state.
-- Presence/typing follows the written BE spec 07 and authenticated local wire checks; AsyncAPI publication drift remains a BE follow-up. A valid snapshot on the current connection confirms subscription; another tab's join and HTTP alone never do. Unknown/recovering activity never renders as zero online.
-- Only native editable input starts typing; draft restoration and focus do not. Starts refresh at most once/2000ms, stop after 1500ms idle or blur/send/Search/hide, and expire within 5000ms. Preserve the start floor across room switches on the same connection; clear timers on account/connection boundaries. Resolve typing names from authorized current members, exclude self/unknown IDs and bound labels to two names plus a count.
-- Safe presence HTTP repairs are account/room scoped, coalesced and rate limited; a response predating a later activity transition cannot restore stale typing. Activity failure leaves durable text chat usable. [Local completion evidence](./docs/REALTIME_COMPLETION_ACCEPTANCE_2026-10-21.md) is separate from hosted and distributed acceptance. Phase 4 was resumed and [locally reaccepted on 2026-10-22](./docs/READ_STATE_LOCAL_ACCEPTANCE_2026-10-22.md), with authoritative unread, monotonic cursors, account-scoped events and native retry/visibility/convergence/privacy checks. Selected-host acceptance remains separate.
-
-## 7. Search, attachments, and inbox
-
-- **Search:** room-scoped authorized search with bounded query and documented cursor pagination. Handle edits, tombstones, revoked membership, and stale snippets without leaking content. Implemented on `feat/message-search` with [verified API and browser evidence](./docs/SEARCH_ACCEPTANCE_2026-10-14.md); deployment acceptance remains separate. Search preserves conversation drafts/scroll and does not acknowledge found messages.
-- **Attachments:** user reports the BE flow complete on 2026-10-20. [Updated contract/runtime evidence](./docs/ATTACHMENTS_RECHECK_2026-10-20.md) confirms published atomic binding, typed summaries and authorized60-second downloads; [fresh local API/provider acceptance](./docs/ATTACHMENTS_LOCAL_ACCEPTANCE_2026-10-22.md) passes after the backend configuration update, including binding/retry, original-byte downloads and membership/deletion denial. Native product picker/send/download/mobile also pass; [extended local edge checks](./docs/PHASE_FIVE_SEVEN_LOCAL_2026-10-22.md) also pass; physical cleanup and selected-host acceptance remain separately tracked. The [frontend design](./docs/superpowers/specs/2026-10-20-attachments-design.md) is approved on 2026-10-20; its [implementation plan](./docs/superpowers/plans/2026-10-20-attachments.md) is implemented with [local acceptance](./docs/ATTACHMENTS_ACCEPTANCE_2026-10-20.md). Selection/progress/cancel/retry, processing states, caption+verified-file sends and authorized downloads preserve text/mentions; local runtime/provider and core product checks pass; real expiry/rejection and native navigation cancellation now pass, while physical cleanup and selected-host gates remain open. Signed URLs stay ephemeral and out of durable caches/logs/events. Keep nonblank captions in this frontend slice; attachment-only creation requires a separate scope decision, while inbound file-only messages must still render. The lightweight processor is not an antivirus guarantee; ClamAV is not a prerequisite.
-- **Mentions/inbox:** select recipients by typed identity, not username parsing. Implemented typed recipient selection, private paginated metadata-only feed, explicit reads, account/room preferences and per-tab explicit retry identity; deleted or revoked items must not reappear after reconnect. External email/push is outside scope. [Acceptance](./docs/MENTIONS_INBOX_ACCEPTANCE_2026-10-15.md) records the original backend Idempotency-Key CORS blocker; [the backend recheck](./docs/BACKEND_RECHECK_2026-10-15.md) confirms it is resolved. [Hosted acceptance](./docs/SANDBOX_RELEASE_ACCEPTANCE_2026-10-16.md) verifies the released Mentions/Inbox build on the designated sandbox.
-
-## 8. Transport, state, and privacy
-
-- Keep typed endpoints in `src/lib/api.ts`, Axios transport and refresh in `src/lib/http.ts`, Vue Query keys in `src/lib/query.ts`, and Pinia for session state. Component refs own drafts and panels. Pass query abort signals to cancellable reads and clear private cache on account change.
-- Poll the newest message page every five seconds while visible; older pages load on demand. WebSocket recovery bridges gaps with `before` from a synchronized history anchor, at most ten additional 40-message pages. Beyond that bound, require explicit conversation reload while preserving the composer draft.
-- Use `@vueuse/core` for the authorized per-tab WebSocket lifecycle. Treat documented best-effort events as signals to reconcile REST state; keep REST writes and polling until lifecycle/read-state event coverage is complete. Send unbuffered join/leave and confirmed-subscription typing commands only for authorized active rooms; never fabricate authoritative events. SSE remains deferred.
-- On reconnect or foreground recovery, reauthorize subscriptions, reconcile history/read state, deduplicate by ID/revision, and apply membership revocation before displaying further private data. Preserve drafts during token refresh, but clear them immediately on an explicit account change. Sequence/recovery metadata and cross-instance guarantees are contract gates, not assumptions. SSE requires its own backend contract.
-- Safe reads may retry transient failures; writes require confirmed idempotency before automatic replay. Honor `Retry-After` and use bounded backoff for readiness failures.
-
-## 9. Visual and accessibility requirements
-
-Keep square panels, 4/8 px spacing, pixel borders/shadows, a pixel font for short labels, and readable sans-serif text for messages/forms. Preserve contrast, visible keyboard focus, labelled inputs, readable line breaks and long URLs, reduced-motion behavior, and mobile room/chat navigation. Edit/delete controls need keyboard access and accessible success/error feedback. Loading, empty, permission-lost, rate-limited, offline, and retry states need distinct text. Do not leave stale private content visible after membership loss.
-
-## 10. Acceptance and open contracts
-
-1. Existing register → room → invite → chat → leave flows pass with two accounts on the target deployment, including desktop/mobile use.
-2. Removed/unauthorized users cannot view cached private room content after navigation or reload; final `401` clears session and private query data.
-3. Edit/delete converge after conflict, retry, reload, and out-of-order updates; tombstones never reveal old text.
-4. Read cursors never move backward; unread counts follow membership and deletion rules across reloads/tabs.
-5. `413`, `429` with `Retry-After`, ownership `409`, concealed `404`, network failure, and warm-up have clear UI states.
-6. Search, attachments, inbox, presence, typing, and distributed real-time features ship only after their deployed contract and privacy gates pass.
-
-**Contract gate:** Recheck the deployed [Swagger JSON](https://gogo-dl.onrender.com/swagger/doc.json) before implementation. Verify lifecycle/read-state behavior, nullable deleted authors, request-ID/`Retry-After` headers, and authorization with test accounts. Review the separately published [AsyncAPI YAML](https://gogo-dl.onrender.com/asyncapi/asyncapi.yaml) before WebSocket work; obtain published contracts for search, uploads, and inbox when those features enter scope. Track resolution in [PLAN.md](./PLAN.md).
+- Typed endpoints: `src/lib/api.ts`; Axios/refresh: `src/lib/http.ts`; Vue Query server state/keys: `src/lib/query.ts`; Pinia: session only.
+- Base controls in `src/components/base/` have no API/router/session dependencies. Feature UI lives in `src/features/`; views compose routes. Local refs own drafts/panels.
+- Pass AbortSignals to cancellable reads; isolate callbacks by account, room, connection and query generation. Do not log credentials, message bodies, raw socket URLs, signed URLs or provider errors.
+- Preserve the pixel tokens in `src/style.css`, accessible labels/focus/keyboard behavior, contrast, reduced motion and mobile navigation. Distinguish loading, empty, offline, rate limit, retry and permission loss.
+- Runtime authorization and current contracts govern behavior. SSE, cross-node guarantees and external email/push are outside the current frontend release; [pending gates](docs/PENDING.md) track what requires further evidence.

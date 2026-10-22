@@ -1,13 +1,23 @@
-# Live acceptance fixture cleanup
+# Live fixture execution and cleanup
 
-Use `scripts/lib/live-fixture-journal.mjs` for future authorized live acceptance harnesses. The original 2026-10-16 private Search harness is no longer available; its successful cleanup evidence does not prove safety under response loss or interruption. The tracked journal has local failure-injection coverage, not a new live acceptance claim.
+Reuse the approved private registry in ignored `.realtime-fixtures.local/` (directory0700, files0600). Owner 9/public room 3/private room 4 are retained. Create no new owned room without an approved retention/deletion strategy. Never commit credentials, tokens, signed URLs or journal contents.
 
-Create a private directory outside the repository with mode 0700, persist recovery credentials there before any request, and open one journal file per sequential harness. Files are atomically replaced with mode 0600. Never commit the journal or include its contents in reports.
+## One live runner at a time
 
-Wrap every resource-creating request, including registration, in `journal.write({ kind, recovery }, send)`. `recovery` must contain enough private information to identify the outcome without its response: a unique run marker and exact room for messages; persisted credentials/email for a disposable account. The journal records an uncertain intent before invoking `send`; return a resource identity only after validating a successful response. A timeout or malformed response leaves the operation unconfirmed.
+The current helper can clean every outstanding guest in its registry. Running two probes concurrently already caused one to delete the other's guest. Serialize all live fixture mutations/cleanup until P01 implements enforced ownership. Synthetic suites with separate local fixtures do not use this registry.
 
-Before cleanup, call `journal.cleanup({ reconcile, remove })`. `reconcile(entry)` must locate an ambiguous resource using its recovery information and return `{ resource }`, or return null to retain uncertainty. For lost registration responses, sign in using the persisted disposable credentials to obtain the account identity/session. For messages, search/page only the authorized fixture room for the unique marker and verify ownership before deletion. Never assume a missing response means nothing was created, or delete unrelated matches. Unresolved ambiguity must remain an open cleanup gate.
+## Journal protocol
 
-`remove(entry)` must confirm deletion or an already-absent state and must tolerate repetition. The journal saves `cleaning` before each deletion and `cleaned` immediately after confirmation. If the process is interrupted, reopen the same file and resume; a deletion whose acknowledgement was lost is retried safely. Save and report `journal.summary()` even if cleanup throws. A report can pass cleanup only when `unconfirmed === 0`; do not print raw exceptions or private state.
+1. Use `scripts/lib/live-fixture-journal.mjs`. Before each write, persist a private recovery intent with enough information to identify an uncertain outcome.
+2. Return/store a resource identity only after validating success. Timeout,500 or missing response stays uncertain;401 is not proof of deletion.
+3. Reconcile ambiguous outcomes only inside authorized fixture scope. Do not blindly replay writes, sign up replacements or delete unrelated matching records.
+4. Cleanup known messages/uploads before deleting disposable accounts. Confirm actual deletion/tombstone acknowledgements. Save progress before and after each operation so interruption is recoverable.
+5. Report cleanup success only when every relevant journal has 0 unresolved entries. Retain unresolved recovery material and list it in PENDING.md; never publish raw errors or secrets.
 
-Run `npm test -- scripts/live-fixture-journal.test.mjs` to verify lost message/registration responses, restart after interrupted cleanup, and unresolved writes. These adapters and live integration must be checked in the next hosted harness before it creates fixtures. No new sandbox writes are needed for the local tests.
+Use one owner per journal file and serialize its writes. Each independent native mutation needs its own journal or explicit serialization. Account deletion can establish logical membership/read-state cleanup, but does not prove physical R2 deletion/quota release. Old owner3/rooms1/2 and historical Render records must not be confused with current retained fixtures.
+
+```bash
+npm test -- scripts/live-fixture-journal.test.mjs scripts/realtime-live-fixtures.test.mjs
+```
+
+These tests verify journal behavior, not live infrastructure cleanup. [Release](RELEASE.md) owns execution order; [pending](PENDING.md) owns unresolved outcomes.

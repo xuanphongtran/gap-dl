@@ -1,39 +1,41 @@
-# Gogo DL Pixel Chat
+# Gogo DL Web Chat
 
-Vue 3 + TypeScript web client for the [Gogo DL API](https://gogo-dl.onrender.com/swagger/index.html). The first version uses room based text chat over HTTP with a pixel styled interface. WebSocket/SSE integration remains a TODO.
+Vue 3 + TypeScript chat client with a pixel UI. Includes rooms/invitations, message editing/deletion, unread counts, WebSocket recovery, presence/typing, Search, Mentions/Inbox and attachments. REST remains authoritative and the newest message page keeps five-second polling.
 
-## Start
+## Run locally
 
-Requires Node.js 22.18 or newer.
+Requires Node.js 22.18+ and a backend. Current acceptance target is local port8080.
 
 ```bash
 npm ci
-cp .env.example .env
-npm run dev
 ```
 
-Set `VITE_API_BASE_URL` in `.env` to the backend origin. The default is `https://gogo-dl.onrender.com`. The backend must allow the frontend origin through CORS. The included `vercel.json` rewrites direct requests such as `/login` and `/app/rooms/1` to `index.html` so Vue Router can handle them. Other hosts need an equivalent SPA fallback.
+Create or update `.env.local`:
 
-## Checks
+```dotenv
+VITE_API_BASE_URL=http://127.0.0.1:8080
+```
+
+```bash
+npm run dev -- --host localhost --port 5173 --strictPort
+```
+
+Use a free port allowed by backend REST CORS and WebSocket Origin settings. Vite compiles the API origin into the build; changing it requires rebuilding. The fallback API default is Render, whose quota was exhausted during acceptance.
+
+## Check and build
 
 ```bash
 npm run check
 ```
 
-This runs Prettier verification, ESLint, Vue TypeScript checking, tests, and a production build. Use `npm run format` to format source files. `.github/workflows/ci.yml` runs the same check on push and pull request.
+Runs format, lint, typecheck, tests and production build; CI runs the same command. Live/native checks are described in [release preparation](docs/RELEASE.md).
 
-Run `npm run contract:check` to compare the current deployed Swagger document with the routes and core DTO fields this client expects. This live check is separate from CI because it requires the API to be reachable. Set `SWAGGER_URL` to check another deployment. The reviewed operation matrix and authenticated HTTP smoke results are in [docs/API_CONTRACT.md](./docs/API_CONTRACT.md).
+## Documentation
 
-## Architecture
-
-- `src/lib/http.ts`: Axios instances, Bearer authentication, error handling, cancellation, timeout, and one shared token refresh request.
-- `src/lib/api.ts`: typed REST endpoint functions.
-- `src/lib/query.ts`: Vue Query client and cache keys. Queries own profile, rooms, invitations, members, and messages; mutations invalidate affected data. The newest message page polls every five seconds while history pages load on demand.
-- `src/lib/session.ts`: session storage for token pair. It persists across reloads in the same tab; production should move refresh tokens to secure HTTP only cookies when supported by the backend.
-- `src/stores/auth.ts`: Pinia state for the current session only.
-- `src/components/base/`: reusable pixel controls with typed props and accessible form behavior. They do not depend on API or application state.
-- `src/features/`: authentication, rooms, messages, and profile UI. Feature screens own their local interactions.
-- `src/views/`: thin route wrappers that compose feature screens.
-- `src/style.css`: shared pixel design tokens, global utilities, and responsive layout.
-
-Read [SPEC.md](./SPEC.md) and [PLAN.md](./PLAN.md) for scope and remaining API questions. Repository guidance for Codex is in [AGENTS.md](./AGENTS.md) and `.agents/skills/gogo-chat-development/SKILL.md`.
+- [SPEC.md](SPEC.md): product behavior and code boundaries.
+- [PLAN.md](PLAN.md): phase status and next work.
+- [Pending](docs/PENDING.md): the single list of unresolved work and release gates.
+- [Release](docs/RELEASE.md): draft notes, verification and rollout checklist.
+- [Acceptance](docs/ACCEPTANCE.md): dated results and retained evidence.
+- [Contracts](docs/CONTRACTS.md): REST/WebSocket integration boundaries.
+- [Fixture cleanup](docs/LIVE_FIXTURE_CLEANUP.md): safe live-test execution.

@@ -1,200 +1,29 @@
-# Frontend implementation plan: Gogo DL Web Chat
+# Delivery plan
 
-References: [frontend specification](./SPEC.md) and the deployed [Swagger JSON](https://gogo-dl.onrender.com/swagger/doc.json), the REST contract source. Recheck Swagger before implementing each feature and verify authenticated behavior at `VITE_API_BASE_URL`. A Swagger route alone is not proof that the user journey works.
+Updated 2026-10-22. Frontend changes through `b787af6` are included in develop PR17 (`b58254e`). Local acceptance is not hosted/production acceptance.
 
-The latest reviewed operation matrix and unresolved runtime checks are in [docs/API_CONTRACT.md](./docs/API_CONTRACT.md).
+## Completed frontend work
 
-**Sandbox acceptance update (2026-10-13):** [Browser acceptance evidence](./docs/ACCEPTANCE_2026-10-13.md) verifies the Phase 3 manager/reload checks and Phase 4 multi-tab/retry journeys on `https://chat-sb.xuanphong.io.vn`. Sandbox routes and CORS pass; CI at `2da84f3` passes. Private-room re-invitation after removal is blocked: the backend returns the old accepted invitation while the removed member remains unauthorized. Swagger now reports 31 paths and 41 operations, including attachment and notification/preference endpoints. Rapid room switches and overlapping read-write tests remain open.
+| Phase                                        | Status                                                              | Evidence                                                                          |
+| -------------------------------------------- | ------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| 0–2: foundation, API reliability, membership | Implemented                                                         | Current source and repository checks                                              |
+| 3: message lifecycle                         | Implemented; earlier hosted smoke                                   | [Acceptance](docs/ACCEPTANCE.md)                                                  |
+| 4: durable read state/unread                 | Locally accepted; 10 live groups                                     | [Read-state evidence](docs/evidence/read-state-local-2026-10-22.json)             |
+| 5: WebSocket, lifecycle, presence/typing     | Locally accepted; 17 latest contract checks                          | [Phase 5–7 evidence](docs/evidence/phase-five-seven-local-2026-10-22.json)        |
+| 6: Search, Mentions/Inbox, attachments       | Implemented; core product/provider and edge checks accepted locally | [Attachment evidence](docs/evidence/attachments-local-acceptance-2026-10-22.json) |
+| 7: recovery and acceptance tooling           | Frontend work implemented/reviewed; operational gates remain open   | [Phase 5–7 evidence](docs/evidence/phase-five-seven-local-2026-10-22.json)        |
 
-**Continuation update (2026-10-14):** The WebSocket transport slice is implemented and independently reviewed; see [the WS evidence](./docs/WEBSOCKET_CONTRACT.md). Phase 4 deterministic rapid-room-switch and overlapping-write checks now pass in [the read-state race record](./docs/READ_STATE_RACES_2026-10-14.md). Private-room re-invitation, deployed WebSocket multi-tab acceptance, and remaining contract/release gates stay open. Room Search is now implemented and locally accepted on `feat/message-search`; see [Search acceptance](./docs/SEARCH_ACCEPTANCE_2026-10-14.md). Attachments remain provider-gated. Mentions/inbox implementation and proxy browser acceptance are complete; direct CORS and deployment remain open.
+## Phase 8: release candidate stability — proposed
 
-**Current frontend baseline (2026-10-02):** Vue 3, TypeScript, Router, Pinia session state, Axios transport, Vue Query server state, pixel UI, ESLint, Prettier, Vitest, and GitHub Actions are in place. Basic REST rooms, invitations, membership actions, profile, text messages, pagination, and latest-page polling are implemented. Two-account HTTP behavior was verified on the target deployment; browser end-to-end behavior remains open. WebSocket and SSE are deferred.
+1. Enforce exclusive ownership of live fixture runs.
+2. Diagnose the recorded history-pagination timeout and add a regression for the established cause.
+3. Smoke the exact production build against local :8080 on desktop/mobile, including privacy and attachments.
+4. Complete the [release checklist](docs/RELEASE.md), retaining failed attempts and cleanup outcomes.
 
-**Backend recheck (2026-10-15, 07:49–07:54 UTC):** [Fresh probes](./docs/BACKEND_RECHECK_2026-10-15.md) close the Idempotency-Key CORS and private re-invitation blockers. Attachments still return 503; account 36 membership and cursor mismatch remain. Earlier dated findings below are historical.
+This is proposed scope; implementation design/plan approval is still pending. See P01–P03 in [PENDING.md](docs/PENDING.md).
 
-**Backend follow-up (2026-10-15):** [Backend handoff](./docs/BACKEND_HANDOFF.md) tracks CORS, private-room re-invitation, attachment readiness, legacy fixture cleanup, and pending deployment verification with acceptance criteria.
+## Release status
 
-**Sandbox release acceptance (2026-10-16):** The user released the Mentions build; [hosted acceptance](./docs/SANDBOX_RELEASE_ACCEPTANCE_2026-10-16.md) verifies byte-identical assets, 16 native functional journeys, and a separate active-socket logout probe. WebSocket multi-tab/reconnect and Mentions/Inbox host gates are closed for `chat-sb.xuanphong.io.vn`. Fresh full check passes 191 tests. Attachments still return 503; operational/distributed and legacy admin-cleanup gates remain open.
+Release documentation is prepared. The candidate has not been tagged, published or fully accepted on the target host. [PENDING.md](docs/PENDING.md) owns all open items, their evidence and closure criteria. Broker/cross-node remains pending by explicit user instruction.
 
-**Release hardening approved (2026-10-16):** Attachments are pending by user instruction because R2 is not configured. Continue independently with [Release hardening](./docs/superpowers/plans/2026-10-16-release-hardening.md): workspace read recovery, deterministic 503/429/retry acceptance, long-history cost baseline and hosted Search verification. [Design](./docs/superpowers/specs/2026-10-16-release-hardening-design.md) and plan were approved; [implementation evidence](./docs/RELEASE_HARDENING_ACCEPTANCE_2026-10-16.md) records completed local recovery/history checks and hosted Search. Independent review is being finalized; the new recovery code needs deployment before its host gate can close. Presence/typing and distributed work retain separate contract gates.
-
-**Attachment implementation (2026-10-20):** The approved upload/send/download slice is implemented on `feat/attachments`; [local acceptance](./docs/ATTACHMENTS_ACCEPTANCE_2026-10-20.md) records 270 passing tests, seven native attachment scenarios, recovery and Search checks. The independent review found three Important issues, fixed in one tested pass; no Minor findings remain. Staging readiness remains 503; real provider/runtime and selected-host release gates remain open.
-
-**Attachment test rerun (2026-10-20, 08:43 UTC):** [Fresh retest](./docs/ATTACHMENTS_RETEST_2026-10-20.md) passes 270 local tests, seven synthetic native scenarios and 34 required contract operations. Live health 200/readiness 503 and two recovery login 401 responses were observed. No authenticated attachment endpoint or browser/storage flow was exercised; actual runtime and deployment gates remain open.
-
-**Local backend target (2026-10-20):** User reports Render quota exhaustion; use local port 8080. [Local verification](./docs/ATTACHMENTS_LOCAL_ACCEPTANCE_2026-10-20.md) confirms health/readiness 200, the 34-operation contract, two native login/logout journeys and acknowledged deletion of both test accounts. `.env.local` now points to 8080. No room fixture is available, so real attachment acceptance awaits an existing room or cleanup/retention strategy; Render journal cleanup remains separate.
-
-**Phase 5 completion (2026-10-21):** Typed lifecycle reconciliation and scoped room presence/typing are implemented and independently reviewed on `feat/realtime-completion`. Repository checks pass335/335; native synthetic8/8 and post-review local-BE7/7 pass. [Acceptance](./docs/REALTIME_COMPLETION_ACCEPTANCE_2026-10-21.md) records actual hide/restore, fixture replacement approved after registry loss, cleanup and remaining host/publication/Phase7 gates. Further Phase4 work remains pending.
-
-**Local attachment retest (2026-10-22):** The backend configuration update restores real upload/scanning. [Acceptance](./docs/ATTACHMENTS_LOCAL_ACCEPTANCE_2026-10-22.md) records seven passing API/provider groups, native R2 CORS/download, binding/retry/history/Search and membership/tombstone denial. [Release preflight](./docs/RELEASE_PREFLIGHT_2026-10-22.md) confirms matching hosted assets and route fallback only. Continue locally by user instruction. Four native product picker/send/download/mobile checks also pass. Extended live edge cases, host and operational gates remain separately tracked.
-
-**Phase 4 resumed (2026-10-22):** User resumes read-state/unread acceptance. [Current local evidence](./docs/READ_STATE_LOCAL_ACCEPTANCE_2026-10-22.md) passes ten API/wire/native groups and 40 focused tests. No product fix was needed; selected-host and Phase7 operational gates remain separate.
-
-**Phase 5–7 local follow-up (2026-10-22):** [Current completion evidence](./docs/PHASE_FIVE_SEVEN_LOCAL_2026-10-22.md) records17 activity-contract checks, real attachment rejection/expiry plus native navigation cancellation, recovery7/7 and341 passing tests. Three deferred release-tool defects are fixed and reviewed. One history pagination timeout is retained alongside its passing bounded retry. Broker/cross-node stays pending by explicit user instruction; hosted, AsyncAPI and real operational/physical-cleanup gates remain external prerequisites.
-
-## 0. Frontend source and component foundation — P0, implement first
-
-The app already runs, but route views contain repeated pixel controls and much of the feature UI. Refactor the existing implementation before adding new API-driven behavior. Preserve routes, visible copy, mobile layout, and request semantics while moving code.
-
-### Source boundaries
-
-```text
-src/
-  components/base/       PixelButton, PixelField, PixelPanel, PixelAlert,
-                         PixelEmptyState, PixelAvatar
-  features/auth/         Authentication forms and feature-only UI
-  features/rooms/        Room navigation, invitation and member UI
-  features/messages/     Message list, row, composer and room-local logic
-  features/profile/      Profile form and account actions
-  views/                 Route-level composition and page layout
-  lib/                   api.ts, http.ts, query.ts, session.ts and shared helpers
-  stores/                Session state only
-  style.css              Shared pixel tokens, reset and global utilities
-  types.ts               Shared API models until a feature owns a local type
-```
-
-Keep endpoint functions in `src/lib/api.ts`, Axios transport in `src/lib/http.ts`, and Vue Query keys in `src/lib/query.ts`. Feature folders may hold query composables and feature-specific types, but do not create a second HTTP client or duplicate server state in Pinia. Base components cannot import API, router, or session modules. Keep component styles close to the component while shared design tokens remain in `src/style.css`.
-
-- [x] Keep the current Vue/Vite/TypeScript setup, Router, Axios, Vue Query, Pinia session store, ESLint, Prettier, Vitest, CI, and `npm run check`.
-- [x] Define typed props, events, and slots for the initial base set. Native `RouterLink` remains the semantic navigation link; `PixelButton` is a button. Fields associate labels/help and preserve external ARIA descriptions; buttons support disabled/loading states.
-- [x] Extract repeated button, field, panel, alert, empty/loading state, and avatar markup. Preserve the pixel appearance and add interaction tests for field labelling, selection, form submit, loading buttons, and composer keyboard behavior.
-- [x] Move authentication, room, message, and profile-specific UI into feature folders. Leave `src/views/` as thin route composition and preserve Axios/Vue Query/Pinia boundaries.
-- [x] Verify focus and reduced-motion rules remain in `src/style.css`; run `npm run check` and visually smoke-test login, room list, conversation, and settings at desktop/mobile sizes using local mock data.
-
-**Local exit gate:** The named base components are used by at least two applicable screens, source boundaries are followed, mock-backed screens retain their layout, and `npm run check` passes. The CI workflow runs the same command; remote CI and two-account live API journeys remain to be verified after push/in Section 1.
-
-**Completion record (2026-10-02):** Created `feat/frontend-foundation`, extracted six base components and message row/composer, moved screens to feature folders, kept route wrappers, added focused component tests, and reviewed desktop/mobile screenshots with local mock REST data. A review found that `PixelField` could overwrite caller-provided ARIA descriptions; the component and test were fixed before commit. No production credentials or API mutations were used.
-
-## 1. Contract inventory and regression baseline — P0
-
-- [x] Inspect the deployed Swagger JSON: the latest 2026-10-02 snapshot reports API 1.0 with 24 paths and 31 operations, including message edit/delete, room read state, room presence, message search, and system readiness routes. The error schema currently exposes an `error` string.
-- [x] Recheck Swagger at implementation time; record target deployment version and compare request/response schemas with `src/types.ts` and `src/lib/api.ts`, including nullable deleted authors and message revision/tombstone fields. Verify the current text-chat contracts with authenticated HTTP requests.
-- [ ] Confirm target origin, CORS, HTTPS, route availability, `expires_at`, refresh rotation, `before` ordering/limit, validation bounds, `Retry-After`, `X-Request-ID`, and stable error shape. Most items were observed; final-host CORS, boundary responses, and `Retry-After` still need verification. Refresh did not rotate the refresh token in the sampled request.
-- [x] Create development accounts and room fixtures. The earlier authenticated HTTP baseline and the 2026-10-13 sandbox browser create/invite/accept/send/history/leave journeys passed. The owner and removed-member fixture remain for blocker reproduction; auxiliary accounts were deleted. Re-invitation after removal remains blocked and is recorded in the acceptance report.
-- [x] Keep `npm run check` green locally. Add focused mocked HTTP contract tests and an opt-in live Swagger check. Local checks and remote CI at `2da84f3` passed on 2026-10-13.
-
-**Exit gate:** A versioned contract matrix identifies deployed routes and fields; existing text-chat journeys work with two accounts, or response-backed mismatches are recorded as blockers.
-
-## 2. Hardening and membership alignment — P0
-
-- [x] Extend Axios error normalization with documented `error` messages, integer `Retry-After`, and `X-Request-ID`. Preserve single-flight `401` refresh and clear private Vue Query data on final auth failure. Actual `429` response headers remain unobserved; mocked tests cover parsing and countdown.
-- [x] Add actionable UI for `400` message length validation, `413`, `429`, transient `503`, ownership `409`, and concealed private-room `404`. Do not replay writes automatically. Show a bounded retry timer for valid integer `Retry-After`.
-- [x] Render nullable deleted authors and account-deletion ownership conflict without losing message identity or exposing tombstone text. Keep a newer revision/tombstone when older pages or polls arrive.
-- [x] Align create/join/leave/invite/member controls with observed authorization behavior. Clear private room queries immediately after membership loss and preserve discoverable public rooms with `role: null` and a join action.
-- [x] Test role changes, removal during an open room, transfer-before-leave, duplicate join/leave, hidden private rooms, logout/account switch, mobile layout, and keyboard interaction. Live HTTP checks cover roles, transfer, concealment, and duplicate public join/leave. Mocked tests cover cache revocation, public join UI, and account switch; headless Chrome with the deployed API covers owner login/private navigation and visitor registration/public join/leave. Desktop/mobile join-state layouts were inspected with local mock data.
-
-**Exit gate:** Errors and membership changes render safely, private cache is cleared on revocation, and current REST chat remains usable. Final membership semantics are verified against the deployed API.
-
-**Completion record (2026-10-02):** The frontend gates private room queries on membership and offers a join action. The refreshed Swagger now documents nullable `Room.role` and clarifies that message content over 4,000 UTF-8 bytes returns `400`, while `413` is for an oversized HTTP body. The composer validates the byte limit. `Retry-After` remains unverified on a real `429`; the header parser and countdown are covered by mocks. The review found a missing `PixelAlert` import in the new join state; it was fixed before commit. Final-host CORS remains a release gate.
-
-**Follow-up review:** A rejected write now refreshes authentication without silently resending the write. Invitation and member rate limits block only the affected action. Ownership conflicts appear beside account deletion, and merged message pages retain erased authors and tombstones. Write retry safety, action isolation, and message merging have focused regression tests.
-
-## 3. Message lifecycle — P1
-
-**Dependency:** The Swagger-documented lifecycle routes and Message fields are rechecked and verified with test accounts.
-
-**Implementation note (2026-10-02):** The current deployed Swagger lists 24 paths and 31 operations and documents `PATCH` with `{ content, revision }` plus `DELETE` returning a Message tombstone. Keep one room-local editor draft, merge mutation results with the displayed REST pages by ID/revision, and refetch loaded pages after `409` to present the server version before an explicit retry. Event merging stays with deferred real-time work.
-
-- [x] Add typed `PATCH/DELETE /api/v1/rooms/{id}/messages/{message_id}` functions and Message fields. PATCH sends `{ content, revision }`; authenticated requests confirmed `200` and stale-revision `409`.
-- [x] Add edit/delete controls to eligible message rows with keyboard support, edit draft preservation, destructive confirmation, and clear edited/deleted display.
-- [x] Merge history, newest-page, and mutation responses by message ID and increasing revision. Keep tombstones ID-stable and content-free. Preserve scroll position while older pages load. Event merging remains in deferred Phase 5.
-- [x] On revision conflict, preserve the local edit and display the fresh server version with explicit retry/discard choices. A repeated delete returned the same tombstone in the live smoke.
-- [x] Test author/manager/forbidden cases, concurrent edits, delete while viewing, out-of-order results, page overlap, and reload. Earlier HTTP and mocked checks cover forbidden members, repeated delete, overlap, and stale results. The 2026-10-13 sandbox browser smoke verifies author edits, explicit conflict retry with draft preservation, owner/moderator deletion, forbidden moderator edits, and edited/tombstone reloads.
-
-**Phase 3 verification (2026-10-02):** A disposable account joined an existing public room, sent, edited, retried a stale revision, deleted twice, and read the tombstone; a second two-account check confirmed non-author edit/delete return `403`. All three test accounts left and were deleted. The live browser URL `https://chat.xuanphong.io.vn/login` returned Vercel `404: NOT_FOUND` before Vue loaded; the repository now includes an SPA rewrite. Confirm direct `/login` and room routes after deployment.
-
-**Exit gate:** No stale response restores erased content or overwrites a newer revision; edit conflicts are recoverable without losing the user's draft.
-
-## 4. Durable read state and unread counts — P1
-
-**Resumed and locally accepted (2026-10-22).** The user resumed Phase 4 after attachment acceptance commit `1332e80`. [Ten fresh live groups](./docs/READ_STATE_LOCAL_ACCEPTANCE_2026-10-22.md) pass against local8080, including native visibility, two-context convergence/reload, injected failure/explicit retry, rapid navigation, revocation and logout. Existing implementation needs no product change. Selected-host functional acceptance remains separate under the local-only instruction.
-
-**Dependency:** The Swagger-documented GET/PUT read-state DTO and cursor semantics are verified with test accounts. This slice does not require WebSocket.
-
-- [x] Add typed `GET/PUT /api/v1/rooms/{id}/read-state` functions and room-scoped Vue Query keys. PUT sends `{ last_read_message_id }`; consume `{ room_id, last_read_message_id, unread_count }`. Advance a cursor only when messages are viewed; debounce writes without moving backward.
-- [x] Add unread badges to the room list using server state or a documented full-history calculation. Do not infer exact counts from the newest-page cache. Exclude own messages and preserve tombstone-by-ID behavior.
-- [x] Clear read state on logout, account switch, and membership loss. Existing account-switch tests and the sandbox browser removal/logout checks verify cleanup. Browser reload, two-tab convergence after foregrounding, and explicit retry after an injected failed write passed on 2026-10-13.
-- [x] Complete deterministic rapid-room-switch and overlapping-write checks. Eight mounted-composable tests exercise real Vue Query, Axios cancellation, viewport measurement, and debounce behavior. Temporary removal of cancellation/generation protection and monotonic merging causes the expected failures; production source is restored.
-- [x] Retest private-room rejoin: fresh pending invitation, denial before acceptance, restored access and hidden old feed passed on 2026-10-15; see [backend recheck](./docs/BACKEND_RECHECK_2026-10-15.md).
-
-- [x] Reaccept Phase 4 against the current local backend after Phase 5: ten API/wire/native groups and 40 focused tests pass on 2026-10-22; journals confirm cleanup. See [current evidence](./docs/READ_STATE_LOCAL_ACCEPTANCE_2026-10-22.md).
-
-**Completion record (2026-10-02):** Added room-scoped read-state queries, monotonic cursor merging, a debounced visible-message acknowledgement, membership revocation cleanup, and server-backed unread badges. The deployed two-account smoke verified own-message exclusion, tombstones counting by ID, monotonic stale writes, duplicate acknowledgement, membership denial, and cleanup of disposable accounts. Local checks cover cursor merging and API payloads; browser multi-tab convergence and final-host CORS remain release gates.
-
-**Exit gate:** Read cursor and unread count converge with the backend after retries/reloads; no other user's private state is shown.
-
-## 5. WebSocket-assisted REST integration — P1
-
-**Scope approved on 2026-10-13.** [Reviewed contract and verification](./docs/WEBSOCKET_CONTRACT.md) and [approved design](./docs/superpowers/specs/2026-10-13-websocket-design.md) define the first release. The approved 2026-10-20 completion adds typed lifecycle reconciliation and room presence/typing; SSE and distributed-delivery guarantees remain deferred.
-
-- [x] Confirm URL, access-JWT query transport, origin handling, join/leave commands, documented envelopes, newline batching, no replay, and drain 1001. Authenticated sandbox-origin upgrade and native development-origin browser connections passed. The 2026-10-20 local contract publishes full lifecycle DTOs; spec 07 plus authenticated local wire checks pin presence/typing despite AsyncAPI publication drift.
-- [x] Use `@vueuse/core` for one connection per authenticated tab. Subscribe only after REST authorization, close on logout/account change, and process membership revocation before data events. Keep REST for durable state and all writes.
-- [x] Reconcile history/read state after reconnect and foreground recovery; preserve drafts/scroll, dedupe by ID/revision, bridge up to ten additional pages, and expose explicit reload beyond the bound. Keep HTTP polling because lifecycle/read-state event coverage is incomplete.
-- [x] Add bounded reconnect/backoff and offline/retry UI. Tests cover token rotation, account/room races, stale frames, malformed batches, revocation, missed pages, failed connections, and drain 1001. Local-branch browser smoke with the deployed backend covers invitations, message events, reconnect, revocation, and logout at desktop/mobile sizes.
-- [x] Verify the changed frontend on the designated sandbox host, including multiple real browser tabs. [2026-10-16 hosted acceptance](./docs/SANDBOX_RELEASE_ACCEPTANCE_2026-10-16.md) verifies the deployed bundle, native sockets, missed-message recovery, draft retention, revocation and active-socket logout. Any different production origin needs its own acceptance.
-- [x] Complete typed lifecycle update/delete reconciliation across retained history and Search, including nullable authors and tombstones, without trusting event content.
-- [x] Complete room-scoped online/typing presentation and actual-input scheduling: current-socket snapshot acknowledgement, 2000ms starts, 1500ms idle stop, 5000ms expiry, safe HTTP repair and account/room/reconnect/revocation isolation.
-- [x] Verify eight synthetic native scenarios with real sockets (post-review rerun 2026-10-21) and seven local-BE native journey groups (post-review rerun 2026-10-21) using the approved reusable owner/two rooms. See [Phase 5 completion acceptance](./docs/REALTIME_COMPLETION_ACCEPTANCE_2026-10-21.md). Preserve HTTP polling and existing Phase 4 behavior.
-- [x] Rerun native local-BE acceptance on the post-review build, including actual window hide/restore:7/7 passed with the user-approved replacement fixtures (owner9, rooms3/4). All52 temporary journal entries are cleaned; guest10 deletion returned204. Original owner3/rooms1/2 remain unreconciled and were not mutated; replacement registry is private and git-ignored in the workspace.
-- [ ] Accept presence/typing/lifecycle behavior on a working selected-host API. Current-source artifact identity was confirmed2026-10-22; functional hosted acceptance remains outside the current local-only test scope.
-- [x] Recheck local activity contract after Phase4:17 runtime checks pass2026-10-22, including privacy, tab aggregation, typing expiry and revocation; [evidence](./docs/PHASE_FIVE_SEVEN_LOCAL_2026-10-22.md).
-- [ ] BE: publish observed presence/typing/read-state schemas in AsyncAPI. Distributed recovery and SSE remain Phase 7 contract/rollout gates.
-
-**Exit gate for this slice:** Authorized REST state converges after connection loss and membership changes, stale private callbacks cannot repopulate another account, and transport failure exposes guarded REST recovery. Hosted multi-tab/reconnect acceptance and private re-invitation now pass on the designated sandbox; operational and distributed guarantees remain separate gates.
-
-## 6. Search, attachments, and inbox — P2
-
-- [x] **Search contract:** Verify authenticated authorization, query bounds, cursor pagination, edit freshness and deletion-aware responses with test accounts. Twelve live checks passed on 2026-10-14; see [the contract evidence](./docs/SEARCH_CONTRACT.md).
-- [x] **Search UI:** Add a room-scoped query form, cursor pagination, loading/empty states, and revoked-membership cleanup. Test edits/tombstones and result privacy. [Approved design](./docs/superpowers/specs/2026-10-14-room-message-search-design.md) and [implementation plan](./docs/superpowers/plans/2026-10-14-room-message-search.md) are implemented on `feat/message-search`; [eleven local-branch live checks](./docs/SEARCH_ACCEPTANCE_2026-10-14.md) passed. [Eight native hosted Search checks](./docs/RELEASE_HARDENING_ACCEPTANCE_2026-10-16.md#hosted-search-acceptance) pass on the designated sandbox; other production origins require their own verification.
-- [x] **Attachments upload/scanner recheck (2026-10-19):** User reports setup complete. A disposable-member HTTP journey confirms reservation 201 → upload 200 → complete 202 → ready/verified, with cancellation and account cleanup acknowledged. [Evidence](./docs/ATTACHMENTS_RECHECK_2026-10-19.md) supersedes the earlier reservation 503; browser/provider invariants remain separate gates.
-- [x] **Attachments binding/download contract (2026-10-20):** Swagger now publishes typed processed metadata, up to five attachment IDs/message and the authorized 60-second download endpoint. [New contract evidence](./docs/ATTACHMENTS_RECHECK_2026-10-20.md) supersedes the missing-route/schema blocker; authenticated runtime acceptance is still open.
-- [x] **Attachments frontend design/implementation:** The approved [design](./docs/superpowers/specs/2026-10-20-attachments-design.md) and [plan](./docs/superpowers/plans/2026-10-20-attachments.md) are implemented on `feat/attachments`: selection/progress/cancel/retry, verified-file caption/mention sends, history/Search rendering and fresh authorized downloads. [Local acceptance](./docs/ATTACHMENTS_ACCEPTANCE_2026-10-20.md) is separate from real provider/host gates. Captions remain required; inbound file-only messages render.
-- [x] **Attachments local API/provider acceptance (2026-10-22):** Seven live groups pass against local8080: real R2 upload/verified processing, caption+file+mention binding, canonical replay/409, recipient history/Search, original download bytes/headers and public leave/private removal/tombstone denial. Chrome PUT enforces real provider CORS; native download bytes match. See [evidence and cleanup](./docs/ATTACHMENTS_LOCAL_ACCEPTANCE_2026-10-22.md).
-- [x] **Attachments local edge acceptance:** Real five-minute expiry refuses complete/re-reserve/binding; harmless hash mismatch reaches rejected/unverified and cannot bind. Native room navigation before provider PUT confirms cancellation204, zero provider bytes and no stale upload/send on return. [Fresh evidence](./docs/PHASE_FIVE_SEVEN_LOCAL_2026-10-22.md) retains initial harness corrections and cleanup.
-- [ ] **Attachments infrastructure/host acceptance:** Delayed physical object cleanup/quota release and selected-host behavior need backend/operator evidence. Historical Render registration cleanup remains separate. Local-only testing remains the current instruction.
-- [x] **Mentions/inbox contract:** Typed recipients, same-key send identity/conflicts, asynchronous private feed pagination, repeated read, false preference payloads, deleted references, and public leave/rejoin generation isolation verified on 2026-10-14. Final HTTP runs passed 40 private-room checks and 10 public-generation checks; [evidence and cleanup limitations](./docs/RICH_MESSAGING_CONTRACT.md). Private-room re-invitation remains blocked independently.
-- [x] **Mentions/inbox UI:** Typed recipient picker, private metadata-only inbox, explicit read/retry, and account/room preferences implemented and reviewed on `feat/mentions-inbox`. [Acceptance](./docs/MENTIONS_INBOX_ACCEPTANCE_2026-10-15.md) records 191 passing tests and native desktop/mobile checks through a temporary proxy.
-- [x] **Mentions/inbox direct CORS:** Header allowance and direct local-branch two-account Chrome send/response-loss retry verified on 2026-10-15; see [backend recheck](./docs/BACKEND_RECHECK_2026-10-15.md).
-- [x] **Mentions/inbox sandbox release:** The user deployed the matching build; [native hosted acceptance](./docs/SANDBOX_RELEASE_ACCEPTANCE_2026-10-16.md) covers sends/retry, inbox pagination/read, preferences, offline recovery, mobile layout and membership generations. Legacy fixture cleanup remains a separate admin gate; another production origin needs verification.
-
-**Exit gate:** Each slice has its own deployed API/privacy gate and can ship independently. External email/push and attachment-only sends stay outside this plan.
-
-## 7. Release and operations alignment — P2
-
-- [ ] Verify browser behavior during backend warm-up, failed readiness, rolling deployment, and transient `503`; show retry without exposing migration details. Production route fallback and CORS must work on the selected host.
-- [ ] **Pending by user instruction (2026-10-22): broker/cross-node.** Once shared delivery and two instances exist, verify replay/gap recovery, room delivery, presence/typing and revocation. An event ACK is transport progress, not proof the browser rendered it.
-- [x] Close the three deferred release-tool findings: cleanup failure persists a redacted nonzero report through actual CLI cleanup, later missing heap samples include reasons, and post-switch IDs must equal the original set.14 focused regressions and341 repository tests pass; independent review correction accepted. Native recovery7/7; history five initial runs plus a passing bounded1,000-row retry, with the initial sixth-run timeout preserved. [Current evidence](./docs/PHASE_FIVE_SEVEN_LOCAL_2026-10-22.md).
-- [ ] Investigate the history pagination timeout if reproduced; one1,000-row initial load timed out at880 rows, while the bounded retry passed. No production regression or root cause is established.
-- [x] Establish a deterministic local traffic/load/heap baseline at 40/1,000 rows; [six native runs](./docs/HISTORY_COST_2026-10-16.md) pass. Reports omit private data; heap is not a post-GC retained-memory guarantee.
-- [ ] Measure real production traffic/error rates/latency and long-session memory after rollout; agree budgets from measurements without private telemetry.
-- [x] Add explicit workspace read recovery and a repeatable seven-scenario local fault matrix; [acceptance](./docs/RELEASE_HARDENING_ACCEPTANCE_2026-10-16.md) records safe retry, the fallback room-handoff regression and final review fixes (211 tests; native recovery 7/7 on 2026-10-17).
-- [x] Verify selected-host route fallback and current frontend artifact identity: [2026-10-22 preflight](./docs/RELEASE_PREFLIGHT_2026-10-22.md) matches JS/CSS after normalizing the API environment. No deployment or hosted API call was performed.
-- [ ] Smoke the reviewed recovery/presence/attachment flows against a working selected-host backend. Hosted assets still point at quota-exhausted Render; the user requests local-only testing for now.
-- [x] Run `npm run check`, desktop/mobile interaction/accessibility smoke tests, and two-account deployed journeys for the sandbox release. [2026-10-16 acceptance](./docs/SANDBOX_RELEASE_ACCEPTANCE_2026-10-16.md) records 191 tests, keyboard focus/Enter, mobile layout, API version, remaining gates and rollback path. This is a bounded smoke, not a full accessibility audit.
-
-**Exit gate:** The frontend works through expected backend failures. Any real-time scale claim has measured two-instance evidence from the backend rollout.
-
-## 8. Release candidate stability — proposed
-
-Preparation is recorded in [Phase8 scope and exit criteria](./docs/PHASE_8_PREPARATION.md). `develop` now contains the Phase5–7 follow-up through PR17 (`b58254e`). The proposed next work is reliable fixture ownership, history-timeout diagnosis, production-build local smoke and repeatable release evidence. This is a proposal for scope review, not an approved implementation plan.
-
-- [ ] Confirm the Phase8 objective and review its implementation design/plan before code changes.
-- [ ] Prevent concurrent live runners from deleting each other’s disposable fixtures.
-- [ ] Diagnose the recorded history pagination timeout and add a regression for its established cause.
-- [ ] Verify the exact production build against local8080 with bounded native desktop/mobile/privacy checks.
-- [ ] Record repeatable release checks, artifact identity, cleanup and independent review.
-
-Broker/cross-node remains pending by user instruction. Hosted runtime, AsyncAPI publication, physical R2 cleanup/quota and real operational/production measurements retain their existing external gates.
-
-## Delivery order
-
-```text
-Source structure + base components → Contract inventory → Hardening/membership
-                                             └───────→ Message lifecycle → REST read state
-                                             └───────→ Search + Mentions/Inbox (sandbox accepted)
-Next: Backend/operator evidence for physical cleanup, publication and real lifecycle operations
-Next hosted: Working API environment → affected-flow smoke → operational evidence
-Deferred: Hosted functional acceptance, SSE and distributed recovery (separate gates)
-```
-
-The foundation, lifecycle, initial read state, WebSocket, Search and Mentions/Inbox slices have recorded acceptance. Phase5 presence/typing is locally accepted; Phase 4 is locally reaccepted with ten fresh live groups. Attachments frontend implementation and fresh local API/provider/privacy checks pass, including core product and extended live edge checks; host and physical-cleanup gates stay explicit. The selected-host bundle matches current source, but its Render API environment is unavailable; continue against local8080 as requested. AsyncAPI publication, hosted functional acceptance and distributed/operational guarantees require separate evidence. Live writes must retain durable private cleanup journals.
+Completed implementation plans and intermediate reports were removed during documentation consolidation. Their exact history remains in Git through `0a0cb6a`; retained JSON evidence is indexed in [ACCEPTANCE.md](docs/ACCEPTANCE.md).
